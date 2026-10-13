@@ -111,10 +111,12 @@ app.post('/api/vip/checkout',async(req,res)=>{
   const name=String(req.body?.name||'').trim();
   const cpfCnpj=String(req.body?.cpfCnpj||'').replace(/\D/g,'');
   if(name.length<3||![11,14].includes(cpfCnpj.length))return res.status(400).json({error:'Informe nome e CPF/CNPJ válido para gerar a cobrança.'});
+  const vipPaymentId=require('crypto').randomUUID();
+  await sbReq('bh_vip_payments','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:vipPaymentId,user_id:user.id,plan:planId,status:'CREATING',amount:plan.value})});
   const customer=await asaas('/customers',{method:'POST',body:JSON.stringify({name,cpfCnpj,externalReference:user.id})});
   const dueDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
   const payment=await asaas('/payments',{method:'POST',body:JSON.stringify({customer:customer.id,billingType:'PIX',value:plan.value,dueDate,description:'Black Hands '+plan.name+' - mensalidade',externalReference:user.id+':'+planId})});
-  await sbReq('bh_vip_payments','',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({user_id:user.id,plan:planId,asaas_payment_id:payment.id,status:'PENDING',amount:plan.value})});
+  await sbReq('bh_vip_payments','?id=eq.'+encodeURIComponent(vipPaymentId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
   const pix=await asaas('/payments/'+encodeURIComponent(payment.id)+'/pixQrCode');
   res.json({paymentId:payment.id,plan:plan.name,amount:plan.value,pixCopyPaste:pix.payload||null,qrCodeBase64:pix.encodedImage||null,expiresAt:pix.expirationDate||null,status:'PENDING'});
  }catch(e){console.error('VIP checkout:',e.message);res.status(503).json({error:'Não foi possível gerar o Pix. Confira login e configurações do servidor.'});}
@@ -181,9 +183,9 @@ app.post('/api/store/checkout',checkoutLimit,async(req,res)=>{
   amount=Math.round(amount*100)/100;
   if(amount<=0||amount>5000)return pixErr(res,'Valor de pedido inválido');
   const orderId=require('crypto').randomUUID();
-  await sbReq('bh_pix_orders','?select=id&limit=1');
+  await savePixOrder({id:orderId,kind:'store',amount,status:'CREATING',customer_name:name,customer_phone:phone,customer_email:email,details:{items:validated,fulfillment:cleanText(body.fulfillment,40)}});
   const {payment,pix}=await createPixForOrder({name,cpfCnpj:customer.cpfCnpj,amount,description:'Black Hands Store - '+orderId,externalReference:'store:'+orderId});
-  await savePixOrder({id:orderId,kind:'store',asaas_payment_id:payment.id,amount,status:'PENDING',customer_name:name,customer_phone:phone,customer_email:email,details:{items:validated,fulfillment:cleanText(body.fulfillment,40)}});
+  await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(orderId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
   res.json({orderId,paymentId:payment.id,amount,pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',status:'PENDING'});
  }catch(e){console.error('Store Pix:',e.message);pixErr(res,'Não foi possível gerar o Pix. Verifique as configurações e os dados informados.',503);}
 });
@@ -195,9 +197,9 @@ app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
   let amount=0;const seen=new Set();
   for(const item of items){const id=cleanText(typeof item==='string'?item:item.name,80);if(!Object.hasOwn(BH_SERVICES,id)||seen.has(id))return pixErr(res,'Serviço inválido');seen.add(id);if((id==='Combo Corte + Sobrancelha'||id==='Pacote Completo')&&items.length!==1)return pixErr(res,'Combo não pode ser somado a outros serviços');amount+=BH_SERVICES[id];}
   const orderId=require('crypto').randomUUID();
-  await sbReq('bh_pix_orders','?select=id&limit=1');
+  await savePixOrder({id:orderId,kind:'booking',amount,status:'CREATING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:[...seen]}});
   const {payment,pix}=await createPixForOrder({name,cpfCnpj:b.cpfCnpj,amount,description:'Black Hands Agendamento - '+orderId,externalReference:'booking:'+orderId});
-  await savePixOrder({id:orderId,kind:'booking',asaas_payment_id:payment.id,amount,status:'PENDING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:[...seen]}});
+  await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(orderId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
   res.json({orderId,paymentId:payment.id,amount,pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',status:'PENDING',note:'Pagamento pendente. Horário sujeito a confirmação de disponibilidade pela equipe.'});
  }catch(e){console.error('Booking Pix:',e.message);pixErr(res,'Não foi possível gerar o Pix. Verifique as configurações e os dados informados.',503);}
 });
