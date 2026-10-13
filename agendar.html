@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="#090909" name="theme-color"/>
+<title>Agendar — Black Hands Barber Shop</title>
+<meta content="Agende seu horário na Black Hands Barber Shop." name="description"/>
+<link href="styles.css" rel="stylesheet"/>
+<link href="assistant.css" rel="stylesheet"/></head>
+<body>
+<header class="topbar">
+<a aria-label="Voltar para Black Hands" class="brand" href="index.html"><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a>
+<nav aria-label="Menu principal" class="main-nav">
+<a href="index.html#inicio">Início</a>
+<a href="servicos.html">Serviços e Preços</a>
+<a href="planos-vip.html">Planos VIP</a>
+<a href="loja.html">Black Hands Store</a>
+<a href="index.html#avaliacoes">Avaliações</a>
+<details class="nav-dropdown">
+<summary>Mais <span aria-hidden="true">⌄</span></summary>
+<div class="nav-dropdown-panel">
+<a href="acompanhar.html">Meus agendamentos</a>
+<a href="index.html#contato">Localização e contato</a>
+<a href="index.html#sobre">Sobre a barbearia</a>
+</div>
+</details>
+</nav>
+<div class="booking-header-actions"><a class="service-action" href="acompanhar.html">Acompanhar</a><a class="btn btn-small" href="index.html">Voltar</a></div>
+</header>
+<main class="booking-page">
+<section class="booking section-dark booking-page-section">
+<div class="section-head">
+<div><p class="eyebrow">AGENDAMENTO ONLINE</p><h1 class="booking-title">Reserve seu horário.</h1></div>
+<p>Escolha um ou mais serviços, o barbeiro, a data e o horário. Seu nome e WhatsApp ficam salvos neste dispositivo para facilitar o próximo agendamento.</p>
+</div>
+<form class="booking-form" id="bookingForm">
+<fieldset class="service-picker full">
+<legend>Escolha seus serviços</legend>
+<p class="service-picker-hint">Selecione um ou mais serviços para montar seu atendimento.</p>
+<button aria-controls="serviceDropdownPanel" aria-expanded="false" class="service-dropdown-trigger" id="serviceDropdownTrigger" type="button">
+<span aria-hidden="true" class="service-trigger-icon">✂</span>
+<span class="service-trigger-copy"><strong id="serviceTriggerTitle">Escolher serviços</strong><small id="serviceTriggerSubtitle">Nenhum serviço selecionado</small></span>
+<span aria-hidden="true" class="service-trigger-chevron">⌄</span>
+</button>
+<div class="service-dropdown-panel" hidden="" id="serviceDropdownPanel">
+<div class="service-dropdown-top"><strong>Todos os serviços</strong><span>Toque para selecionar vários</span></div>
+<div class="booking-service-grid" id="serviceOptions">
+<label class="booking-service"><input data-price="35" name="services" type="checkbox" value="Cabelo"/><span><b>Cabelo</b><small>Corte e acabamento</small><strong>R$ 35,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="booking-service"><input data-price="30" name="services" type="checkbox" value="Barba"/><span><b>Barba</b><small>Barba com acabamento</small><strong>R$ 30,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="booking-service"><input data-price="15" name="services" type="checkbox" value="Pintura"/><span><b>Pintura</b><small>Procedimento de pintura</small><strong>R$ 15,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="booking-service"><input data-price="15" name="services" type="checkbox" value="Relaxamento"/><span><b>Relaxamento</b><small>Tratamento para o cabelo</small><strong>R$ 15,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="booking-service"><input data-price="15" name="services" type="checkbox" value="Pigmentação"/><span><b>Pigmentação</b><small>Realce e acabamento</small><strong>R$ 15,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="booking-service"><input data-price="10" name="services" type="checkbox" value="Pezinho"/><span><b>Pezinho</b><small>Acabamento preciso</small><strong>R$ 10,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="booking-service"><input data-price="10" name="services" type="checkbox" value="Sobrancelha"/><span><b>Sobrancelha</b><small>Acabamento da sobrancelha</small><strong>R$ 10,00</strong><i aria-hidden="true">✓</i></span></label>
+<label class="bh-combo-option" style="border:1px solid #ed8b34;border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center"><input data-combo="combo-corte-sobrancelha" data-price="40" name="services" type="checkbox" value="Combo Corte + Sobrancelha"/><span><strong>Combo Corte + Sobrancelha</strong><small style="display:block">Corte + Sobrancelha — R$ 40,00</small></span></label><label class="bh-combo-option" style="border:1px solid #ed8b34;border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center"><input data-combo="combo-completo" data-price="50" name="services" type="checkbox" value="Pacote Completo"/><span><strong>Pacote Completo</strong><small style="display:block">Corte + Sobrancelhas + Limpeza de pele — R$ 50,00</small></span></label></div>
+<button class="service-dropdown-done" id="serviceDropdownDone" type="button">Concluir seleção</button>
+</div>
+<div class="booking-total"><span>Total dos serviços</span><strong id="bookingTotal">R$ 0,00</strong></div>
+</fieldset>
+<label>Barbeiro<select id="barber" required=""><option value="">Selecione</option><option value="WELIGOL">WELIGOL</option></select></label>
+<label>Data<input id="date" required="" type="date"/></label>
+<label>Horário<select id="time" required=""><option value="">Selecione barbeiro e data</option></select></label>
+<label>Nome<input autocomplete="name" id="bookingName" placeholder="Seu nome" required="" type="text"/></label>
+<label>WhatsApp<input autocomplete="tel" id="bookingPhone" placeholder="(31) 99999-9999" required="" type="tel"/></label>
+<div class="payment-box full">
+<strong>Forma de pagamento</strong>
+<div class="payment-options">
+<label><input checked="" name="payment" type="radio" value="online"/> Pagar Pix agora</label>
+<label><input name="payment" type="radio" value="shop"/> Pagar em dinheiro no dia</label>
+</div>
+<p class="payment-help">No Pix, o valor será calculado automaticamente conforme os serviços escolhidos. A confirmação e a integração do pagamento serão conectadas ao backend.</p>
+</div>
+<button class="btn full" type="submit">CONFIRMAR AGENDAMENTO</button>
+</form>
+<div class="result" hidden="" id="bookingResult"></div>
+</section>
+</main>
+<footer><div><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/></div><div class="footer-links"><a href="servicos.html">Serviços</a><a href="planos-vip.html">Club</a><a href="loja.html">Loja</a></div><p>© 2026 Black Hands Barber Shop. Todos os direitos reservados.</p></footer>
+<script src="booking.js"></script>
+<script defer="True" src="assistant.js"></script><a aria-label="Instagram da Black Hands Barber Shop" class="instagram-float" href="https://instagram.com/barbearia_blackhands?mdxt=djkyb3ptbDI2d3Yy" rel="noopener noreferrer" target="_blank" title="Instagram Black Hands">
+<svg aria-hidden="true" viewbox="0 0 24 24"><rect fill="none" height="18" rx="5" stroke="currentColor" stroke-width="2" width="18" x="3" y="3"></rect><circle cx="12" cy="12" fill="none" r="4" stroke="currentColor" stroke-width="2"></circle><circle cx="17.5" cy="6.5" fill="currentColor" r="1.2"></circle></svg>
+</a></body>
+</html>

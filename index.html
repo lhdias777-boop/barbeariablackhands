@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="#090909" name="theme-color"/>
+<title>Black Hands Barber Shop</title>
+<meta content="Black Hands Barber Shop — agende seu horário, conheça os serviços e faça parte do Black Hands Club." name="description"/>
+<link href="styles.css" rel="stylesheet"/>
+<link href="assistant.css" rel="stylesheet"/></head>
+<body>
+<header class="topbar topbar-premium">
+<button aria-controls="mainNav" aria-expanded="false" aria-label="Abrir menu" class="mobile-menu-toggle" id="mobileMenuToggle" type="button">
+<span aria-hidden="true" class="hamburger-lines"><i></i><i></i><i></i></span>
+</button>
+<a aria-label="Acessar painel administrativo Black Hands" class="brand brand-centered" href="admin.html" id="mainBrand" title="Acessar painel ADM">
+<img alt="Logo Black Hands Barber Shop" class="brand-logo" src="logo-oficial-black-hands.jpg"/>
+</a>
+<nav aria-label="Menu principal" class="main-nav" id="mainNav">
+<a href="#inicio"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg><span>Início</span></a>
+<a href="servicos.html"><svg aria-hidden="true" viewbox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="m8.2 8.2 12 12M8.2 15.8l12-12"></path></svg><span>Serviços e Preços</span></a>
+<a class="nav-booking" href="agendar.html"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="16" rx="2" width="18" x="3" y="5"></rect><path d="M16 3v4M8 3v4M3 10h18M8 15l2 2 5-5"></path></svg><span>Agendar horário</span></a>
+<a href="planos-vip.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg><span>Planos VIP</span></a>
+<a href="loja.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 8h16l-1 13H5zM3 8l2-5h14l2 5M9 12v1M15 12v1"></path></svg><span>Black Hands Store</span></a>
+<a href="acompanhar.html"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="16" rx="2" width="18" x="3" y="5"></rect><path d="M16 3v4M8 3v4M3 10h18M12 13v4l3 2"></path></svg><span>Meus agendamentos</span></a>
+<a href="#avaliacoes"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z"></path></svg><span>Avaliações</span></a>
+<a href="#contato"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg><span>Localização e contato</span></a>
+</nav>
+</header>
+<section aria-label="Anúncios Black Hands" class="announcement-slider">
+<div class="slider-track" id="sliderTrack">
+<article class="slide active">
+<img alt="Black Hands Barber Shop" src="banner-1.jpg"/>
+<div class="slide-content">
+<span>BLACK HANDS BARBER SHOP</span>
+<h2>Seu estilo começa aqui.</h2>
+<p>Agende seu horário online e viva a experiência Black Hands.</p>
+<a class="btn" href="agendar.html">AGENDAR AGORA</a>
+</div>
+</article>
+<article class="slide">
+<img alt="Black Hands Barber Shop" src="banner-2.jpg"/>
+<div class="slide-content">
+<span>BLACK HANDS CLUB</span>
+<h2>Faça parte do clube.</h2>
+<p>Planos mensais, benefícios exclusivos e muito mais.</p>
+<a class="btn" href="planos-vip.html">CONHECER CLUB</a>
+</div>
+</article>
+<article class="slide">
+<img alt="Produtos Black Hands Store" src="black-hands-hero.jpg"/>
+<div class="slide-content">
+<span>BLACK HANDS STORE</span>
+<h2>NOVIDADES QUE COMBINAM COM VOCÊ.</h2>
+<p>Conheça os produtos para cuidar, modelar e finalizar seu visual.</p>
+<a class="btn" href="loja.html">VER PRODUTOS</a>
+</div>
+</article>
+</div>
+<button aria-label="Anúncio anterior" class="slider-arrow prev" id="prevSlide">‹</button>
+<button aria-label="Próximo anúncio" class="slider-arrow next" id="nextSlide">›</button>
+<div class="slider-dots" id="sliderDots">
+<button aria-label="Anúncio 1" class="dot active" data-slide="0"></button>
+<button aria-label="Anúncio 2" class="dot" data-slide="1"></button>
+<button aria-label="Anúncio 3" class="dot" data-slide="2"></button>
+</div>
+<div class="drag-hint">← arraste para o lado →</div>
+</section>
+<main>
+<section class="hero" id="inicio">
+<div class="hero-overlay"></div>
+<div class="hero-content">
+<p class="eyebrow">ESTILO • PRECISÃO • EXPERIÊNCIA</p>
+<h1>Seu estilo.<br/><span>Nossa assinatura.</span></h1>
+<p class="hero-copy">Agende seu horário online, escolha seu serviço e deixe o visual nas mãos da Black Hands.</p>
+<div class="actions">
+<a class="btn" href="agendar.html">AGENDAR HORÁRIO</a>
+<a class="btn btn-ghost" href="servicos.html">VER SERVIÇOS</a>
+</div>
+<div class="trust-row">
+<span>✓ Agenda online</span>
+<span>✓ Pagamento antecipado</span>
+<span>✓ Black Hands Club</span>
+</div>
+</div>
+</section>
+<section class="section club" id="club"><div class="club-copy"><p class="eyebrow">BLACK HANDS CLUB</p><h2>Planos mensais VIP</h2><p>Conheça os benefícios e acompanhe sua assinatura.</p><a class="btn" href="planos-vip.html">VER PLANOS MENSAIS</a></div></section>
+<section class="section testimonials" id="avaliacoes">
+<div class="section-head"><div><p class="eyebrow">FEEDBACKS</p><h2>Experiências reais.</h2></div><p>As avaliações poderão ser liberadas após atendimentos concluídos.</p></div>
+<div class="testimonial-grid">
+<article><div class="stars">★★★★★</div><p>“Espaço, atendimento e acabamento em outro nível.”</p><strong>Cliente Black Hands</strong></article>
+<article><div class="stars">★★★★★</div><p>“Agendei, fui atendido no horário e saí satisfeito.”</p><strong>Cliente Black Hands</strong></article>
+<article><div class="stars">★★★★★</div><p>“Experiência completa e atendimento profissional.”</p><strong>Cliente Black Hands</strong></article>
+</div>
+</section>
+<section class="section about-section" id="sobre">
+<div class="section-head"><div><p class="eyebrow">SOBRE A BLACK HANDS</p><h2>Seu estilo merece atenção.</h2></div><p>A Black Hands une cuidado, precisão e estilo para oferecer uma experiência completa, do agendamento ao acabamento final.</p></div>
+<a class="btn btn-ghost" href="servicos.html">CONHECER SERVIÇOS</a>
+</section>
+<section class="section contact-section" id="contato">
+<div class="section-head"><div><p class="eyebrow">LOCALIZAÇÃO E CONTATO</p><h2>Vamos marcar seu próximo corte?</h2></div><p>Entre em contato para tirar dúvidas e consultar a localização da barbearia.</p></div>
+<div class="contact-actions">
+<a class="btn" href="https://wa.me/5531971245200" rel="noopener noreferrer" target="_blank">FALAR PELO WHATSAPP</a>
+<a class="btn btn-ghost" href="https://instagram.com/barbearia_blackhands?mdxt=djkyb3ptbDI2d3Yy" rel="noopener noreferrer" target="_blank">INSTAGRAM</a>
+</div>
+</section>
+<section class="cta">
+<p class="eyebrow">BLACK HANDS BARBER SHOP</p>
+<h2>Pronto para renovar o visual?</h2>
+<a class="btn" href="agendar.html">AGENDAR AGORA</a>
+</section>
+<section class="section" id="promocoes-black-hands" style="padding:32px 7%;background:#111;text-align:center"><p class="eyebrow">PROMOÇÕES BLACK HANDS</p><h2 style="margin:8px 0">Combos a partir de R$ 40,00</h2><p>Corte + sobrancelha por R$ 40,00 ou pacote completo por R$ 50,00.</p><a class="btn" href="servicos.html#combos-promocionais">Ver combos promocionais ↗</a></section></main>
+<footer>
+<div><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/></div>
+<div class="footer-links"><a href="#inicio">Início</a><a href="servicos.html">Serviços e Preços</a><a href="planos-vip.html">Planos VIP</a><a href="loja.html">Loja</a><a href="#contato">Contato</a></div>
+<p>© 2026 Black Hands Barber Shop. Todos os direitos reservados.</p>
+</footer>
+<a aria-label="Instagram da Black Hands Barber Shop" class="instagram-float" href="https://instagram.com/barbearia_blackhands?mdxt=djkyb3ptbDI2d3Yy" rel="noopener noreferrer" target="_blank" title="Instagram Black Hands">
+<svg aria-hidden="true" viewbox="0 0 24 24"><rect fill="none" height="18" rx="5" stroke="currentColor" stroke-width="2" width="18" x="3" y="3"></rect><circle cx="12" cy="12" fill="none" r="4" stroke="currentColor" stroke-width="2"></circle><circle cx="17.5" cy="6.5" fill="currentColor" r="1.2"></circle></svg>
+</a>
+<script>
+    (() => {
+      const toggle = document.getElementById('mobileMenuToggle');
+      const nav = document.getElementById('mainNav');
+      if (!toggle || !nav) return;
+      toggle.addEventListener('click', () => {
+        const open = nav.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.innerHTML = open ? '<span class="close-mark" aria-hidden="true">×</span>' : '<span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span>';
+        toggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+      });
+      nav.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+        nav.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.innerHTML = '<span class="hamburger-lines" aria-hidden="true"><i></i><i></i><i></i></span>';
+        toggle.setAttribute('aria-label', 'Abrir menu');
+      }));
+    })();
+  </script>
+<script src="app.js"></script>
+<script defer="True" src="assistant.js"></script></body>
+</html>

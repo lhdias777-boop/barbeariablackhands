@@ -1,0 +1,235 @@
+{
+  "saudacao": "Olá! 👋 Sou o Assistente Black Hands. Escolha uma pergunta sugerida abaixo ou escreva sua dúvida sobre agendamentos, serviços, preços, loja, VIP e promoções.",
+  "nao_entendi": "Ainda não tenho uma resposta cadastrada para isso. Você pode reformular a pergunta ou falar com nossa equipe pelo WhatsApp: https://wa.me/5531971245200",
+  "assuntos": [
+    {
+      "id": "combos_promocionais",
+      "palavras": [
+        "combo",
+        "combos",
+        "promocao corte",
+        "corte sobrancelha",
+        "limpeza de pele",
+        "pacote completo",
+        "promocao 40",
+        "promocao 50"
+      ],
+      "resposta": "Temos dois combos: Corte + Sobrancelha por R$ 40,00 e Pacote Completo (Corte + Sobrancelhas + Limpeza de pele) por R$ 50,00. Confira as imagens e agende em [Combos promocionais](servicos.html#combos-promocionais)."
+    },
+    {
+      "id": "agendar",
+      "palavras": [
+        "agendar",
+        "agendamento novo",
+        "marcar horario",
+        "marcar corte",
+        "reservar",
+        "disponibilidade",
+        "horario livre"
+      ],
+      "resposta": "Você pode escolher os serviços e solicitar seu horário na página de agendamento: [Agendar horário](agendar.html)."
+    },
+    {
+      "id": "acompanhar",
+      "palavras": [
+        "meu agendamento",
+        "acompanhar agendamento",
+        "status agendamento",
+        "confirmou meu horario",
+        "meu horario",
+        "meu corte"
+      ],
+      "resposta": "Para consultar seus agendamentos, acesse [Meus agendamentos](acompanhar.html). Não consigo verificar sua situação individual por este chat ainda."
+    },
+    {
+      "id": "pedidos",
+      "palavras": [
+        "meu pedido",
+        "acompanhar pedido",
+        "status pedido",
+        "onde esta meu pedido",
+        "minha compra",
+        "entrega"
+      ],
+      "resposta": "Para saber o andamento de um pedido, entre em contato pelo WhatsApp (31) 97124-5200 e informe o número do pedido. Este assistente ainda não consulta pedidos automaticamente."
+    },
+    {
+      "id": "precos",
+      "palavras": [
+        "preco",
+        "precos",
+        "quanto custa",
+        "valor do corte",
+        "servicos",
+        "tabela de preco",
+        "corte e barba"
+      ],
+      "resposta": "Veja os serviços e valores atualizados na página [Serviços e preços](servicos.html). Você pode selecionar mais de um serviço."
+    },
+    {
+      "id": "vip",
+      "palavras": [
+        "vip",
+        "assinatura",
+        "plano mensal",
+        "planos mensais",
+        "mensalidade"
+      ],
+      "resposta": "Temos VIP 1 por R$ 70/mês (2 cortes com acabamento) e VIP 2 por R$ 160/mês (2 atendimentos com corte, barba, sobrancelhas e acabamento). Uso de segunda a quinta. Veja [Planos VIP](planos-vip.html). A ativação automática do Pix ainda está em configuração."
+    },
+    {
+      "id": "promocoes",
+      "palavras": [
+        "promocao",
+        "promocoes",
+        "desconto",
+        "oferta",
+        "ofertas",
+        "combo",
+        "combos"
+      ],
+      "resposta": "As promoções e combos são divulgados pela Black Hands. No momento, não tenho uma oferta ativa cadastrada. Consulte a equipe no WhatsApp: https://wa.me/5531971245200"
+    },
+    {
+      "id": "loja",
+      "palavras": [
+        "loja",
+        "store",
+        "produto",
+        "pomada",
+        "gel",
+        "shampoo",
+        "comprar"
+      ],
+      "resposta": "Confira os produtos disponíveis na [Black Hands Store](loja.html)."
+    },
+    {
+      "id": "whatsapp",
+      "palavras": [
+        "whatsapp",
+        "telefone",
+        "contato",
+        "atendente",
+        "falar com pessoa",
+        "suporte"
+      ],
+      "resposta": "Fale com a equipe Black Hands pelo WhatsApp: https://wa.me/5531971245200 — (31) 97124-5200."
+    },
+    {
+      "id": "pagamento",
+      "palavras": [
+        "pix",
+        "pagamento",
+        "pagar",
+        "cartao",
+        "comprovante"
+      ],
+      "resposta": "Para dúvidas sobre pagamentos, fale com a equipe pelo WhatsApp: https://wa.me/5531971245200. Este chat não confirma pagamentos."
+    },
+    {
+      "id": "barbeiro",
+      "palavras": [
+        "barbeiro",
+        "weligol",
+        "profissional"
+      ],
+      "resposta": "Você pode selecionar o barbeiro disponível durante o agendamento: [Agendar horário](agendar.html)."
+    },
+    {
+      "id": "horarios",
+      "palavras": [
+        "horario de funcionamento",
+        "que horas abre",
+        "que horas fecha",
+        "funcionamento",
+        "abre hoje",
+        "aberto hoje"
+      ],
+      "resposta": "Os horários de funcionamento devem ser confirmados com a equipe pelo WhatsApp: https://wa.me/5531971245200. Para escolher um horário disponível, acesse [Agendar horário](agendar.html)."
+    },
+    {
+      "id": "localizacao",
+      "palavras": [
+        "endereco",
+        "localizacao",
+        "onde fica",
+        "como chegar",
+        "fica onde"
+      ],
+      "resposta": "Confira a localização e os contatos na página inicial: [Localização e contato](index.html#contato). Se precisar, peça o endereço pelo WhatsApp: https://wa.me/5531971245200."
+    },
+    {
+      "id": "cancelar",
+      "palavras": [
+        "cancelar agendamento",
+        "remarcar",
+        "mudar horario",
+        "alterar agendamento",
+        "desmarcar"
+      ],
+      "resposta": "Para conferir seu agendamento, acesse [Meus agendamentos](acompanhar.html). Para solicitar cancelamento ou remarcação, fale com a equipe pelo WhatsApp: https://wa.me/5531971245200."
+    },
+    {
+      "id": "multiplos",
+      "palavras": [
+        "mais de um servico",
+        "dois servicos",
+        "varios servicos",
+        "corte e sobrancelha",
+        "adicionar servico"
+      ],
+      "resposta": "Você pode selecionar mais de um serviço e conferir o valor total em [Serviços e preços](servicos.html), depois continuar para [Agendar horário](agendar.html)."
+    },
+    {
+      "id": "como_assinar",
+      "palavras": [
+        "assinar vip",
+        "como assinar",
+        "quero ser vip",
+        "virar vip"
+      ],
+      "resposta": "Acesse [Planos VIP](planos-vip.html) e escolha VIP 1 ou VIP 2. A ativação automática por Pix ainda depende da integração final; confirme com a equipe antes de pagar."
+    },
+    {
+      "id": "vip_status",
+      "palavras": [
+        "meu plano vip",
+        "vip ativo",
+        "minha assinatura",
+        "validade do vip",
+        "sou vip"
+      ],
+      "resposta": "Consulte a área Meu plano VIP em [Planos VIP](planos-vip.html). Este assistente ainda não acessa sua assinatura individual."
+    },
+    {
+      "id": "entrega_loja",
+      "palavras": [
+        "retirada",
+        "frete",
+        "prazo de entrega",
+        "entrega em casa"
+      ],
+      "resposta": "Para confirmar retirada, entrega e disponibilidade dos produtos, fale com a equipe pelo WhatsApp: https://wa.me/5531971245200. Veja os itens na [Black Hands Store](loja.html)."
+    },
+    {
+      "id": "avaliacoes",
+      "palavras": [
+        "avaliacao",
+        "avaliacoes",
+        "deixar avaliacao",
+        "feedback"
+      ],
+      "resposta": "Você pode conferir as avaliações e informações da barbearia na página inicial: [Início](index.html). Para enviar sugestões, fale com nossa equipe pelo WhatsApp."
+    },
+    {
+      "id": "seguranca",
+      "palavras": [
+        "meus dados",
+        "privacidade",
+        "senha",
+        "dados pessoais"
+      ],
+      "resposta": "Por segurança, não envie senha, CPF, dados bancários ou informações pessoais neste chat. Para assuntos do seu perfil, use as áreas de acesso do site ou fale com a equipe."
+    }
+  ]
+}

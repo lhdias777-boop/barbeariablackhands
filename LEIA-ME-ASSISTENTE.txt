@@ -1,0 +1,12 @@
+BLACK HANDS — ASSISTENTE IA
+
+A interface da assistente foi incluída nas páginas HTML.
+Para conversar com a IA, hospede em servidor Node.js (ex.: Render) e configure OPENAI_API_KEY como variável de ambiente privada.
+Comandos: npm install; npm start.
+O Netlify com hospedagem apenas estática NÃO executa server.js: nesse caso, a interface abre mas a conversa não funciona até criar uma função serverless/backend.
+Não coloque a chave da API nos arquivos públicos do site.
+Os fluxos de pagamentos, agendamento e WhatsApp precisam de testes e integrações próprias; a IA apenas orienta.
+
+
+ICONES: IA, WhatsApp e Instagram alinhados na esquerda, em tamanhos iguais.
+A IA nao funciona apenas em hospedagem estatica. O endpoint /api/assistant/chat precisa de Node.js e OPENAI_API_KEY no servidor. Nao exponha a chave no navegador.

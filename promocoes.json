@@ -1,0 +1,18 @@
+[
+  {
+    "id": "combo-corte-sobrancelha",
+    "titulo": "Combo Corte + Sobrancelha",
+    "preco": 40,
+    "descricao": "Corte + Sobrancelha",
+    "imagem": "promo-corte-sobrancelha.jpg",
+    "ativo": true
+  },
+  {
+    "id": "combo-completo",
+    "titulo": "Pacote Completo",
+    "preco": 50,
+    "descricao": "Corte + Sobrancelhas + Limpeza de pele",
+    "imagem": "promo-pacote-completo.jpg",
+    "ativo": true
+  }
+]
