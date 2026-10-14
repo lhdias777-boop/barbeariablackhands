@@ -1060,19 +1060,25 @@ app.post('/api/barber/attendance/:id',accountSameOrigin,requireStaff,async(req,r
 app.get('/api/barber/vip',requireStaff,async(req,res)=>{
  accountNoCache(res);
  try{
-  const today=spParts().date;
-  const memberships=await sbReq('bh_customer_vip_memberships','?status=eq.ACTIVE&paid_until=gt.'+encodeURIComponent(new Date().toISOString())+
-   '&select=account_id,plan,paid_until&limit=150');
+  const memberships=await sbReq('bh_customer_vip_memberships','?status=eq.ACTIVE&paid_until=gt.'+
+   encodeURIComponent(new Date().toISOString())+
+   '&select=account_id,plan,paid_until,cycle_starts_on&limit=150');
   const ids=memberships.map(x=>x.account_id);
-  const accounts=ids.length?await sbReq('bh_customer_accounts','?id=in.('+ids.join(',')+')&select=id,full_name,phone'):[];
-  const month=today.slice(0,7);
-  const used=ids.length?await sbReq('bh_vip_appointments','?account_id=in.('+ids.join(',')+')&appointment_date=gte.'+month+'-01&appointment_date=lt.'+
-   (new Date(Date.UTC(Number(today.slice(0,4)),Number(today.slice(5,7)),1)).toISOString().slice(0,10))+
-   '&status=eq.SCHEDULED&select=account_id,appointment_date'):[];
+  const accounts=ids.length?await sbReq('bh_customer_accounts',
+   '?id=in.('+ids.join(',')+')&select=id,full_name,phone'):[];
+  const starts=memberships.map(m=>m.cycle_starts_on).sort();
+  const used=ids.length?await sbReq('bh_vip_appointments',
+   '?account_id=in.('+ids.join(',')+')&status=eq.SCHEDULED&cycle_start_date=gte.'+
+   starts[0]+'&select=account_id,cycle_start_date,week_number'):[];
   const names=new Map(accounts.map(x=>[x.id,x]));
-  res.json({members:memberships.map(m=>({accountId:m.account_id,name:names.get(m.account_id)?.full_name||'Cliente',
-    phone:names.get(m.account_id)?.phone||'',plan:m.plan,paidUntil:m.paid_until,
-    usedThisMonth:used.filter(u=>u.account_id===m.account_id).length}))});
+  res.json({members:memberships.map(m=>({
+   accountId:m.account_id,name:names.get(m.account_id)?.full_name||'Cliente',
+   phone:names.get(m.account_id)?.phone||'',plan:m.plan,paidUntil:m.paid_until,
+   cycleStartsOn:m.cycle_starts_on,
+   usedThisCycle:used.filter(u=>u.account_id===m.account_id&&u.cycle_start_date===m.cycle_starts_on).length,
+   bookedWeeks:used.filter(u=>u.account_id===m.account_id&&u.cycle_start_date===m.cycle_starts_on)
+    .map(u=>u.week_number).filter(Boolean)
+  }))});
  }catch(e){console.error('VIP barber list:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível consultar clientes VIP.'});}
 });
 // Visibilidade administrativa da fila, sem expor tokens nem números completos.
