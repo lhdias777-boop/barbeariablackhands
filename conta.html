@@ -1,7 +1,198 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Minha conta | Black Hands</title><link rel="stylesheet" href="styles.css"><style>
-.auth-wrap{max-width:470px;margin:80px auto;padding:26px;background:#171717;border:1px solid #644023;border-radius:18px;color:white}.auth-wrap h1{font-size:32px}.auth-wrap label{display:block;margin:14px 0}.auth-wrap input{display:block;width:100%;padding:13px;margin-top:7px;border-radius:8px;border:1px solid #666;background:#272727;color:#fff}.auth-wrap button{padding:13px 20px;background:#ed8b34;color:#111;font-weight:800;border:0;border-radius:8px;cursor:pointer}.auth-tabs{display:flex;gap:12px;margin:20px 0}.auth-tabs button[aria-selected=false]{background:#333;color:#fff}.auth-wrap a{color:#f4a75b}#authMsg{min-height:30px;white-space:pre-wrap}.auth-wrap [hidden]{display:none!important}
-</style></head><body><header class="topbar"><a class="brand" href="index.html"><img class="brand-official" src="logo-oficial-black-hands.jpg" alt="Black Hands"></a><nav><a href="index.html">Início</a> <a href="planos-vip.html">Planos VIP</a> <a href="agendar.html">Agendar</a></nav></header><main class="auth-wrap"><h1>Minha conta</h1><p>Cadastre-se ou entre com seu WhatsApp e sua senha.</p><div class="auth-tabs"><button id="registerTab" type="button" aria-selected="true">Cadastrar</button><button id="loginTab" type="button" aria-selected="false">Entrar</button></div>
-<div id="loggedIn" hidden><p id="welcome"></p><button id="logout" type="button">Sair da conta</button><p><a href="planos-vip.html">Consultar VIP</a></p></div>
-<form id="authForm"><label id="nameRow">Nome completo<input name="name" autocomplete="name" minlength="3" maxlength="120" required></label><label>WhatsApp<input name="phone" autocomplete="tel" type="tel" inputmode="tel" placeholder="(31) 99999-9999" required></label><label>Senha<input name="password" autocomplete="current-password" type="password" minlength="8" maxlength="128" required></label><label id="confirmRow">Confirmar senha<input name="confirm" autocomplete="new-password" type="password" minlength="8" maxlength="128" required></label><button id="submitAuth" type="submit">CRIAR CONTA</button></form>
-<section id="verifyBox" hidden><h2>Confirmar telefone</h2><p>Se a verificação por SMS estiver ativada, informe o código recebido.</p><form id="verifyForm"><label>Código<input name="code" inputmode="numeric" autocomplete="one-time-code" required></label><button type="submit">CONFIRMAR CÓDIGO</button></form></section><p id="authMsg" role="status"></p><small>O WhatsApp informado identifica sua conta. O código de verificação, quando exigido pelo Supabase, é enviado por SMS, não pelo WhatsApp da barbearia.</small></main>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script><script src="auth.js"></script><script src="conta.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="description" content="Minha conta Black Hands: seus agendamentos, perfil e acesso seguro.">
+<title>Minha Conta | Black Hands Barber Shop</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+:root{--account-orange:#ef903a;--account-orange2:#ffc16f;--account-paper:#f6f3ed;--account-muted:#aba6a0;--account-line:#39312c;--account-dark:#111113}
+.account-page,.account-page *{box-sizing:border-box}
+body.account-body{margin:0;background:#090909;color:var(--account-paper)}
+.account-page{max-width:1170px;margin:0 auto;padding:44px 24px 94px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.account-header{height:76px;background:#0b0b0b;border-bottom:1px solid #30241d;display:flex;align-items:center;justify-content:space-between;padding:0 max(20px,calc((100vw - 1170px)/2))}
+.account-brand{display:flex;gap:14px;align-items:center;text-decoration:none;color:#f8f8f8}.account-brand img{width:62px;height:62px;object-fit:contain;border-radius:8px}.account-brand strong{font-family:inherit;font-size:19px;letter-spacing:1.7px;display:block}.account-brand small{letter-spacing:3.8px;font-size:10px;color:#aaa;display:block}
+.account-nav{display:flex;gap:22px;align-items:center}.account-nav a{color:#dbd7d2;text-decoration:none;font-size:13px;font-weight:650}.account-nav a:hover{color:var(--account-orange)}.account-nav a.account-nav-cta{background:#ef903a;color:#180f07;padding:12px 18px;border-radius:9px}
+.account-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,475px);align-items:stretch;gap:40px}
+.account-intro{position:relative;min-height:580px;display:flex;flex-direction:column;justify-content:center;padding:40px 5px 32px 0}
+.account-eyebrow{color:var(--account-orange);font-size:11px;font-weight:850;letter-spacing:3px;text-transform:uppercase;margin:0 0 20px}
+.account-intro h1{font-size:clamp(42px,5.3vw,72px);letter-spacing:-2.3px;line-height:1.05;font-weight:900;margin:0 0 24px;max-width:610px;color:#fff}
+.account-intro h1 em{color:var(--account-orange);font-style:normal}
+.account-intro>p{font-size:16px;line-height:1.8;color:#aca7a0;max-width:480px;margin:0}
+.account-perks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:43px;max-width:540px}
+.account-perk{border:1px solid #352a23;border-radius:14px;background:#151311;padding:17px 15px;min-height:128px;display:flex;flex-direction:column;gap:12px}
+.account-perk svg{width:24px;height:24px;stroke:var(--account-orange);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.account-perk b{font-size:12px;line-height:1.5}
+.account-panel{background:linear-gradient(155deg,#1a1918 0%,#141313 60%,#111 100%);border:1px solid #51402f;border-radius:22px;padding:32px;box-shadow:0 26px 80px #0006;align-self:center;width:100%}
+.account-panel h2{font-size:26px;line-height:1.2;margin:6px 0 8px;color:#fff;font-weight:850;letter-spacing:-.7px}
+.account-panel p{color:#aba6a0;line-height:1.65;font-size:13px;margin:6px 0 20px}
+.account-panel .account-tabs{display:grid;grid-template-columns:1fr 1fr;padding:5px;gap:5px;background:#0f0f0f;border:1px solid #342a24;border-radius:12px;margin:22px 0 25px}
+.account-tabs button{border:0;border-radius:8px;background:transparent;color:#aaa;font-size:14px;font-weight:750;padding:13px;cursor:pointer;min-height:44px}
+.account-tabs button[aria-selected="true"]{background:#e9913f;color:#17100a;box-shadow:0 6px 15px #0005}
+.account-form{display:grid;gap:17px}
+.account-field{display:block;font-size:12px;color:#e3ded6;font-weight:750;letter-spacing:.1px}
+.account-field input{display:block;width:100%;height:51px;margin-top:8px;background:#0e0e0f;color:#fff;border:1px solid #55463a;border-radius:10px;padding:0 15px;font-size:15px;transition:border-color .18s,box-shadow .18s}
+.account-field input::placeholder{color:#78716d}.account-field input:focus{border-color:#ef903a;outline:0;box-shadow:0 0 0 3px #ef903a22}
+.account-form input:autofill{box-shadow:0 0 0 1000px #141313 inset;-webkit-text-fill-color:#fff}
+.account-help{font-size:11px!important;line-height:1.55!important;color:#a7a09b!important;margin:0!important}
+.account-password-line{display:flex;justify-content:space-between;align-items:center;gap:12px}.account-password-line button{border:0;background:transparent;color:#efad6a;cursor:pointer;font-size:12px;font-weight:800;padding:5px}
+.account-primary{border:0;border-radius:11px;background:linear-gradient(110deg,#ffc06a,#ef913b 65%,#df7624);color:#1a110b;font-weight:900;font-size:14px;letter-spacing:.3px;padding:16px 19px;cursor:pointer;min-height:51px;box-shadow:0 12px 28px #ef893327;transition:transform .14s}
+.account-primary:hover{transform:translateY(-1px)}.account-primary:disabled{opacity:.55;cursor:wait}
+.account-alert{font-size:13px!important;padding:12px 13px;border-radius:10px;background:#22190f;border:1px solid #734620;color:#ffcf9c!important;line-height:1.5!important;margin:10px 0!important}
+.account-alert[data-type="success"]{background:#122118;border-color:#325841;color:#b9ead0!important}
+.account-alert[data-type="error"]{background:#2b1717;border-color:#7a3c3c;color:#ffb9b4!important}
+.account-disclosure{border-top:1px solid #392e27;margin-top:23px;padding-top:18px;font-size:12px;color:#aea6a0;line-height:1.65}
+.account-disclosure a,.account-link{color:#f3a65f;text-decoration:none}
+.account-disclosure a:hover,.account-link:hover{text-decoration:underline}
+.account-dashboard{max-width:1080px;margin:0 auto}
+.dashboard-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:25px;flex-wrap:wrap}
+.dashboard-heading h1{margin:4px 0 8px;font-size:clamp(30px,5vw,46px);line-height:1.1;letter-spacing:-1px}
+.dashboard-heading p{color:#b0aaa4;margin:0;font-size:14px}
+.account-outline{border:1px solid #6d4c32;border-radius:10px;background:#20160f;color:#ffb878;padding:13px 16px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
+.dashboard-banner{background:linear-gradient(120deg,#21170f,#151312 70%);border:1px solid #6b482d;border-radius:18px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:24px;margin-bottom:20px}
+.dashboard-banner h2{font-size:23px;margin:0 0 8px}.dashboard-banner p{font-size:13px;color:#b9b1a9;margin:0;line-height:1.6}
+.dashboard-avatar{display:grid;place-items:center;width:68px;height:68px;border-radius:18px;background:#e9913b;color:#201208;font-weight:900;font-size:27px}
+.dashboard-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.dashboard-stat{border:1px solid #40352c;background:#181716;padding:17px;border-radius:13px}.dashboard-stat b{display:block;font-size:22px;color:#f3a656}.dashboard-stat span{font-size:12px;color:#b3a9a1}
+.dashboard-layout{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+.dashboard-card{border:1px solid #40342b;border-radius:17px;background:#171616;padding:24px;margin-bottom:18px;min-width:0}
+.dashboard-card h2{font-size:19px;margin:0 0 7px}.dashboard-card p{font-size:13px;color:#ada69d;line-height:1.65;margin:5px 0 16px}
+.dashboard-card .account-form{gap:13px}.dashboard-card .account-field input{height:47px}
+.booking-mini{padding:16px 0;border-top:1px solid #382e27}
+.booking-mini:first-child{border-top:0}.booking-mini-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.booking-mini strong{font-size:14px}.booking-mini span{font-size:11px;color:#ffbb77;font-weight:750}
+.booking-mini p{margin:7px 0!important;color:#c1bab1!important}
+.dashboard-placeholder{border:1px dashed #514031;border-radius:12px;padding:20px;line-height:1.7;color:#a8a09a;font-size:13px}
+.account-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}
+.account-actions a{background:#2a2019;border:1px solid #674327;border-radius:9px;padding:10px 13px;color:#ffc284;font-size:12px;font-weight:750;text-decoration:none}
+.account-actions a:hover{background:#3c2a1f}
+.account-footer{border-top:1px solid #2a211c;padding:29px 20px;text-align:center;color:#857d75;font-size:12px}
+[hidden]{display:none!important}
+@media(max-width:860px){.account-grid{grid-template-columns:1fr;gap:18px}.account-intro{min-height:auto;padding:25px 0 5px}.account-intro h1{font-size:43px;max-width:620px}.account-intro>p{font-size:14px}.account-perks{margin-top:24px}.account-panel{max-width:650px;justify-self:center}.dashboard-layout{grid-template-columns:1fr}}
+@media(max-width:600px){.account-header{height:70px;padding:0 16px}.account-brand{gap:8px}.account-brand img{width:51px;height:51px}.account-brand strong{font-size:13px;letter-spacing:1px}.account-brand small{font-size:8px;letter-spacing:2px}.account-nav{gap:10px}.account-nav a{font-size:11px}.account-nav a:not(.account-nav-cta){display:none}.account-nav a.account-nav-cta{padding:10px 12px}.account-page{padding:25px 16px 50px}.account-intro{padding:7px 2px 5px}.account-intro h1{font-size:37px;line-height:1.08;letter-spacing:-1.4px;margin-bottom:13px}.account-eyebrow{font-size:10px;margin-bottom:12px}.account-intro>p{font-size:13px;line-height:1.65}.account-perks{grid-template-columns:repeat(3,1fr);gap:7px;margin-top:19px}.account-perk{min-height:94px;padding:12px 10px;gap:7px}.account-perk b{font-size:10px}.account-perk svg{width:20px;height:20px}.account-panel{padding:23px 18px;border-radius:17px}.account-panel h2{font-size:23px}.account-panel .account-tabs{margin:18px 0 20px}.dashboard-banner{padding:18px;grid-template-columns:1fr auto}.dashboard-avatar{width:52px;height:52px;font-size:21px}.dashboard-banner h2{font-size:21px}.dashboard-stats{gap:7px}.dashboard-stat{padding:12px}.dashboard-stat b{font-size:18px}.dashboard-stat span{font-size:10px}.dashboard-card{padding:18px}.dashboard-heading h1{font-size:30px}}
+</style>
+</head>
+<body class="account-body">
+<header class="account-header">
+ <a class="account-brand" href="index.html"><img src="logo-oficial-black-hands.jpg" alt="Black Hands Barber Shop"><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a>
+ <nav class="account-nav" aria-label="Menu"><a href="index.html">Início</a><a href="acompanhar.html">Meus agendamentos</a><a href="agendar.html" class="account-nav-cta">AGENDAR</a></nav>
+</header>
+<main class="account-page">
+ <section class="account-grid" id="accountGuest">
+  <div class="account-intro">
+   <p class="account-eyebrow">BLACK HANDS • ÁREA DO CLIENTE</p>
+   <h1>Seu estilo.<br><em>Sua conta.</em></h1>
+   <p>Entre para ter seus agendamentos em um só lugar, consultar seus pedidos e voltar a agendar com mais facilidade.</p>
+   <div class="account-perks">
+    <div class="account-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18m5 5 2 2 5-5"/></svg><b>Agendamentos no seu perfil</b></div>
+    <div class="account-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3 8 8 10 5-2 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><b>Acesso com senha protegida</b></div>
+    <div class="account-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2c0-3 3.6-5 8-5s8 2 8 5v2"/></svg><b>Perfil e dados atualizados</b></div>
+   </div>
+  </div>
+  <section class="account-panel" aria-labelledby="authHeading">
+   <p class="account-eyebrow" style="margin:0 0 5px">BEM-VINDO À BLACK HANDS</p>
+   <h2 id="authHeading">Crie sua conta</h2>
+   <p id="authSubtitle">Seu espaço exclusivo na barbearia. Simples e rápido.</p>
+   <div class="account-tabs" role="tablist" aria-label="Acesso à conta">
+    <button id="registerTab" type="button" role="tab" aria-selected="true">Criar conta</button>
+    <button id="loginTab" type="button" role="tab" aria-selected="false">Já tenho conta</button>
+   </div>
+   <form class="account-form" id="authForm" autocomplete="on">
+    <label class="account-field" id="nameRow">Nome completo
+     <input name="fullName" type="text" autocomplete="name" minlength="3" maxlength="120" placeholder="Como devemos chamar você?" required>
+    </label>
+    <label class="account-field">WhatsApp com DDD
+     <input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="(31) 99999-9999" required>
+    </label>
+    <label class="account-field">Senha
+     <input id="authPassword" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Pelo menos 10 caracteres" required>
+    </label>
+    <label class="account-field" id="confirmRow">Confirmar senha
+     <input name="confirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Digite novamente sua senha" required>
+    </label>
+    <div class="account-password-line">
+     <span class="account-help" id="passwordHint">Use uma senha exclusiva de pelo menos 10 caracteres.</span>
+     <button type="button" id="togglePassword">Mostrar senha</button>
+    </div>
+    <button class="account-primary" id="submitAuth" type="submit">CRIAR MINHA CONTA</button>
+    <p id="authMsg" role="status" aria-live="polite" class="account-alert" hidden></p>
+   </form>
+   <div class="account-disclosure">
+    <strong>Sobre seu acesso</strong><br>
+    Cadastro com WhatsApp e senha, sem SMS. O número não será verificado automaticamente. Para recuperar o acesso caso esqueça a senha, procure a equipe da barbearia; não existe recuperação automática sem confirmação de identidade.
+    <div style="margin-top:8px"><a href="https://wa.me/5531971245200" rel="noopener noreferrer">Falar com a Black Hands</a></div>
+   </div>
+  </section>
+ </section>
+ <section class="account-dashboard" id="accountDashboard" hidden aria-labelledby="dashboardHeading">
+  <div class="dashboard-heading">
+   <div><p class="account-eyebrow" style="margin:0 0 8px">ÁREA DO CLIENTE</p><h1 id="dashboardHeading">Minha Black Hands</h1><p>Seus agendamentos e dados, organizados em um só lugar.</p></div>
+   <button id="logout" type="button" class="account-outline">Sair da conta</button>
+  </div>
+  <div class="dashboard-banner">
+   <div><p class="account-eyebrow" style="margin:0 0 8px">CONTA CONECTADA</p><h2 id="welcome">Bem-vindo!</h2><p id="accountPhoneLabel"></p><p id="accountMemberSince"></p></div>
+   <div class="dashboard-avatar" id="accountAvatar" aria-hidden="true">BH</div>
+  </div>
+  <div class="dashboard-stats">
+   <div class="dashboard-stat"><b id="accountBookingCount">—</b><span>Meus agendamentos</span></div>
+   <div class="dashboard-stat"><b id="accountPendingCount">—</b><span>Em análise</span></div>
+   <div class="dashboard-stat"><b id="accountConfirmedCount">—</b><span>Confirmados</span></div>
+  </div>
+  <div class="dashboard-layout">
+   <div>
+    <section class="dashboard-card">
+     <h2>Meus agendamentos</h2>
+     <p>Pedidos feitos enquanto você estava conectado ou vinculados por código. O status vem diretamente do servidor.</p>
+     <div id="accountBookings" aria-live="polite"><div class="dashboard-placeholder">Carregando seus agendamentos...</div></div>
+     <div class="account-actions"><a href="agendar.html">+ Novo agendamento</a><a href="acompanhar.html">Consultar por código</a></div>
+    </section>
+    <section class="dashboard-card">
+     <h2>Vincular um agendamento</h2>
+     <p>Fez um agendamento antes de entrar na conta? Use o código privado recebido no site para adicioná-lo ao seu perfil.</p>
+     <form id="claimForm" class="account-form">
+      <label class="account-field">Código privado
+       <input id="claimToken" type="text" autocomplete="off" placeholder="Cole o código de acompanhamento" required>
+      </label>
+      <button class="account-primary" type="submit">VINCULAR AGENDAMENTO</button>
+      <p id="claimMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+   </div>
+   <div>
+    <section class="dashboard-card">
+     <h2>Meu perfil</h2>
+     <p>Personalize como seu nome aparece no seu perfil.</p>
+     <form id="profileForm" class="account-form">
+      <label class="account-field">Nome completo
+       <input id="profileName" type="text" autocomplete="name" minlength="3" maxlength="120" required>
+      </label>
+      <label class="account-field">WhatsApp cadastrado
+       <input id="profilePhone" type="tel" readonly aria-describedby="phoneNote">
+      </label>
+      <p class="account-help" id="phoneNote">O WhatsApp não foi verificado. Por segurança, a troca do número exige atendimento da equipe.</p>
+      <button class="account-primary" type="submit">SALVAR ALTERAÇÕES</button>
+      <p id="profileMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+    <section class="dashboard-card">
+     <h2>Segurança da conta</h2>
+     <p>Troque sua senha quando quiser. Os outros aparelhos serão desconectados.</p>
+     <form id="passwordForm" class="account-form">
+      <label class="account-field">Senha atual<input name="currentPassword" type="password" autocomplete="current-password" required></label>
+      <label class="account-field">Nova senha<input name="newPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+      <label class="account-field">Confirmar nova senha<input name="newConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+      <button class="account-primary" type="submit">ALTERAR MINHA SENHA</button>
+      <p id="passwordMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+    <section class="dashboard-card"><h2>Precisa de ajuda?</h2><p>Em caso de dificuldade com seu acesso ou agendamento, fale com a equipe.</p><div class="account-actions"><a href="https://wa.me/5531971245200" rel="noopener noreferrer">Atendimento Black Hands</a></div></section>
+   </div>
+  </div>
+ </section>
+</main>
+<footer class="account-footer">© 2026 BLACK HANDS BARBER SHOP · SUA EXPERIÊNCIA, SEU ESTILO.</footer>
+<script src="conta.js" defer></script>
+</body>
+</html>
