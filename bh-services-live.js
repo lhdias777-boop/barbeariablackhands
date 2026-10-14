@@ -20,7 +20,7 @@ const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL
    }
    for(const row of active){
     if(root.querySelector('[data-service="'+CSS.escape(row.name)+'"]'))continue;
-    if(['Pacote Completo','Combo Corte + Sobrancelha'].includes(row.name))continue;
+    // Combos também são opções selecionáveis; ficam sempre ao final da lista.
     const article=document.createElement('article');article.className='bh-service';article.dataset.service=row.name;article.dataset.price=String(row.price);
     const head=document.createElement('div');head.className='bh-service-top';
     const symbol=document.createElement('span');symbol.className='bh-symbol';symbol.textContent='✂';
@@ -39,6 +39,11 @@ const brl=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL
    }
   }
   const names=['Combo Corte + Sobrancelha','Pacote Completo'];
+  // Novos serviços vêm antes dos dois combos; combos ativos sempre são as últimas opções.
+  if(root)for(const name of names){
+   const card=[...root.querySelectorAll('.bh-service')].find(x=>x.dataset.service===name);
+   if(card)root.append(card);
+  }
   const comboCards=document.querySelectorAll('.bh-combo-card');
   for(let i=0;i<comboCards.length;i++){
    const row=byName.get(names[i]);if(!row){comboCards[i].hidden=true;continue}
