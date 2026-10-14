@@ -84,6 +84,213 @@ async function sbReq(table,query='',opts={}){
  if(!body.trim())return [];
  try{return JSON.parse(body);}catch{throw Error('Resposta inválida do Supabase');}
 }
+
+// Área Minha Conta: acesso via WhatsApp + senha, sem fingir que o número foi verificado.
+// Hash scrypt do lado do servidor; sessões armazenadas somente como hash em Postgres.
+const accountCrypto=require('crypto');
+const accountScrypt=require('util').promisify(accountCrypto.scrypt);
+const ACCOUNT_COOKIE='__Host-bh_session';
+const ACCOUNT_SESSION_MS=14*24*60*60*1000;
+const ACCOUNT_LOGIN_FAILURE='WhatsApp ou senha incorretos.';
+const ACCOUNT_ORIGINS=new Set(['https://blackhands-barber.netlify.app']);
+function accountNoCache(res){res.setHeader('Cache-Control','no-store, private');res.setHeader('Pragma','no-cache');}
+function accountPhone(value){
+ const digits=String(value||'').replace(/\D/g,'');
+ const national=digits.startsWith('55')&&digits.length===13?digits.slice(2):digits;
+ return /^[1-9][0-9]9[0-9]{8}$/.test(national)?'+55'+national:null;
+}
+function accountName(value){return String(value||'').trim().replace(/\s+/g,' ').slice(0,120);}
+function accountPassOK(pass){
+ return typeof pass==='string' && pass.length>=10 && pass.length<=128 &&
+  !/^\s+$/.test(pass) && !['1234567890','123456789a','password123','12345678910','qwerty12345','senha123456'].includes(pass.toLowerCase());
+}
+function accountSameOrigin(req,res,next){
+ const origin=String(req.get('origin')||'');
+ if(ACCOUNT_ORIGINS.has(origin))return next();
+ if(process.env.NODE_ENV!=='production'&&/^http:\/\/localhost(?::[0-9]+)?$/.test(origin))return next();
+ return res.status(403).json({error:'Requisição não autorizada. Reabra o site oficial.'});
+}
+function accountToken(req){
+ const cookies=String(req.headers.cookie||'').split(';');
+ const cookie=cookies.find(x=>x.trim().startsWith(ACCOUNT_COOKIE+'='));
+ const token=cookie?cookie.trim().slice(ACCOUNT_COOKIE.length+1):'';
+ return /^[A-Za-z0-9_-]{43}$/.test(token)?token:'';
+}
+function accountHash(value){return accountCrypto.createHash('sha256').update(value).digest('hex');}
+async function accountPasswordHash(pass,salt){
+ return (await accountScrypt(pass,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024})).toString('base64url');
+}
+async function accountPasswordVerify(pass,salt,hash){
+ const attempt=Buffer.from(await accountPasswordHash(pass,salt),'base64url');
+ const stored=Buffer.from(String(hash||''),'base64url');
+ return stored.length===attempt.length&&accountCrypto.timingSafeEqual(stored,attempt);
+}
+function accountPublic(user){
+ return {id:user.id,fullName:user.full_name,phone:user.phone,phoneVerified:user.phone_verified===true,memberSince:user.created_at};
+}
+function accountSetCookie(res,token){
+ res.cookie(ACCOUNT_COOKIE,token,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:ACCOUNT_SESSION_MS});
+}
+function accountClearCookie(res){
+ res.clearCookie(ACCOUNT_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
+}
+async function accountNewSession(id,res){
+ const token=accountCrypto.randomBytes(32).toString('base64url');
+ await sbReq('bh_customer_sessions','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({token_hash:accountHash(token),account_id:id,expires_at:new Date(Date.now()+ACCOUNT_SESSION_MS).toISOString()})});
+ accountSetCookie(res,token);
+}
+async function accountFromRequest(req){
+ const token=accountToken(req);
+ if(!token)return null;
+ const sessions=await sbReq('bh_customer_sessions','?token_hash=eq.'+accountHash(token)+'&select=account_id,expires_at,revoked_at&limit=1');
+ const session=sessions[0];
+ if(!session||session.revoked_at||Date.parse(session.expires_at)<=Date.now())return null;
+ const users=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(session.account_id)+'&select=id,full_name,phone,phone_verified,created_at&limit=1');
+ return users[0]||null;
+}
+function accountIpKey(req){
+ const ip=String(req.headers['x-nf-client-connection-ip']||req.ip||req.socket?.remoteAddress||'unknown').slice(0,150);
+ return accountHash(ip);
+}
+async function accountLimit(key,attempts,seconds){
+ const result=await sbReq('rpc/bh_customer_rate_check','',{method:'POST',body:JSON.stringify({p_bucket:key,p_max_attempts:attempts,p_window_seconds:seconds})});
+ return result===true||result==='true';
+}
+app.get('/api/account/me',async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const user=await accountFromRequest(req);
+  if(!user)return res.status(401).json({error:'Entre na sua conta para continuar.'});
+  return res.json({account:accountPublic(user)});
+ }catch(e){console.error('Account me:',e.message);return res.status(503).json({error:'Não foi possível consultar sua conta no momento.'});}
+});
+app.post('/api/account/register',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ const fullName=accountName(req.body?.fullName),phone=accountPhone(req.body?.phone),pass=req.body?.password;
+ if(fullName.length<3||fullName.length>120||!phone||!accountPassOK(pass))
+  return res.status(400).json({error:'Informe nome completo, WhatsApp válido e senha de pelo menos 10 caracteres (até 128).'});
+ try{
+  if(!await accountLimit('signup:'+accountIpKey(req),5,3600))return res.status(429).json({error:'Muitas tentativas de cadastro. Aguarde e tente mais tarde.'});
+  const found=await sbReq('bh_customer_accounts','?phone=eq.'+encodeURIComponent(phone)+'&select=id&limit=1');
+  if(found.length)return res.status(409).json({error:'Não foi possível cadastrar este número. Se já possui conta, utilize Entrar.'});
+  const salt=accountCrypto.randomBytes(24).toString('base64url');
+  const hash=await accountPasswordHash(pass,salt);
+  const created=await sbReq('bh_customer_accounts','?select=id,full_name,phone,phone_verified,created_at',{
+   method:'POST',headers:{Prefer:'return=representation'},
+   body:JSON.stringify({full_name:fullName,phone,password_salt:salt,password_hash:hash})
+  });
+  const user=created[0];
+  if(!user)throw Error('empty_insert');
+  await accountNewSession(user.id,res);
+  return res.status(201).json({account:accountPublic(user),message:'Conta criada com sucesso. Seu WhatsApp ainda não foi verificado.'});
+ }catch(e){
+  console.error('Account signup:',String(e.message).slice(0,120));
+  if(/Erro Supabase 409:/.test(e.message))return res.status(409).json({error:'Não foi possível cadastrar. Se já possui conta, utilize Entrar.'});
+  return res.status(503).json({error:'Cadastro temporariamente indisponível. Tente novamente.'});
+ }
+});
+app.post('/api/account/login',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ const phone=accountPhone(req.body?.phone),pass=req.body?.password;
+ if(!phone||typeof pass!=='string'||pass.length>128||!pass)return res.status(401).json({error:ACCOUNT_LOGIN_FAILURE});
+ try{
+  const ipKey=accountIpKey(req);
+  if(!await accountLimit('login:ip:'+ipKey,15,1800)||
+     !await accountLimit('login:phone:'+accountHash(phone),8,1800))
+   return res.status(429).json({error:'Muitas tentativas de acesso. Aguarde 30 minutos.'});
+  const users=await sbReq('bh_customer_accounts','?phone=eq.'+encodeURIComponent(phone)+'&select=id,full_name,phone,phone_verified,created_at,password_salt,password_hash&limit=1');
+  const user=users[0];
+  const salt=user?.password_salt||'A4xJcZDl4HfR6W_wEdSGmg';
+  const stored=user?.password_hash||'';
+  const valid=await accountPasswordVerify(pass,salt,stored);
+  if(!user||!valid)return res.status(401).json({error:ACCOUNT_LOGIN_FAILURE});
+  await accountNewSession(user.id,res);
+  return res.json({account:accountPublic(user)});
+ }catch(e){console.error('Account login:',String(e.message).slice(0,120));return res.status(503).json({error:'Acesso temporariamente indisponível. Tente novamente.'});}
+});
+app.post('/api/account/logout',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ const token=accountToken(req);
+ try{
+  if(token)await sbReq('bh_customer_sessions','?token_hash=eq.'+accountHash(token),{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  accountClearCookie(res);return res.json({ok:true});
+ }catch(e){console.error('Account logout:',e.message);accountClearCookie(res);return res.status(503).json({error:'Sessão local encerrada. Tente novamente para encerrar no servidor.'});}
+});
+app.patch('/api/account/profile',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const user=await accountFromRequest(req);
+  if(!user)return res.status(401).json({error:'Entre na sua conta.'});
+  const fullName=accountName(req.body?.fullName);
+  if(fullName.length<3||fullName.length>120)return res.status(400).json({error:'Informe um nome válido.'});
+  const updated=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(user.id)+'&select=id,full_name,phone,phone_verified,created_at',{
+   method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({full_name:fullName,updated_at:new Date().toISOString()})
+  });
+  return res.json({account:accountPublic(updated[0])});
+ }catch(e){console.error('Account profile:',e.message);return res.status(503).json({error:'Não foi possível salvar seu perfil.'});}
+});
+app.post('/api/account/change-password',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ const oldPassword=req.body?.currentPassword,newPassword=req.body?.newPassword;
+ if(typeof oldPassword!=='string'||!accountPassOK(newPassword)||oldPassword===newPassword)
+  return res.status(400).json({error:'Confira a senha atual e escolha uma senha nova de pelo menos 10 caracteres.'});
+ try{
+  const user=await accountFromRequest(req);
+  if(!user)return res.status(401).json({error:'Entre na sua conta.'});
+  if(!await accountLimit('password:'+user.id,5,3600))return res.status(429).json({error:'Muitas tentativas. Tente novamente mais tarde.'});
+  const users=await sbReq('bh_customer_accounts','?id=eq.'+user.id+'&select=password_salt,password_hash&limit=1');
+  if(!users.length||!await accountPasswordVerify(oldPassword,users[0].password_salt,users[0].password_hash))
+   return res.status(401).json({error:'Senha atual incorreta.'});
+  const salt=accountCrypto.randomBytes(24).toString('base64url');
+  const hash=await accountPasswordHash(newPassword,salt);
+  await sbReq('bh_customer_accounts','?id=eq.'+user.id,{
+   method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({password_salt:salt,password_hash:hash,updated_at:new Date().toISOString()})
+  });
+  // Revoga todas as outras sessões; a sessão atual permanece ativa.
+  const token=accountToken(req);
+  await sbReq('bh_customer_sessions','?account_id=eq.'+user.id+'&token_hash=neq.'+accountHash(token),{
+   method:'DELETE',headers:{Prefer:'return=minimal'}
+  });
+  return res.json({ok:true,message:'Senha alterada. Outros dispositivos foram desconectados.'});
+ }catch(e){console.error('Account change password:',e.message);return res.status(503).json({error:'Não foi possível trocar a senha.'});}
+});
+app.get('/api/account/bookings',async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const user=await accountFromRequest(req);
+  if(!user)return res.status(401).json({error:'Entre na sua conta.'});
+  const bookings=await sbReq('bh_booking_reservations','?account_id=eq.'+user.id+'&select=id,pix_order_id,appointment_date,appointment_time,barber,service_names,status,payment_method,amount,created_at&order=created_at.desc&limit=50');
+  const ids=bookings.map(b=>b.pix_order_id).filter(Boolean);
+  const orders=ids.length?await sbReq('bh_pix_orders','?id=in.('+ids.map(id=>encodeURIComponent(id)).join(',')+')&select=id,status'):[];
+  const statuses=new Map(orders.map(o=>[o.id,o.status]));
+  return res.json({bookings:bookings.map(b=>({
+   id:b.id,reference:String(b.id).slice(0,8).toUpperCase(),date:b.appointment_date,time:String(b.appointment_time).slice(0,5),
+   barber:b.barber,services:b.service_names,status:b.status,paymentMethod:b.payment_method,amount:b.amount,
+   paymentStatus:b.payment_method==='PAY_ON_DAY'?'PAY_ON_DAY':statuses.get(b.pix_order_id)||'PENDING'
+  }))});
+ }catch(e){console.error('Account bookings:',e.message);return res.status(503).json({error:'Não foi possível consultar seus agendamentos.'});}
+});
+app.post('/api/account/claim-booking',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const user=await accountFromRequest(req);
+  if(!user)return res.status(401).json({error:'Entre na sua conta.'});
+  const token=String(req.body?.trackingToken||'');
+  if(!/^[A-Za-z0-9_-]{40,90}$/.test(token))return res.status(400).json({error:'Código de acompanhamento inválido.'});
+  if(!await accountLimit('claim:'+user.id,15,3600))return res.status(429).json({error:'Muitas tentativas; aguarde.'});
+  const rows=await sbReq('bh_booking_reservations','?access_token_hash=eq.'+accountHash(token)+'&select=id,account_id&limit=1');
+  const row=rows[0];
+  if(!row)return res.status(404).json({error:'Código não encontrado.'});
+  if(row.account_id===user.id)return res.json({ok:true,message:'Agendamento já vinculado.'});
+  if(row.account_id)return res.status(409).json({error:'Este agendamento já está vinculado a outra conta.'});
+  const updated=await sbReq('bh_booking_reservations','?id=eq.'+row.id+'&account_id=is.null&select=id',{
+   method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({account_id:user.id})
+  });
+  if(!updated.length)return res.status(409).json({error:'O agendamento foi vinculado em outro dispositivo.'});
+  return res.json({ok:true,message:'Agendamento vinculado à sua conta!'});
+ }catch(e){console.error('Account claim:',e.message);return res.status(503).json({error:'Não foi possível vincular o agendamento.'});}
+});
+
 async function vipAuth(req){
  const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
  if(!token)throw Error('login_required');
