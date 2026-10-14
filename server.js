@@ -125,7 +125,6 @@ async function sbReq(table,query='',opts={}){
 // Área Minha Conta: acesso via WhatsApp + senha, sem fingir que o número foi verificado.
 // Hash scrypt do lado do servidor; sessões armazenadas somente como hash em Postgres.
 const accountCrypto=require('crypto');
-const accountScrypt=require('util').promisify(accountCrypto.scrypt);
 const ACCOUNT_COOKIE='__Host-bh_session';
 const ACCOUNT_SESSION_MS=14*24*60*60*1000;
 const ACCOUNT_LOGIN_FAILURE='WhatsApp ou senha incorretos.';
@@ -162,30 +161,6 @@ function accountToken(req){
  return /^[A-Za-z0-9_-]{43}$/.test(token)?token:'';
 }
 function accountHash(value){return accountCrypto.createHash('sha256').update(value).digest('hex');}
-async function accountPasswordHash(pass,salt){
- // O Worker Free tem orçamento curto de CPU. Supabase Edge deriva exatamente o
- // mesmo scrypt usado pelo Node original, sem armazenar senhas em texto claro.
- if(process.env.BH_AUTH_PASSWORD_KDF==='supabase_edge'){
-  const url=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
-  const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if(!url||!key)throw Error('KDF backend missing');
-  const response=await fetch(url+'/functions/v1/bh-password-derive',{
-   method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'apikey':key},
-   body:JSON.stringify({password:pass,salt})
-  });
-  if(!response.ok)throw Error('KDF service unavailable ('+response.status+')');
-  const data=await response.json();
-  if(typeof data.hash!=='string'||! /^[A-Za-z0-9_-]{80,90}$/.test(data.hash))
-   throw Error('KDF invalid output');
-  return data.hash;
- }
- return (await accountScrypt(pass,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024})).toString('base64url');
-}
-async function accountPasswordVerify(pass,salt,hash){
- const attempt=Buffer.from(await accountPasswordHash(pass,salt),'base64url');
- const stored=Buffer.from(String(hash||''),'base64url');
- return stored.length===attempt.length&&accountCrypto.timingSafeEqual(stored,attempt);
-}
 function accountPublic(user){
  return {id:user.id,fullName:user.full_name,phone:user.phone,phoneVerified:user.phone_verified===true,memberSince:user.created_at};
 }
@@ -194,11 +169,6 @@ function accountSetCookie(res,token){
 }
 function accountClearCookie(res){
  res.clearCookie(ACCOUNT_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
-}
-async function accountNewSession(id,res){
- const token=accountCrypto.randomBytes(32).toString('base64url');
- await sbReq('bh_customer_sessions','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({token_hash:accountHash(token),account_id:id,expires_at:new Date(Date.now()+ACCOUNT_SESSION_MS).toISOString()})});
- accountSetCookie(res,token);
 }
 async function accountFromRequest(req){
  const token=accountToken(req);
@@ -232,22 +202,22 @@ app.post('/api/account/register',accountSameOrigin,async(req,res)=>{
   return res.status(400).json({error:'Informe nome completo, WhatsApp válido e senha de pelo menos 10 caracteres (até 128).'});
  try{
   if(!await accountLimit('signup:'+accountIpKey(req),5,3600))return res.status(429).json({error:'Muitas tentativas de cadastro. Aguarde e tente mais tarde.'});
-  const found=await sbReq('bh_customer_accounts','?phone=eq.'+encodeURIComponent(phone)+'&select=id&limit=1');
-  if(found.length)return res.status(409).json({error:'Não foi possível cadastrar este número. Se já possui conta, utilize Entrar.'});
-  const salt=accountCrypto.randomBytes(24).toString('base64url');
-  const hash=await accountPasswordHash(pass,salt);
-  const created=await sbReq('bh_customer_accounts','?select=id,full_name,phone,phone_verified,created_at',{
-   method:'POST',headers:{Prefer:'return=representation'},
-   body:JSON.stringify({full_name:fullName,phone,password_salt:salt,password_hash:hash})
-  });
-  const user=created[0];
-  if(!user)throw Error('empty_insert');
-  await accountNewSession(user.id,res);
+  // Cadastro e sessao atomicos no Postgres: bcrypt-SHA256, sem Edge KDF.
+  const sessionToken=accountCrypto.randomBytes(32).toString('base64url');
+  const users=await sbReq('rpc/bh_customer_register','',{method:'POST',body:JSON.stringify({
+   p_full_name:fullName,p_phone:phone,p_password:pass,
+   p_session_hash:accountHash(sessionToken),
+   p_expires_at:new Date(Date.now()+ACCOUNT_SESSION_MS).toISOString()
+  })});
+  const user=users[0];
+  if(!user)throw Error('register returned no account');
+  accountSetCookie(res,sessionToken);
   return res.status(201).json({account:accountPublic(user),message:'Conta criada com sucesso. Seu WhatsApp ainda não foi verificado.'});
  }catch(e){
   console.error('Account signup:',String(e.message).slice(0,120));
-  if(/Erro Supabase 409:/.test(e.message))return res.status(409).json({error:'Não foi possível cadastrar. Se já possui conta, utilize Entrar.'});
-  return res.status(503).json({error:'Cadastro temporariamente indisponível. Tente novamente.'});
+  if(/Erro Supabase 409:/.test(e.message)||/23505/.test(e.message))
+   return res.status(409).json({error:'Este WhatsApp já tem uma conta. Use Entrar.'});
+  return res.status(503).json({error:'Não foi possível criar sua conta agora. Tente novamente mais tarde.'});
  }
 });
 app.post('/api/account/login',accountSameOrigin,async(req,res)=>{
@@ -259,14 +229,14 @@ app.post('/api/account/login',accountSameOrigin,async(req,res)=>{
   if(!await accountLimit('login:ip:'+ipKey,15,1800)||
      !await accountLimit('login:phone:'+accountHash(phone),8,1800))
    return res.status(429).json({error:'Muitas tentativas de acesso. Aguarde 30 minutos.'});
-  const users=await sbReq('bh_customer_accounts','?phone=eq.'+encodeURIComponent(phone)+'&select=id,full_name,phone,phone_verified,created_at,password_salt,password_hash&limit=1');
-  const user=users[0];
-  const salt=user?.password_salt||'A4xJcZDl4HfR6W_wEdSGmg';
-  const stored=user?.password_hash||'';
-  const valid=await accountPasswordVerify(pass,salt,stored);
-  if(!user||!valid)return res.status(401).json({error:ACCOUNT_LOGIN_FAILURE});
-  await accountNewSession(user.id,res);
-  return res.json({account:accountPublic(user)});
+  const sessionToken=accountCrypto.randomBytes(32).toString('base64url');
+  const users=await sbReq('rpc/bh_customer_login','',{method:'POST',body:JSON.stringify({
+   p_phone:phone,p_password:pass,p_session_hash:accountHash(sessionToken),
+   p_expires_at:new Date(Date.now()+ACCOUNT_SESSION_MS).toISOString()
+  })});
+  if(!users.length)return res.status(401).json({error:ACCOUNT_LOGIN_FAILURE});
+  accountSetCookie(res,sessionToken);
+  return res.json({account:accountPublic(users[0])});
  }catch(e){console.error('Account login:',String(e.message).slice(0,120));return res.status(503).json({error:'Acesso temporariamente indisponível. Tente novamente.'});}
 });
 app.post('/api/account/logout',accountSameOrigin,async(req,res)=>{
@@ -299,15 +269,9 @@ app.post('/api/account/change-password',accountSameOrigin,async(req,res)=>{
   const user=await accountFromRequest(req);
   if(!user)return res.status(401).json({error:'Entre na sua conta.'});
   if(!await accountLimit('password:'+user.id,5,3600))return res.status(429).json({error:'Muitas tentativas. Tente novamente mais tarde.'});
-  const users=await sbReq('bh_customer_accounts','?id=eq.'+user.id+'&select=password_salt,password_hash&limit=1');
-  if(!users.length||!await accountPasswordVerify(oldPassword,users[0].password_salt,users[0].password_hash))
-   return res.status(401).json({error:'Senha atual incorreta.'});
-  const salt=accountCrypto.randomBytes(24).toString('base64url');
-  const hash=await accountPasswordHash(newPassword,salt);
-  await sbReq('bh_customer_accounts','?id=eq.'+user.id,{
-   method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({password_salt:salt,password_hash:hash,updated_at:new Date().toISOString()})
-  });
-  // Revoga todas as outras sessões; a sessão atual permanece ativa.
+  const changed=await sbReq('rpc/bh_customer_change_password','',{method:'POST',
+   body:JSON.stringify({p_account_id:user.id,p_current_password:oldPassword,p_new_password:newPassword})});
+  if(changed!==true)return res.status(401).json({error:'Senha atual incorreta.'});
   const token=accountToken(req);
   await sbReq('bh_customer_sessions','?account_id=eq.'+user.id+'&token_hash=neq.'+accountHash(token),{
    method:'DELETE',headers:{Prefer:'return=minimal'}
