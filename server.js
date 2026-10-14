@@ -468,7 +468,7 @@ app.post('/api/store/checkout',accountSameOrigin,requireAccount,checkoutLimit,as
  }catch(e){console.error('Store Pix:',e.message);pixErr(res,'Não foi possível gerar o Pix. Verifique as configurações e os dados informados.',503);}
 });
 
-const BOOKING_SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30"];
+const BOOKING_SLOTS=Array.from({length:24},(_,i)=>{const minute=420+i*30;return String(Math.floor(minute/60)).padStart(2,'0')+':'+String(minute%60).padStart(2,'0')});
 const BOOKING_BARBERS = new Set(['WELIGOL']);
 const BH_SERVICE_DURATIONS = {'Combo Corte + Sobrancelha':60,'Pacote Completo':90,'Cabelo':30,'Barba':30,'Pintura':30,'Relaxamento':30,'Pigmentação':30,'Pezinho':30,'Sobrancelha':30};
 function spParts(){
@@ -485,8 +485,10 @@ function slotAllowed(time,duration,date){
  if(!BOOKING_SLOTS.includes(time)||!validBookingDate(date))return false;
  const now=spParts();
  if(date===now.date&&mins(time)<=mins(now.time))return false;
+ const day=new Date(date+'T12:00:00Z').getUTCDay();
+ if(day===0)return false;
  const a=mins(time),b=a+duration;
- return (a>=480&&b<=720)||(a>=780&&b<=1140);
+ return a>=420&&b<=(day===6?960:1140);
 }
 async function asBookingDetails(items){
  if(!Array.isArray(items)||!items.length||items.length>7)return null;
