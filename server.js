@@ -318,6 +318,22 @@ async function verifyAdmin(req){
  if(!allowed.length||!allowed.includes(String(user.email||'').toLowerCase()))throw Error('forbidden');
  return user;
 }
+app.get('/api/admin/bookings',async(req,res)=>{
+ try{
+  await verifyAdmin(req);
+  const date=cleanText(req.query.date,10)||spParts().date;
+  if(!validBookingDate(date)&&date!==spParts().date)return pixErr(res,'Data inválida.');
+  const bookings=await sbReq('bh_booking_reservations','?appointment_date=eq.'+encodeURIComponent(date)+'&select=id,pix_order_id,barber,appointment_date,appointment_time,duration_minutes,service_names,status&order=appointment_time.asc&limit=100');
+  const orderIds=bookings.map(x=>x.pix_order_id).filter(Boolean);
+  const orders=orderIds.length?await sbReq('bh_pix_orders','?id=in.('+orderIds.map(x=>encodeURIComponent(x)).join(',')+')&select=id,customer_name,customer_phone,status,amount'):[];
+  const byOrder=new Map(orders.map(o=>[o.id,o]));
+  res.setHeader('Cache-Control','no-store');
+  res.json({date,bookings:bookings.map(b=>{
+   const o=byOrder.get(b.pix_order_id)||{};
+   return {id:b.id,barber:b.barber,date:b.appointment_date,time:String(b.appointment_time).slice(0,5),duration:b.duration_minutes,services:b.service_names,status:b.status,customerName:o.customer_name||'',customerPhone:o.customer_phone||'',paymentStatus:o.status||'',amount:o.amount||0};
+  })});
+ }catch(e){console.error('Admin bookings:',e.message);res.status(['unauthorized','forbidden'].includes(e.message)?403:503).json({error:'Acesso à agenda indisponível ou não autorizado.'});}
+});
 app.get('/api/admin/pix/summary',async(req,res)=>{
  try{
   await verifyAdmin(req);
