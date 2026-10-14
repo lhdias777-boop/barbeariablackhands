@@ -156,9 +156,14 @@ async function recoverStorePix(orderId){
  return json;
 }
 function showStorePix(data,attempt=0){
- if(data.orderId)pendingStoreOrderId=data.orderId;
  const target=document.getElementById('checkoutMessage');
  target.replaceChildren();
+ if(data.status==='PAID'){
+  pendingStoreOrderId=null;
+  target.textContent='Pagamento confirmado pelo Asaas. Consulte Minha Conta para acompanhar seu pedido.';
+  return;
+ }
+ if(data.orderId)pendingStoreOrderId=data.orderId;
  const real=data.paymentMode==='production',pending=!!data.qrPending;
  const intro=document.createElement('p');
  intro.textContent=(pending?'Cobrança criada; aguardando QR Code do Asaas.':'PIX '+(real?'REAL':'DE TESTE')+' gerado!')+
