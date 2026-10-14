@@ -3,6 +3,12 @@ const form=document.getElementById("bookingForm");
 const dateInput=document.getElementById("date");
 const barber=document.getElementById("barber");
 const timeSelect=document.getElementById("time");
+const bookingHoursHint=document.getElementById("bookingHoursHint");
+function endOfVisit(start,duration){
+ const [h,m]=String(start).split(':').map(Number);
+ const finish=h*60+m+duration;
+ return String(Math.floor(finish/60)).padStart(2,'0')+':'+String(finish%60).padStart(2,'0');
+}
 const result=document.getElementById("bookingResult");
 const totalEl=document.getElementById("bookingTotal");
 const nameInput=document.getElementById("bookingName");
@@ -34,7 +40,10 @@ let availabilityRevision=0;
 function bookingDuration(){return selectedServices().reduce((n,s)=>n+(SERVICE_MINUTES[s.name]||30),0)||30;}
 async function loadTimes(){
   const revision=++availabilityRevision;
-  if(!barber.value||!dateInput.value){timeSelect.innerHTML='<option value="">Selecione barbeiro e data</option>';timeSelect.disabled=true;return;}
+  if(!barber.value||!dateInput.value){
+    timeSelect.innerHTML='<option value="">Selecione barbeiro e data</option>';timeSelect.disabled=true;
+    bookingHoursHint.textContent='Segunda a sexta: 7h–19h. Sábado: 7h–16h. Domingo fechado.';return;
+  }
   const previous=timeSelect.value;
   timeSelect.disabled=true;
   timeSelect.innerHTML='<option value="">Consultando horários disponíveis...</option>';
@@ -44,9 +53,17 @@ async function loadTimes(){
     const data=await response.json();
     if(revision!==availabilityRevision)return;
     if(!response.ok||!Array.isArray(data.times))throw Error(data.error||'Não foi possível verificar os horários.');
-    timeSelect.innerHTML='<option value="">Selecione um horário</option>';
+    const duration=Number(data.durationMinutes)||bookingDuration();
+    const last=data.lastPossibleStart;
+    const summary='Expediente: '+data.open+' às '+data.close+'. Este atendimento dura '+
+      duration+' min'+(last?'. Último início possível: '+last+', para terminar até '+data.close+'.':'')+
+      ' Horários ocupados ou já passados não aparecem.';
+    bookingHoursHint.textContent=data.close==='Fechado'?'Domingo fechado. Escolha outra data.':summary;
+    timeSelect.innerHTML='<option value="">Selecione um horário de início</option>';
     for(const time of data.times){
-      const option=document.createElement('option');option.value=time;option.textContent=time;timeSelect.append(option);
+      const option=document.createElement('option');option.value=time;
+      option.textContent=time+' → '+endOfVisit(time,duration);
+      timeSelect.append(option);
     }
     if(data.times.includes(previous))timeSelect.value=previous;
     if(!data.times.length)timeSelect.innerHTML='<option value="">Sem horários disponíveis nesta data</option>';
@@ -55,6 +72,7 @@ async function loadTimes(){
     if(revision!==availabilityRevision)return;
     timeSelect.innerHTML='<option value="">Não foi possível consultar horários</option>';
     timeSelect.disabled=true;
+    bookingHoursHint.textContent='Não foi possível consultar horários agora. Tente novamente.';
   }
 }
 function restoreClientData(){try{const saved=JSON.parse(localStorage.getItem("blackhands_client")||"null");if(saved?.name)nameInput.value=saved.name;if(saved?.phone)phoneInput.value=saved.phone;}catch{}}
