@@ -153,12 +153,29 @@ function openEditor(item){
  // Edicao segura: id imutavel. Para novos itens gerar apenas slug permitido.
  $('adminEditor').scrollIntoView({behavior:'smooth',block:'start'});
 }
+async function compressedProductPhoto(file){
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024)
+  throw Error('Escolha uma imagem JPG, PNG ou WebP de até 8 MB.');
+ if(file.size<=900000)return {body:file,mime:file.type};
+ const image=await createImageBitmap(file);
+ const ratio=Math.min(1,1100/Math.max(image.width,image.height));
+ const canvas=document.createElement('canvas');
+ canvas.width=Math.round(image.width*ratio);
+ canvas.height=Math.round(image.height*ratio);
+ const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0,canvas.width,canvas.height);
+ image.close?.();
+ for(const quality of [0.85,0.72,0.58,0.43]){
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',quality));
+  if(blob&&blob.type==='image/webp'&&blob.size<=900000)return {body:blob,mime:'image/webp'};
+ }
+ throw Error('Não foi possível reduzir a foto. Tente escolher outra imagem.');
+}
 $('editPhoto').addEventListener('change',()=>{
  const file=$('editPhoto').files[0];
  const preview=$('editPhotoPreview');
  if(!file)return;
- if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>900000){
-  $('adminEditorMessage').textContent='Escolha uma imagem JPG, PNG ou WebP de até 900 KB.';
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){
+  $('adminEditorMessage').textContent='Escolha uma imagem JPG, PNG ou WebP de até 8 MB.';
   $('editPhoto').value='';return;
  }
  preview.hidden=false;
@@ -178,9 +195,9 @@ $('adminEditorForm').addEventListener('submit',async e=>{
   await api('/api/admin/live/catalog',{method:'POST',body:JSON.stringify(body)});
   const file=kind==='product'?$('editPhoto').files[0]:null;
   if(file){
-   if(file.size>900000||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Produto salvo, mas a foto precisa ser JPG, PNG ou WebP de até 900 KB.');
+   const optimized=await compressedProductPhoto(file);
    const response=await fetch('/api/admin/live/product-photo/'+encodeURIComponent(id),{
-    method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file
+    method:'POST',credentials:'same-origin',headers:{'Content-Type':optimized.mime},body:optimized.body
    });
    const payload=await response.json().catch(()=>({}));
    if(!response.ok)throw Error(payload.error||'Produto salvo, mas o envio da foto falhou.');
