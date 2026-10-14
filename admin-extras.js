@@ -92,6 +92,36 @@ async function team(){
  }catch(e){$('staffMessage').textContent=e.message}
 }
 
+
+async function refreshPixReadiness(){
+ const info=$('pixSetupMode'),metrics=$('pixSetupMetrics'),warnings=$('pixSetupWarnings');
+ const button=$('pixSetupRefresh');button.disabled=true;
+ info.textContent='Verificando configurações do servidor...';
+ try{
+  const state=await request('/api/admin/live/pix-readiness');
+  $('pixWebhookUrl').textContent=location.origin+state.webhookPath;
+  const labels=[
+   ['Ambiente',state.mode==='production'?'Produção':state.mode==='sandbox'?'Sandbox':'Desativado'],
+   ['Chave Asaas',state.apiKeyConfigured?'Configurada':'Ausente'],
+   ['Token webhook',state.webhookTokenConfigured?'Configurado':'Ausente'],
+   ['URL da API',state.apiBaseMatchesMode?'Compatível':'Verificar'],
+   ['Cobranças reais',state.liveChargesEnabled?'Habilitadas':'Bloqueadas']
+  ];
+  metrics.replaceChildren();
+  for(const [label,value] of labels){
+   const stat=document.createElement('article');stat.className='adm-metric';
+   const name=document.createElement('small');name.textContent=label;
+   const display=document.createElement('strong');display.textContent=value;display.style.fontSize='19px';
+   stat.append(name,display);metrics.append(stat);
+  }
+  info.textContent=state.configurationReady?
+   'A configuração parece completa. Antes de aceitar pagamentos, teste geração de QR Code e recebimento do webhook, inclusive em casos de erro e pagamento duplicado.':
+   'A Black Hands ainda não está totalmente pronta para pagamentos. Veja abaixo as pendências.';
+  warnings.replaceChildren();
+  for(const line of state.warnings||[]){const p=document.createElement('p');p.textContent='• '+line;warnings.append(p);}
+ }catch(e){info.textContent='Não foi possível verificar o PIX: '+e.message}
+ finally{button.disabled=false}
+}
 function formatNotificationDay(raw){
  if(!raw)return '—';
  const date=new Date(raw);
@@ -136,6 +166,7 @@ async function notificationStatus(){
    ]));
  }catch(e){output.textContent='Não foi possível consultar as notificações: '+e.message}
 }
+$('pixSetupRefresh').addEventListener('click',refreshPixReadiness);
 $('financeFilter').addEventListener('click',finance);
 $('financeExpenseForm').addEventListener('submit',async e=>{
  e.preventDefault();
@@ -167,6 +198,7 @@ $('staffGrantForm').addEventListener('submit',async e=>{
 $('adminTabs').addEventListener('click',event=>{
  const button=event.target.closest('button[data-panel]');
  if(button?.dataset.panel==='finance')finance();
+ if(button?.dataset.panel==='pix')refreshPixReadiness();
  if(button?.dataset.panel==='team')team();
  if(button?.dataset.panel==='notifications')notificationStatus();
 });
