@@ -740,6 +740,26 @@ app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
   res.json(data);
  }catch(e){console.error('Admin dashboard:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível carregar os dados da gestão.'});}
 });
+app.patch('/api/admin/live/bookings/:id',accountSameOrigin,requireAdmin,async(req,res)=>{
+ const id=String(req.params.id||''),target=String(req.body?.status||'');
+ if(!/^[0-9a-f-]{36}$/i.test(id)||!['CONFIRMED','CANCELLED'].includes(target))
+  return res.status(400).json({error:'Dados de agendamento inválidos.'});
+ try{
+  const rows=await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(id)+'&select=id,status,payment_method,pix_order_id&limit=1');
+  if(!rows.length)return res.status(404).json({error:'Agendamento não encontrado.'});
+  const b=rows[0];
+  if(!['AWAITING_STAFF','CONFIRMED'].includes(b.status))return res.status(409).json({error:'Não é possível alterar o status atual.'});
+  if(target==='CONFIRMED'&&b.payment_method==='PIX'){
+   const paid=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(b.pix_order_id)+'&select=status&limit=1');
+   if(paid[0]?.status!=='PAID')return res.status(409).json({error:'Pix ainda não confirmado pelo Asaas.'});
+  }
+  if(b.status!==target)await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(id),{
+   method:'PATCH',headers:{Prefer:'return=minimal'},
+   body:JSON.stringify({status:target,updated_at:new Date().toISOString()})
+  });
+  return res.json({ok:true,note:target==='CANCELLED'?'Agendamento cancelado. Reembolso, se necessário, é uma operação separada.':'Agendamento confirmado pela equipe.'});
+ }catch(e){console.error('Admin booking change:',String(e.message).slice(0,120));return res.status(503).json({error:'Não foi possível atualizar o agendamento.'});}
+});
 app.get('/api/site/catalog',async(req,res)=>{
  res.setHeader('Cache-Control','public,max-age=30');
  try{
