@@ -1,4 +1,4 @@
-const times=["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30"];
+const times=Array.from({length:24},(_,i)=>{const m=420+i*30;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")});
 const form=document.getElementById("bookingForm");
 const dateInput=document.getElementById("date");
 const barber=document.getElementById("barber");
