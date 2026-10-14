@@ -34,7 +34,7 @@ Esta aplicação é **um único Cloudflare Worker** que usa Express por meio de 
 3. Conecte o GitHub e escolha o repositório:
    `lhdias777-boop/barbeariablackhands`
 4. Escolha a branch **`cloudflare-blackhands`**. Se o painel iniciar pela branch padrão, ajuste em **Settings → Builds → Branch control**.
-5. Nome do Worker: **`blackhands-barber-cloudflare-test`**, exatamente como em `wrangler.jsonc`.
+5. Nome do Worker: **`barbeariablackhands`**, exatamente como em `wrangler.jsonc`.
 6. Build command: `npm run build:cloudflare`.
 7. Deploy command: `npx wrangler deploy`.
 8. Diretório-raiz: raiz do repositório (não `public` e não `cloudflare`).
