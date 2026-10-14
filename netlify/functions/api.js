@@ -24,7 +24,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 200,
       headers: {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'},
-      body: JSON.stringify({ok:true,service:'black-hands-api',routing:'v2'})
+      body: JSON.stringify({ok:true,service:'black-hands-api',routing:'v2',pixTest:{enabled:process.env.BH_PIX_ENABLED === 'true',sandboxConfigured:process.env.ASAAS_API_BASE === ['https://api-sandbox','asaas.com/v3'].join('.')}})
     };
   }
   if (/^\/api\/(booking\/checkout|store\/checkout|vip\/checkout|asaas\/webhook)(?:\/|$)/.test(path) && process.env.BH_PIX_ENABLED !== 'true') {
