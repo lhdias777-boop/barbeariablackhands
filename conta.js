@@ -28,9 +28,7 @@ function setMode(mode){
  $('registerTab').setAttribute('aria-selected',String(isRegister));
  $('loginTab').setAttribute('aria-selected',String(!isRegister));
  $('nameRow').hidden=!isRegister;
- $('confirmRow').hidden=!isRegister;
  $('authForm').elements.fullName.required=isRegister;
- $('authForm').elements.confirm.required=isRegister;
  $('authPassword').setAttribute('autocomplete',isRegister?'new-password':'current-password');
  $('authHeading').textContent=isRegister?'Crie sua conta':'Entre na sua conta';
  $('authSubtitle').textContent=isRegister?'Seu espaço exclusivo na barbearia. Simples e rápido.':'Acesse seus agendamentos e seu perfil com WhatsApp e senha.';
@@ -108,7 +106,7 @@ async function startup(){
 $('registerTab').addEventListener('click',()=>setMode('register'));
 $('loginTab').addEventListener('click',()=>setMode('login'));
 $('togglePassword').addEventListener('click',()=>{
- const items=[$('authPassword'),$('authForm').elements.confirm];
+ const items=[$('authPassword')];
  const shouldShow=$('authPassword').type==='password';
  for(const field of items)field.type=shouldShow?'text':'password';
  $('togglePassword').textContent=shouldShow?'Ocultar senha':'Mostrar senha';
@@ -124,7 +122,7 @@ $('authForm').addEventListener('submit',async e=>{
   const body={phone:String(fields.get('phone')||''),password};
   if(state.mode==='register'){
    body.fullName=String(fields.get('fullName')||'').trim();
-   if(password!==String(fields.get('confirm')||''))throw Error('As senhas não coincidem.');
+
    if(password.length<10)throw Error('Use uma senha de pelo menos 10 caracteres.');
   }
   message('authMsg',state.mode==='register'?'Criando sua conta...':'Entrando na sua conta...');
