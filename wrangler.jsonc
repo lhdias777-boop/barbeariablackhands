@@ -20,8 +20,7 @@
     "WHATSAPP_ENABLED": "false",
     "NODE_ENV": "production",
     "BH_AUTH_PASSWORD_KDF": "supabase_edge",
-    "SUPABASE_URL": "https://nfemozpmqfgedxfuzamm.supabase.co",
-    "PUBLIC_SITE_ORIGIN": "https://barbeariablackhands.lhdias777.workers.dev"
+    "SUPABASE_URL": "https://nfemozpmqfgedxfuzamm.supabase.co"
   },
   "triggers": {"crons": ["*/5 * * * *"]},
   "keep_vars": true
