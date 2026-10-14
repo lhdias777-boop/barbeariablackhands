@@ -13,18 +13,50 @@ const jsonHeaders = {
 function reply(status: number, message: string) {
   return new Response(JSON.stringify({ error: message }), { status, headers: jsonHeaders });
 }
-function isInternalCall(req: Request): boolean {
-  const expected = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+// Caso uma chave administrativa tenha sido renovada, conferir acesso real
+// ao Supabase. Nunca decodificar JWTs sem verificar assinaturas.
+async function isInternalCall(req: Request): Promise<boolean> {
   const supplied = req.headers.get("authorization");
-  if (!expected || !supplied?.startsWith("Bearer ")) return false;
+  if (!supplied?.startsWith("Bearer ")) return false;
   const actual = supplied.slice(7);
-  const a = Buffer.from(actual, "utf8");
-  const b = Buffer.from(expected, "utf8");
-  return a.length === b.length && timingSafeEqual(a, b);
+  if (!actual || actual.length > 2048) return false;
+
+  const expected = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (expected) {
+    const a = Buffer.from(actual, "utf8");
+    const b = Buffer.from(expected, "utf8");
+    if (a.length === b.length && timingSafeEqual(a, b)) return true;
+  }
+
+  // Consulta somente de permissao, sem retornar dados de clientes.
+  let supabase: URL;
+  try {
+    supabase = new URL(Deno.env.get("SUPABASE_URL") || "");
+    if (supabase.protocol !== "https:" || !supabase.hostname.endsWith(".supabase.co")) return false;
+    if (supabase.pathname !== "/" || supabase.search || supabase.hash) return false;
+  } catch { return false; }
+  try {
+    const response = await fetch(
+      supabase.origin + "/rest/v1/bh_customer_accounts?select=id&limit=0",
+      {
+        method: "GET",
+        headers: {
+          "apikey": actual,
+          "authorization": "Bearer " + actual,
+          "accept": "application/json"
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(5000)
+      }
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
 Deno.serve(async (req: Request): Promise<Response> => {
   if (req.method !== "POST") return reply(405, "Método não permitido.");
-  if (!isInternalCall(req)) return reply(401, "Não autorizado.");
+  if (!await isInternalCall(req)) return reply(401, "Não autorizado.");
   try {
     const payload = await req.json();
     const password = payload?.password;
