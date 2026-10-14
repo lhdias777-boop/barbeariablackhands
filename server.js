@@ -526,6 +526,7 @@ app.post('/api/booking/pay-on-day',checkoutLimit,async(req,res)=>{
   return pixErr(res,'Confira seus dados e selecione um horário disponível.',400);
  const crypto=require('crypto'),referenceId=crypto.randomUUID(),token=crypto.randomBytes(32).toString('base64url');
  try{
+  const account=await accountFromRequest(req);
   await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
   await sbReq('bh_booking_reservations','',{
    method:'POST',headers:{Prefer:'return=minimal'},
@@ -534,6 +535,7 @@ app.post('/api/booking/pay-on-day',checkoutLimit,async(req,res)=>{
     duration_minutes:details.duration,service_names:details.services,
     status:'AWAITING_STAFF',payment_method:'PAY_ON_DAY',
     customer_name:name,customer_phone:phone,amount:details.amount,
+    account_id:account?.id||null,
     access_token_hash:trackingHash(token)
    })
   });
@@ -558,6 +560,7 @@ app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
  const crypto=require('crypto'),orderId=crypto.randomUUID(),trackingToken=crypto.randomBytes(32).toString('base64url');
  let orderCreated=false,holdCreated=false,paymentCreated=false;
  try{
+  const account=await accountFromRequest(req);
   await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
   await savePixOrder({id:orderId,kind:'booking',amount:parsed.amount,status:'CREATING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:parsed.services}});
   orderCreated=true;
@@ -566,6 +569,7 @@ app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
    pix_order_id:orderId,barber,appointment_date:date,appointment_time:time,
    duration_minutes:parsed.duration,service_names:parsed.services,status:'HOLD',
    payment_method:'PIX',customer_name:name,customer_phone:phone,amount:parsed.amount,
+   account_id:account?.id||null,
    hold_until:new Date(Date.now()+30*60000).toISOString(),access_token_hash:trackingHash(trackingToken)
   })});
   holdCreated=true;
