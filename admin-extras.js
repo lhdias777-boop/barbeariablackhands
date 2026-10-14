@@ -167,6 +167,18 @@ async function notificationStatus(){
  }catch(e){output.textContent='Não foi possível consultar as notificações: '+e.message}
 }
 $('pixSetupRefresh').addEventListener('click',refreshPixReadiness);
+$('pixTestConnection').addEventListener('click',async()=>{
+ const button=$('pixTestConnection'),notice=$('pixTestResult');
+ button.disabled=true;notice.textContent='Consultando a API do Asaas sem criar cobrança...';
+ try{
+  const data=await request('/api/admin/live/pix-connection-test',{method:'POST',body:'{}'});
+  notice.textContent=data.message+' Ambiente: '+(data.environment==='production'?'produção':'Sandbox')+
+   '. Cobranças reais: '+(data.liveChargesEnabled?'liberadas':'ainda bloqueadas')+'.';
+  await refreshPixReadiness();
+ }catch(e){notice.textContent='Não foi possível testar: '+e.message}
+ finally{button.disabled=false;}
+});
+
 $('financeFilter').addEventListener('click',finance);
 $('financeExpenseForm').addEventListener('submit',async e=>{
  e.preventDefault();
