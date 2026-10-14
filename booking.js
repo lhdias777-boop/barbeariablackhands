@@ -114,7 +114,7 @@ function whatsappUrl(details){
  const paidPix=details.paymentMethod==='PIX'&&details.paid&&['AWAITING_STAFF','CONFIRMED'].includes(details.bookingStatus);
  const payOnDay=details.paymentMethod==='PAY_ON_DAY'&&['AWAITING_STAFF','CONFIRMED'].includes(details.bookingStatus);
  if(!paidPix&&!payOnDay)return '';
- const method=paidPix?'Pix confirmado pelo sistema (Asaas Sandbox — teste)':'Pagamento em dinheiro no dia';
+ const method=paidPix?(details.paymentMode==='production'?'Pix real confirmado pelo Asaas':'Pix confirmado pelo sistema (Asaas Sandbox — teste)'):'Pagamento em dinheiro no dia';
  const message=[
   '*BLACK HANDS — AGENDAMENTO REGISTRADO*',
   'Referência: '+details.reference,
@@ -171,7 +171,7 @@ async function verifyPaymentStatus(){
   if(activePaymentCheck!==task)return;
   if(status.paymentStatus==='PAID'){
    if(status.whatsappEligible){
-    task.live.textContent='Pix confirmado pelo Asaas Sandbox. Pré-agendamento registrado! Abrindo o WhatsApp para você enviar a mensagem à barbearia.';
+    task.live.textContent='Pix confirmado pelo Asaas. Pré-agendamento registrado! Abrindo o WhatsApp para você enviar a mensagem à barbearia.';
     const url=whatsappUrl(status);
     if(!task.whatsappLink&&url)task.whatsappLink=addWhatsappLink(result,url,task.token,'Enviar confirmação pelo WhatsApp');
     endPaymentPoll();
@@ -185,7 +185,7 @@ async function verifyPaymentStatus(){
    task.live.textContent='O prazo da pré-reserva terminou. Evite pagar agora; entre em contato com a equipe pelo acompanhamento.';
    endPaymentPoll();return;
   }
-  task.live.textContent='Aguardando confirmação do Pix no Asaas Sandbox. Você pode deixar a página aberta ou acompanhar depois no site.';
+  task.live.textContent='Aguardando confirmação do Pix pelo Asaas. Você pode deixar a página aberta ou acompanhar depois no site.';
  }catch(err){
   if(activePaymentCheck===task)task.live.textContent='Não foi possível verificar agora: '+err.message+' Tente novamente ou acompanhe pelo site.';
  }finally{
@@ -215,7 +215,7 @@ form.addEventListener('submit',async e=>{
  try{
   let data,stored;
   if(payment==='online'){
-   const cpfCnpj=prompt('Informe CPF/CNPJ para gerar o Pix de teste (somente números):');
+   const cpfCnpj=prompt('Informe o CPF/CNPJ para gerar a cobrança Pix (somente números):');
    if(!cpfCnpj)return;
    result.hidden=false;result.textContent='Gerando Pix no Asaas Sandbox...';
    const response=await fetch('/api/booking/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...booking,cpfCnpj})});
@@ -223,11 +223,11 @@ form.addEventListener('submit',async e=>{
    if(!response.ok)throw Error(data.error||'Não foi possível gerar o Pix.');
    stored=storeTracking({...booking,trackingToken:data.trackingToken,orderId:data.orderId,amount:data.amount,paymentMethod:'PIX'});
    result.replaceChildren();
-   const intro=document.createElement('p');intro.textContent='Pré-reserva registrada. Pix de TESTE: '+money(Number(data.amount))+'. Aguarde a confirmação pelo Asaas para enviar a mensagem de agendamento ao WhatsApp.';result.append(intro);
-   if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt='QR Code Pix do Asaas Sandbox';img.style.maxWidth='220px';result.append(img);}
+   const intro=document.createElement('p');intro.textContent='Pré-reserva registrada. '+(data.paymentMode==='production'?'Pix real':'Pix de TESTE')+': '+money(Number(data.amount))+'. Aguarde a confirmação pelo Asaas para enviar a mensagem de agendamento ao WhatsApp.';result.append(intro);
+   if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt=data.paymentMode==='production'?'QR Code Pix de pagamento real':'QR Code Pix do Asaas Sandbox';img.style.maxWidth='220px';result.append(img);}
    const code=document.createElement('textarea');code.value=data.pixCopyPaste||'';code.readOnly=true;code.rows=4;code.style.width='100%';result.append(code);
    const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar Pix';copy.addEventListener('click',()=>navigator.clipboard.writeText(code.value));result.append(copy);
-   const live=document.createElement('p');live.setAttribute('role','status');live.textContent='Pagamento pendente. Quando for confirmado no Sandbox, abriremos o WhatsApp para preparar a mensagem.';result.append(live);
+   const live=document.createElement('p');live.setAttribute('role','status');live.textContent='Pagamento pendente. Quando o Asaas confirmar, abriremos o WhatsApp para preparar a mensagem.';result.append(live);
    const check=document.createElement('button');check.type='button';check.className='btn';check.textContent='Já confirmei no Asaas — verificar pagamento';check.style.marginTop='12px';check.addEventListener('click',verifyPaymentStatus);result.append(check);
    addTrackingLink(result);
    if(!stored)fallbackToken(result,data.trackingToken);
