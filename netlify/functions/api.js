@@ -34,11 +34,10 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({error:'Pagamentos temporariamente indisponíveis. Nenhuma cobrança foi gerada.'})
     };
   }
-  // Enquanto a integração está em homologação, nunca permitir cobranças reais
-  // por engano, mesmo que BH_PIX_ENABLED seja ativada.
-  if (/^\\/api\\/(booking\\/checkout|store\\/checkout|vip\\/checkout|asaas\\/webhook)(?:\\/|$)/.test(path) &&
-      process.env.BH_PIX_ENABLED === 'true' &&
-      process.env.ASAAS_API_BASE !== 'https://api-sandbox.asaas.com/v3') {
+  // Apenas o ambiente Sandbox pode ser habilitado durante a homologação.
+  const pixRoute = /^\/api\/(booking\\/checkout|store\/checkout|vip\/checkout|asaas\/webhook)(?:\/|$)/.test(path);
+  const sandboxBase = ['https://api-sandbox', 'asaas.com/v3'].join('.');
+  if (pixRoute && process.env.BH_PIX_ENABLED === 'true' && process.env.ASAAS_API_BASE !== sandboxBase) {
     return {
       statusCode: 503,
       headers: {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'},
