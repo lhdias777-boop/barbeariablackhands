@@ -79,6 +79,18 @@
     }
     return null;
   }
+  async function locationReply(text){
+    const query=normalize(text);
+    if(!/(onde fica|localizacao|endereco|qual rua|como chegar|como ir|mapa|maps|gps|padre eustaquio)/.test(query))return null;
+    try{
+      const response=await fetch('/api/site/content',{cache:'no-store'});
+      if(!response.ok)return null;
+      const data=await response.json();
+      const address=data?.content?.location_address;
+      if(typeof address!=='string'||address.trim().length<10)return null;
+      return 'Estamos em '+address.trim().slice(0,240)+'. Veja o mapa e clique em COMO CHEGAR na seção [Localização e contato](index.html#contato). Segunda a sexta: 7h às 19h; sábado: 7h às 16h; domingo: fechado.';
+    }catch{return null;}
+  }
   async function submitMessage(text) {
     if (!text || busy) return;
     busy=true; send.disabled=true; root.querySelectorAll('.bh-ai-quick button').forEach(b=>b.disabled=true);
@@ -87,7 +99,7 @@
     try {
       const config=answerConfig || await configPromise;
       if(!config)throw Error('Não consegui carregar as respostas. Verifique se o arquivo respostas-assistente.json foi publicado junto ao site.');
-      const answer=String(accountReply(text)||findReply(text,config)||config.nao_entendi).slice(0,5000);
+      const answer=String(accountReply(text)||(await locationReply(text))||findReply(text,config)||config.nao_entendi).slice(0,5000);
       typing.remove();addMessage(answer,'bot');
     } catch(err) {typing.remove();addMessage(err.message,'bot');}
     finally {busy=false;send.disabled=false;root.querySelectorAll('.bh-ai-quick button').forEach(b=>b.disabled=false);input.focus();}
