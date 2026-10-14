@@ -77,66 +77,176 @@ const serviceParam=new URLSearchParams(location.search).get("service");
 if(serviceParam){const checkbox=[...document.querySelectorAll('input[name="services"]')].find(el=>el.value.toLowerCase()===serviceParam.toLowerCase());if(checkbox){checkbox.checked=true;updateTotal();}}
 
 
+
 const TRACKING_KEY='bh_booking_tracking_v1';
-function storeTracking({trackingToken,orderId,amount,date,time,barber}){
+const BARBERSHOP_WHATSAPP='5531971245200';
+let activePaymentCheck=null;
+function storeTracking(record){
  try{
   const old=JSON.parse(localStorage.getItem(TRACKING_KEY)||'[]');
-  const list=(Array.isArray(old)?old:[]).filter(item=>item&&item.trackingToken!==trackingToken);
-  list.unshift({trackingToken,orderId,amount,date,time,barber});
+  const list=(Array.isArray(old)?old:[]).filter(item=>item&&item.trackingToken!==record.trackingToken);
+  list.unshift({...record,whatsappOpenedAt:null});
   localStorage.setItem(TRACKING_KEY,JSON.stringify(list.slice(0,20)));
   return true;
  }catch{return false;}
 }
-form.addEventListener("submit",async e=>{
+function markWhatsappOpened(token){
+ try{
+  const list=JSON.parse(localStorage.getItem(TRACKING_KEY)||'[]');
+  if(!Array.isArray(list))return;
+  const entry=list.find(x=>x.trackingToken===token);
+  if(entry){entry.whatsappOpenedAt=new Date().toISOString();localStorage.setItem(TRACKING_KEY,JSON.stringify(list));}
+ }catch{}
+}
+function humanDate(date){
+ const parts=String(date||'').split('-');
+ return parts.length===3?parts[2]+'/'+parts[1]+'/'+parts[0]:String(date||'');
+}
+function whatsappUrl(details){
+ const paidPix=details.paymentMethod==='PIX'&&details.paid&&['AWAITING_STAFF','CONFIRMED'].includes(details.bookingStatus);
+ const payOnDay=details.paymentMethod==='PAY_ON_DAY'&&['AWAITING_STAFF','CONFIRMED'].includes(details.bookingStatus);
+ if(!paidPix&&!payOnDay)return '';
+ const method=paidPix?'Pix confirmado pelo sistema (Asaas Sandbox — teste)':'Pagamento em dinheiro no dia';
+ const message=[
+  '*BLACK HANDS — AGENDAMENTO REGISTRADO*',
+  'Referência: '+details.reference,
+  'Nome: '+details.customerName,
+  'Contato: '+details.customerPhone,
+  'Serviços: '+(details.services||[]).join(', '),
+  'Barbeiro: '+details.barber,
+  'Data: '+humanDate(details.date),
+  'Horário: '+details.time,
+  'Valor: '+money(Number(details.amount)),
+  'Pagamento: '+method,
+  details.bookingStatus==='CONFIRMED'?'Horário: confirmado pela equipe.':'Horário: reservado, aguardando confirmação da equipe.',
+  'Olá! Por favor, confirmem o recebimento deste agendamento.'
+ ].join('\n');
+ return 'https://wa.me/'+BARBERSHOP_WHATSAPP+'?text='+encodeURIComponent(message);
+}
+function addWhatsappLink(parent,url,token,label){
+ if(!url)return null;
+ const link=document.createElement('a');
+ link.className='btn';
+ link.href=url;
+ link.rel='noopener noreferrer';
+ link.textContent=label||'Continuar no WhatsApp da barbearia';
+ link.style.display='inline-block';link.style.marginTop='12px';
+ link.addEventListener('click',()=>markWhatsappOpened(token));
+ parent.append(link);
+ return link;
+}
+function addTrackingLink(parent){
+ const link=document.createElement('a');link.href='acompanhar.html';
+ link.className='btn';link.textContent='Acompanhar meu agendamento';
+ link.style.display='inline-block';link.style.marginTop='12px';
+ parent.append(link);
+}
+function fallbackToken(parent,token){
+ const text=document.createElement('p');
+ text.textContent='O navegador não salvou o acompanhamento. Copie e guarde o código privado abaixo, pois sem ele não será possível consultar esta solicitação.';
+ parent.append(text);
+ const el=document.createElement('textarea');el.readOnly=true;el.value=token;el.rows=2;el.style.width='100%';parent.append(el);
+}
+function endPaymentPoll(){
+ if(!activePaymentCheck)return;
+ clearInterval(activePaymentCheck.timer);
+ activePaymentCheck=null;
+}
+async function verifyPaymentStatus(){
+ const task=activePaymentCheck;
+ if(!task||task.busy||document.hidden)return;
+ task.busy=true;
+ try{
+  const response=await fetch('/api/booking/status',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:task.token})});
+  const status=await response.json();
+  if(!response.ok)throw Error(status.error||'Consulta indisponível.');
+  if(activePaymentCheck!==task)return;
+  if(status.paymentStatus==='PAID'){
+   if(status.whatsappEligible){
+    task.live.textContent='Pix confirmado pelo Asaas Sandbox. Pré-agendamento registrado! Abrindo o WhatsApp para você enviar a mensagem à barbearia.';
+    const url=whatsappUrl(status);
+    if(!task.whatsappLink&&url)task.whatsappLink=addWhatsappLink(result,url,task.token,'Enviar confirmação pelo WhatsApp');
+    endPaymentPoll();
+    if(url){markWhatsappOpened(task.token);window.location.assign(url);}
+    return;
+   }
+   task.live.textContent='Pagamento confirmado, mas este horário requer revisão pela equipe. Consulte o acompanhamento antes de enviar a mensagem.';
+   endPaymentPoll();return;
+  }
+  if(status.bookingStatus==='EXPIRED'){
+   task.live.textContent='O prazo da pré-reserva terminou. Evite pagar agora; entre em contato com a equipe pelo acompanhamento.';
+   endPaymentPoll();return;
+  }
+  task.live.textContent='Aguardando confirmação do Pix no Asaas Sandbox. Você pode deixar a página aberta ou acompanhar depois no site.';
+ }catch(err){
+  if(activePaymentCheck===task)task.live.textContent='Não foi possível verificar agora: '+err.message+' Tente novamente ou acompanhe pelo site.';
+ }finally{
+  task.busy=false;
+ }
+}
+function startPixPolling(token,live){
+ endPaymentPoll();
+ const task={token,live,busy:false,count:0,timer:null,whatsappLink:null};
+ activePaymentCheck=task;
+ task.timer=setInterval(()=>{
+  if(activePaymentCheck!==task)return;
+  if(++task.count>35){task.live.textContent='Verificação automática encerrada. Continue pelo botão Acompanhar meu agendamento.';endPaymentPoll();return;}
+  verifyPaymentStatus();
+ },15000);
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&activePaymentCheck)verifyPaymentStatus();});
+form.addEventListener('submit',async e=>{
  e.preventDefault();
  const services=selectedServices();
  if(!services.length){alert('Selecione pelo menos um serviço.');return;}
  if(!barber.value||!dateInput.value||!timeSelect.value||!nameInput.value.trim()||!phoneInput.value.trim())return;
  const payment=document.querySelector('input[name="payment"]:checked')?.value||'online';
- const booking={id:Date.now(),name:nameInput.value.trim(),phone:phoneInput.value.trim(),services,date:dateInput.value,time:timeSelect.value,barber:barber.value,payment,paymentStatus:'pending',status:'pending',total:services.reduce((s,x)=>s+x.price,0),createdAt:new Date().toISOString()};
- const submitBtn=form.querySelector('button[type="submit"]');
- submitBtn.disabled=true;
+ const booking={name:nameInput.value.trim(),phone:phoneInput.value.trim(),services,date:dateInput.value,time:timeSelect.value,barber:barber.value};
+ const button=form.querySelector('button[type="submit"]');button.disabled=true;
+ endPaymentPoll();
  try{
+  let data,stored;
   if(payment==='online'){
-   const cpfCnpj=prompt('Informe CPF/CNPJ apenas no ambiente autorizado de testes (somente números):');
+   const cpfCnpj=prompt('Informe CPF/CNPJ para gerar o Pix de teste (somente números):');
    if(!cpfCnpj)return;
-   result.hidden=false;result.textContent='Preparando Pix no Asaas Sandbox...';
+   result.hidden=false;result.textContent='Gerando Pix no Asaas Sandbox...';
    const response=await fetch('/api/booking/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...booking,cpfCnpj})});
-   const data=await response.json();
-   if(!response.ok)throw Error(data.error||'Não foi possível gerar o Pix');
-   const stored=storeTracking({...data,date:booking.date,time:booking.time,barber:booking.barber});
+   data=await response.json();
+   if(!response.ok)throw Error(data.error||'Não foi possível gerar o Pix.');
+   stored=storeTracking({...booking,trackingToken:data.trackingToken,orderId:data.orderId,amount:data.amount,paymentMethod:'PIX'});
    result.replaceChildren();
-   const title=document.createElement('p');
-   title.textContent='Pix de TESTE no valor de '+money(Number(data.amount))+'. '+(data.note||'Pagamento pendente.');
-   result.append(title);
-   if(data.qrCodeBase64){
-    const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;
-    img.alt='QR Code Pix de teste';img.style.maxWidth='220px';result.append(img);
-   }
+   const intro=document.createElement('p');intro.textContent='Pré-reserva registrada. Pix de TESTE: '+money(Number(data.amount))+'. Aguarde a confirmação pelo Asaas para enviar a mensagem de agendamento ao WhatsApp.';result.append(intro);
+   if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt='QR Code Pix do Asaas Sandbox';img.style.maxWidth='220px';result.append(img);}
    const code=document.createElement('textarea');code.value=data.pixCopyPaste||'';code.readOnly=true;code.rows=4;code.style.width='100%';result.append(code);
-   const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar Pix';
-   copy.onclick=()=>navigator.clipboard.writeText(code.value);result.append(copy);
-   const track=document.createElement('a');track.href='acompanhar.html';track.className='btn';
-   track.textContent=stored?'Acompanhar meu pré-agendamento':'Abrir página de acompanhamento';track.style.display='inline-block';track.style.marginTop='14px';result.append(track);
-   if(!stored){const tip=document.createElement('p');tip.textContent='Seu navegador não permitiu salvar o código privado de acompanhamento. Contate a barbearia para verificar o pedido.';result.append(tip);}
+   const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar Pix';copy.addEventListener('click',()=>navigator.clipboard.writeText(code.value));result.append(copy);
+   const live=document.createElement('p');live.setAttribute('role','status');live.textContent='Pagamento pendente. Quando for confirmado no Sandbox, abriremos o WhatsApp para preparar a mensagem.';result.append(live);
+   const check=document.createElement('button');check.type='button';check.className='btn';check.textContent='Já confirmei no Asaas — verificar pagamento';check.style.marginTop='12px';check.addEventListener('click',verifyPaymentStatus);result.append(check);
+   addTrackingLink(result);
+   if(!stored)fallbackToken(result,data.trackingToken);
+   startPixPolling(data.trackingToken,live);
   }else{
-   // Pagamento no local ainda requer confirmação manual; não afirma ocupar a agenda compartilhada.
-   const saved=JSON.parse(localStorage.getItem('blackHandsBookings')||'[]');
-   if(Array.isArray(saved)){saved.push(booking);localStorage.setItem('blackHandsBookings',JSON.stringify(saved));}
-   result.hidden=false;result.replaceChildren();
-   const text=document.createElement('p');
-   text.textContent='Solicitação de agendamento registrada apenas neste aparelho. Pagamento em dinheiro no dia: combine a confirmação do horário com a equipe da barbearia. Esta solicitação não bloqueia a agenda online.';
-   result.append(text);
+   result.hidden=false;result.textContent='Registrando o agendamento na agenda...';
+   const response=await fetch('/api/booking/pay-on-day',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(booking)});
+   data=await response.json();
+   if(!response.ok)throw Error(data.error||'Não foi possível registrar a solicitação.');
+   stored=storeTracking({...booking,trackingToken:data.trackingToken,orderId:data.reservationId,amount:data.amount,paymentMethod:'PAY_ON_DAY'});
+   result.replaceChildren();
+   const intro=document.createElement('p');intro.textContent='Sua solicitação foi registrada na agenda da Black Hands! Pagamento em dinheiro no dia. O horário está bloqueado, aguardando confirmação da equipe.';result.append(intro);
+   const whatsapp=whatsappUrl({reference:data.reference,customerName:booking.name,customerPhone:booking.phone,services:booking.services.map(x=>x.name),date:booking.date,time:booking.time,barber:booking.barber,paymentMethod:'PAY_ON_DAY',bookingStatus:data.bookingStatus,amount:data.amount,paid:false});
+   addWhatsappLink(result,whatsapp,data.trackingToken,'Enviar pedido pelo WhatsApp');
+   addTrackingLink(result);
+   const note=document.createElement('p');note.textContent='O WhatsApp abrirá com a mensagem pronta. Toque em Enviar e, ao voltar, use Acompanhar meu agendamento.';result.append(note);
+   if(!stored)fallbackToken(result,data.trackingToken);
+   if(whatsapp){markWhatsappOpened(data.trackingToken);window.location.assign(whatsapp);}
   }
   saveClientData();
   form.reset();restoreClientData();loadTimes();updateTotal();
   window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
  }catch(err){
-  result.hidden=false;result.textContent=err.message+' — nenhum pagamento foi confirmado.';
- }finally{submitBtn.disabled=false;}
+  result.hidden=false;result.textContent=err.message+' — não considere o horário confirmado sem consultar o acompanhamento.';
+  if(err.message.includes('horário'))loadTimes();
+ }finally{button.disabled=false;}
 });
-
-
 
 // Combos promocionais têm preço fechado e não podem ser somados a serviços avulsos.
 document.querySelectorAll('input[name="services"]').forEach(input=>input.addEventListener('change',()=>{
