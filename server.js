@@ -549,7 +549,7 @@ app.post('/api/booking/status',bookingStatusLimit,async(req,res)=>{
    paymentStatus:method==='PAY_ON_DAY'?'PAY_ON_DAY':order?.status||'UNKNOWN',
    customerName:item.customer_name||'',customerPhone:item.customer_phone||'',
    amount:method==='PAY_ON_DAY'?item.amount||0:order?.amount||item.amount||0,
-   paid,whatsappEligible,holdUntil:item.hold_until
+   paid,whatsappEligible,paymentMode:paymentEnvironment(),holdUntil:item.hold_until
   });
  }catch(e){console.error('Booking status:',e.message);pixErr(res,'Acompanhamento indisponível no momento.',503);}
 });
