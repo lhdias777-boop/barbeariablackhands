@@ -131,12 +131,17 @@ app.post('/api/asaas/webhook',async(req,res)=>{
  const paymentId=String(event.payment?.id||'');
  if(!paymentId)return res.sendStatus(400);
  try{
-  const orders=await sbReq('bh_pix_orders','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,status,amount&limit=1');
+  const orders=await sbReq('bh_pix_orders','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,kind,status,amount&limit=1');
   if(orders.length){
    const order=orders[0];
    const real=await asaas('/payments/'+encodeURIComponent(paymentId));
    if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(order.amount))return res.sendStatus(200);
-   if(order.status!=='PAID')await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID',paid_at:new Date().toISOString()})});
+   if(order.kind==='booking'){
+    // O banco atualiza pagamento e reserva na mesma transação; repetir o webhook é seguro.
+    await sbReq('rpc/bh_confirm_booking_pix','',{method:'POST',body:JSON.stringify({p_order_id:order.id})});
+   }else if(order.status!=='PAID'){
+    await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID',paid_at:new Date().toISOString()})});
+   }
    return res.sendStatus(200);
   }
   const rows=await sbReq('bh_vip_payments','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,user_id,plan,status,amount&limit=1');
@@ -191,19 +196,116 @@ app.post('/api/store/checkout',checkoutLimit,async(req,res)=>{
   res.json({orderId,paymentId:payment.id,amount,pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',status:'PENDING'});
  }catch(e){console.error('Store Pix:',e.message);pixErr(res,'Não foi possível gerar o Pix. Verifique as configurações e os dados informados.',503);}
 });
-app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
+
+const BOOKING_SLOTS = ["08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30","13:00","13:30","14:00","14:30","15:00","15:30","16:00","16:30","17:00","17:30","18:00","18:30"];
+const BOOKING_BARBERS = new Set(['WELIGOL']);
+const BH_SERVICE_DURATIONS = {'Combo Corte + Sobrancelha':60,'Pacote Completo':90,'Cabelo':30,'Barba':30,'Pintura':30,'Relaxamento':30,'Pigmentação':30,'Pezinho':30,'Sobrancelha':30};
+function spParts(){
+ const dateParts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(p=>[p.type,p.value]));
+ return {date:dateParts.year+'-'+dateParts.month+'-'+dateParts.day,time:dateParts.hour+':'+dateParts.minute};
+}
+function validBookingDate(d){
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d))return false;
+ const t=new Date(d+'T12:00:00Z');
+ return !Number.isNaN(t.getTime())&&t.toISOString().slice(0,10)===d && d>=spParts().date && t.getTime()<=Date.now()+90*86400000;
+}
+function mins(time){const [h,m]=String(time).split(':').map(Number);return h*60+m;}
+function slotAllowed(time,duration,date){
+ if(!BOOKING_SLOTS.includes(time)||!validBookingDate(date))return false;
+ const now=spParts();
+ if(date===now.date&&mins(time)<=mins(now.time))return false;
+ const a=mins(time),b=a+duration;
+ return (a>=480&&b<=720)||(a>=780&&b<=1140);
+}
+function asBookingDetails(items){
+ if(!Array.isArray(items)||!items.length||items.length>7)return null;
+ const seen=new Set();let amount=0,duration=0;
+ for(const item of items){
+  const name=cleanText(typeof item==='string'?item:item?.name,80);
+  if(!Object.hasOwn(BH_SERVICES,name)||seen.has(name))return null;
+  seen.add(name);amount+=BH_SERVICES[name];duration+=BH_SERVICE_DURATIONS[name]||30;
+ }
+ if((seen.has('Combo Corte + Sobrancelha')||seen.has('Pacote Completo'))&&seen.size!==1)return null;
+ return {services:[...seen],amount:Math.round(amount*100)/100,duration};
+}
+function trackingHash(token){return require('crypto').createHash('sha256').update(token).digest('hex');}
+function activeReservation(row){
+ return row.status==='AWAITING_STAFF'||(row.status==='HOLD'&&Date.parse(row.hold_until)>Date.now());
+}
+function bookedSlots(rows,time,duration){
+ const start=mins(time),end=start+duration;
+ return rows.some(row=>{
+  if(!activeReservation(row))return false;
+  const existingStart=mins(String(row.appointment_time).slice(0,5));
+  return start<existingStart+Number(row.duration_minutes)&&end>existingStart;
+ });
+}
+async function bookingReservations(barber,date){
+ return sbReq('bh_booking_reservations','?barber=eq.'+encodeURIComponent(barber)+'&appointment_date=eq.'+encodeURIComponent(date)+'&select=appointment_time,duration_minutes,status,hold_until');
+}
+app.get('/api/booking/availability',async(req,res)=>{
+ const barber=cleanText(req.query.barber,80),date=cleanText(req.query.date,10),duration=Number(req.query.duration||30);
+ if(!BOOKING_BARBERS.has(barber)||!validBookingDate(date)||!Number.isInteger(duration)||duration<30||duration>240||duration%30)
+  return pixErr(res,'Selecione barbeiro, data e serviços válidos.');
  try{
-  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80),items=b.services;
-  if(name.length<3||!validPhone(phone)||!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(time)||!barber||!Array.isArray(items)||!items.length||items.length>7)return pixErr(res,'Dados do agendamento inválidos');
-  if(date<new Date().toISOString().slice(0,10))return pixErr(res,'Selecione uma data futura');
-  let amount=0;const seen=new Set();
-  for(const item of items){const id=cleanText(typeof item==='string'?item:item.name,80);if(!Object.hasOwn(BH_SERVICES,id)||seen.has(id))return pixErr(res,'Serviço inválido');seen.add(id);if((id==='Combo Corte + Sobrancelha'||id==='Pacote Completo')&&items.length!==1)return pixErr(res,'Combo não pode ser somado a outros serviços');amount+=BH_SERVICES[id];}
-  const orderId=require('crypto').randomUUID();
-  await savePixOrder({id:orderId,kind:'booking',amount,status:'CREATING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:[...seen]}});
-  const {payment,pix}=await createPixForOrder({name,cpfCnpj:b.cpfCnpj,amount,description:'Black Hands Agendamento - '+orderId,externalReference:'booking:'+orderId});
+  const rows=await bookingReservations(barber,date);
+  res.setHeader('Cache-Control','no-store');
+  res.json({barber,date,times:BOOKING_SLOTS.filter(t=>slotAllowed(t,duration,date)&&!bookedSlots(rows,t,duration))});
+ }catch(e){console.error('Booking availability:',e.message);pixErr(res,'Não foi possível consultar os horários. Tente novamente.',503);}
+});
+// Consulta privada com código aleatório. Nunca aceita WhatsApp ou nome como prova de identidade.
+app.post('/api/booking/status',checkoutLimit,async(req,res)=>{
+ const token=String(req.body?.token||'');
+ if(!/^[A-Za-z0-9_-]{40,90}$/.test(token))return pixErr(res,'Código de acompanhamento inválido.',400);
+ try{
+  const rows=await sbReq('bh_booking_reservations','?access_token_hash=eq.'+trackingHash(token)+'&select=pix_order_id,barber,appointment_date,appointment_time,service_names,status,hold_until&limit=1');
+  if(!rows.length)return pixErr(res,'Agendamento não encontrado.',404);
+  const item=rows[0];
+  const orders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=status,amount,paid_at&limit=1');
+  res.setHeader('Cache-Control','no-store');
+  res.json({barber:item.barber,date:item.appointment_date,time:String(item.appointment_time).slice(0,5),services:item.service_names,bookingStatus:item.status,paymentStatus:orders[0]?.status||'UNKNOWN',amount:orders[0]?.amount||0,paid:!!orders[0]?.paid_at,holdUntil:item.hold_until});
+ }catch(e){console.error('Booking status:',e.message);pixErr(res,'Acompanhamento indisponível no momento.',503);}
+});
+app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
+ const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
+ const parsed=asBookingDetails(b.services),cpf=String(b.cpfCnpj||'').replace(/\\D/g,'');
+ if(name.length<3||!validPhone(phone)||!parsed||![11,14].includes(cpf.length)||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,parsed?.duration||30,date))
+  return pixErr(res,'Confira os dados, a data, o horário e os serviços do agendamento.');
+ const crypto=require('crypto'),orderId=crypto.randomUUID(),trackingToken=crypto.randomBytes(32).toString('base64url');
+ let orderCreated=false,holdCreated=false,paymentCreated=false;
+ try{
+  await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
+  await savePixOrder({id:orderId,kind:'booking',amount:parsed.amount,status:'CREATING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:parsed.services}});
+  orderCreated=true;
+  // Exclusão GiST no Postgres impede conflitos mesmo com pedidos simultâneos.
+  await sbReq('bh_booking_reservations','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+   pix_order_id:orderId,barber,appointment_date:date,appointment_time:time,
+   duration_minutes:parsed.duration,service_names:parsed.services,status:'HOLD',
+   hold_until:new Date(Date.now()+30*60000).toISOString(),access_token_hash:trackingHash(trackingToken)
+  })});
+  holdCreated=true;
+  const customer=await asaas('/customers',{method:'POST',body:JSON.stringify({name,cpfCnpj:cpf})});
+  const payment=await asaas('/payments',{method:'POST',body:JSON.stringify({
+   customer:customer.id,billingType:'PIX',value:parsed.amount,dueDate:todayPlusOne(),
+   description:'Black Hands Agendamento - '+orderId,externalReference:'booking:'+orderId
+  })});
+  paymentCreated=true;
   await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(orderId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
-  res.json({orderId,paymentId:payment.id,amount,pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',status:'PENDING',note:'Pagamento pendente. Horário sujeito a confirmação de disponibilidade pela equipe.'});
- }catch(e){console.error('Booking Pix:',e.message);pixErr(res,'Não foi possível gerar o Pix. Verifique as configurações e os dados informados.',503);}
+  const pix=await asaas('/payments/'+encodeURIComponent(payment.id)+'/pixQrCode');
+  res.setHeader('Cache-Control','no-store');
+  res.json({orderId,paymentId:payment.id,trackingToken,amount:parsed.amount,
+   pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',
+   status:'PENDING',note:'Pré-reserva por 30 minutos. Após o pagamento, a equipe ainda precisa confirmar o atendimento. Não pague pelo banco durante os testes Sandbox.'});
+ }catch(e){
+  console.error('Booking Pix:',e.message);
+  // Falhas anteriores à cobrança liberam o horário. Se o Asaas gerou cobrança, preserva-se a reserva até vencer.
+  if(!paymentCreated){
+   if(holdCreated)try{await sbReq('bh_booking_reservations','?pix_order_id=eq.'+orderId,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'ERROR'})});}catch(err){console.error('Release booking hold:',err.message);}
+   if(orderCreated)try{await sbReq('bh_pix_orders','?id=eq.'+orderId,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'ERROR'})});}catch(err){console.error('Mark failed order:',err.message);}
+  }
+  if(/Erro Supabase 409:/.test(e.message))return pixErr(res,'Esse horário foi reservado por outra pessoa. Escolha outro horário.',409);
+  pixErr(res,'Não foi possível preparar o Pix. Verifique a disponibilidade e tente novamente.',503);
+ }
 });
 
 
