@@ -382,7 +382,7 @@ async function asaas(endpoint,options={}){
 app.get('/api/vip/me',requireAccount,async(req,res)=>{
  try{
   const user=await vipAuth(req);
-  const rows=await sbReq('bh_customer_vip_memberships','?account_id=eq.'+encodeURIComponent(user.id)+'&select=plan,status,paid_until,created_at&order=created_at.desc&limit=1');
+  const rows=await sbReq('bh_customer_vip_memberships','?account_id=eq.'+encodeURIComponent(user.id)+'&select=plan,status,paid_until,cycle_starts_on,created_at&order=created_at.desc&limit=1');
   res.json({membership:rows[0]||null});
  }catch(e){res.status(e.message==='login_required'?401:503).json({error:'Faça login para consultar seu plano VIP ou configure o servidor.'});}
 });
@@ -391,19 +391,20 @@ app.get('/api/vip/appointments',requireAccount,async(req,res)=>{
  accountNoCache(res);
  try{
   const membership=await sbReq('bh_customer_vip_memberships','?account_id=eq.'+
-   encodeURIComponent(req.bhAccount.id)+'&select=plan,status,paid_until&limit=1');
+   encodeURIComponent(req.bhAccount.id)+'&select=plan,status,paid_until,cycle_starts_on&limit=1');
   const visits=await sbReq('bh_vip_appointments','?account_id=eq.'+
-   encodeURIComponent(req.bhAccount.id)+'&select=reservation_id,plan,appointment_date,status&order=appointment_date.asc&limit=80');
+   encodeURIComponent(req.bhAccount.id)+'&select=reservation_id,plan,appointment_date,status,cycle_start_date,week_number&order=appointment_date.asc&limit=80');
   const ids=visits.map(v=>v.reservation_id);
   const slots=ids.length?await sbReq('bh_booking_reservations','?id=in.('+ids.join(',')+
-   ')&select=id,appointment_time,barber,status'):[];
+   ')&select=id,appointment_time,barber,status,service_names,duration_minutes'):[];
   const attendance=ids.length?await sbReq('bh_booking_attendance','?booking_id=in.('+ids.join(',')+
    ')&select=booking_id,status'):[];
   const slotMap=new Map(slots.map(x=>[x.id,x])),attendanceMap=new Map(attendance.map(x=>[x.booking_id,x.status]));
   return res.json({membership:membership[0]||null,barber:'WELIGOL',appointments:visits.map(v=>{
     const booking=slotMap.get(v.reservation_id)||{};
     return {id:v.reservation_id,plan:v.plan,date:v.appointment_date,time:String(booking.appointment_time||'').slice(0,5),
-      barber:booking.barber||'WELIGOL',status:booking.status||v.status,attendance:attendanceMap.get(v.reservation_id)||null};
+      barber:booking.barber||'WELIGOL',status:booking.status||v.status,attendance:attendanceMap.get(v.reservation_id)||null,
+      weekNumber:v.week_number,cycleStart:v.cycle_start_date,services:booking.service_names||[]};
    })});
  }catch(e){console.error('Client VIP appointments:',String(e.message).slice(0,130));return res.status(503).json({error:'Não foi possível consultar seu calendário VIP agora.'});}
 });
@@ -415,9 +416,17 @@ app.post('/api/vip/appointments',accountSameOrigin,requireAccount,async(req,res)
   return res.status(400).json({error:'Escolha um dia de segunda a quinta e um horário válido.'});
  try{
   const m=await sbReq('bh_customer_vip_memberships','?account_id=eq.'+encodeURIComponent(req.bhAccount.id)+
-   '&status=eq.ACTIVE&select=plan,paid_until&limit=1');
+   '&status=eq.ACTIVE&select=plan,paid_until,cycle_starts_on&limit=1');
   if(!m.length||Date.parse(m[0].paid_until)<=Date.now())return res.status(409).json({error:'Seu plano VIP ainda não está ativo.'});
-  const duration=m[0].plan==='vip2'?60:30;
+  const start=m[0].cycle_starts_on;
+  const offset=Math.round((Date.parse(date+'T12:00:00Z')-Date.parse(start+'T12:00:00Z'))/86400000);
+  if(!Number.isInteger(offset)||offset<0||offset>=28)
+   return res.status(409).json({error:'Selecione uma data dentro das 4 semanas da sua mensalidade VIP.'});
+  const week=Math.floor(offset/7)+1;
+  const existing=await sbReq('bh_vip_appointments','?account_id=eq.'+req.bhAccount.id+
+   '&cycle_start_date=eq.'+start+'&week_number=eq.'+week+'&status=eq.SCHEDULED&select=id&limit=1');
+  if(existing.length)return res.status(409).json({error:'O atendimento da semana '+week+' já está reservado.'});
+  const duration=m[0].plan==='vip2'&&[1,3].includes(week)?90:30;
   if(!slotAllowed(time,duration,date))return res.status(409).json({error:'Horário fora do expediente.'});
   const bookings=await bookingReservations(barber,date);
   if(bookedSlots(bookings,time,duration))return res.status(409).json({error:'Horário já ocupado. Escolha outro.'});
@@ -426,7 +435,8 @@ app.post('/api/vip/appointments',accountSameOrigin,requireAccount,async(req,res)
   return res.status(201).json({ok:true,id,date,time,barber,message:'Corte VIP reservado! Já aparece na agenda do barbeiro.'});
  }catch(e){
   const msg=String(e.message);
-  if(msg.includes('vip_monthly_limit'))return res.status(409).json({error:'Você já reservou as duas sessões VIP deste mês.'});
+  if(/vip_week_already_booked/.test(msg))return res.status(409).json({error:'Você já reservou o benefício VIP desta semana.'});
+  if(/vip_week_outside_cycle/.test(msg))return res.status(409).json({error:'Escolha uma data das quatro semanas válidas da sua assinatura.'});
   if(/vip_not_active|vip_expires_before_visit/.test(msg))return res.status(409).json({error:'Seu VIP precisa estar ativo e válido até o fim do atendimento.'});
   if(/23P01|no_overlap|invalid_vip_slot|vip_close_time|vip_time_passed/.test(msg))return res.status(409).json({error:'Horário indisponível. Atualize o calendário e escolha outro.'});
   console.error('Client VIP booking:',msg.slice(0,140));return res.status(503).json({error:'Não foi possível reservar sua sessão VIP agora.'});
@@ -484,7 +494,8 @@ app.post('/api/asaas/webhook',async(req,res)=>{
    if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(v.amount))return res.sendStatus(200);
    if(v.status==='PAID')return res.sendStatus(200);
    const until=new Date();until.setMonth(until.getMonth()+1);
-   await sbReq('bh_customer_vip_memberships','?on_conflict=account_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({account_id:v.account_id,plan:v.plan,status:'ACTIVE',paid_until:until.toISOString()})});
+   await sbReq('bh_customer_vip_memberships','?on_conflict=account_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({account_id:v.account_id,plan:v.plan,status:'ACTIVE',paid_until:until.toISOString(),
+    cycle_starts_on:new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'})})});
    await sbReq('bh_customer_vip_payments','?id=eq.'+encodeURIComponent(v.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID'})});
    return res.sendStatus(200);
   }
