@@ -141,7 +141,9 @@ $('logout').addEventListener('click',async()=>{
  const button=$('logout');button.disabled=true;
  try{
   await api('/api/account/logout',{method:'POST',body:'{}'});
+  try{localStorage.removeItem('blackhands_client');localStorage.removeItem('bh_booking_tracking_v1');}catch{}
   guest();setMode('login');
+  message('authMsg','Você saiu da sua conta com segurança.','success');
  }catch(err){
   guest();setMode('login');
   message('authMsg','A sessão no aparelho foi encerrada, mas não foi possível confirmar o encerramento no servidor. Tente novamente.','error');
