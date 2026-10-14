@@ -726,6 +726,25 @@ app.post('/api/admin/live/logout',accountSameOrigin,async(req,res)=>{
  res.clearCookie(ADMIN_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
  return res.json({ok:true});
 });
+app.post('/api/admin/live/change-password',accountSameOrigin,requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ const password=req.body?.newPassword;
+ if(typeof password!=='string'||password.length<14||password.length>128)
+  return res.status(400).json({error:'Escolha uma senha administrativa exclusiva com pelo menos 14 caracteres.'});
+ try{
+  const subtle=accountCrypto.webcrypto?.subtle||globalThis.crypto?.subtle;
+  if(!subtle)throw Error('WebCrypto unavailable');
+  const iterations=180000,salt=accountCrypto.randomBytes(16);
+  const key=await subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const derived=Buffer.from(await subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},key,256));
+  await sbReq('bh_admin_credential','?id=eq.1',{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+   hash_hex:derived.toString('hex'),salt_hex:salt.toString('hex'),iterations,updated_at:new Date().toISOString()
+  })});
+  await sbReq('bh_admin_sessions','?account_id=eq.'+encodeURIComponent(req.bhAdmin.id),{method:'DELETE',headers:{Prefer:'return=minimal'}});
+  res.clearCookie(ADMIN_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
+  return res.json({ok:true,message:'Senha alterada. Entre novamente com a nova senha.'});
+ }catch(e){console.error('Admin password change:',String(e.message).slice(0,100));return res.status(503).json({error:'Não foi possível trocar a senha agora.'});}
+});
 app.get('/api/admin/live/me',async(req,res)=>{
  accountNoCache(res);
  try{const account=await adminSession(req);if(!account)return res.status(401).json({error:'Entre na área administrativa.'});return res.json({ok:true,name:account.full_name});}
