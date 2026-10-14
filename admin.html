@@ -112,6 +112,11 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 <input type="hidden" id="editId"><input type="hidden" id="editKind">
 <label class="adm-label">Nome<input class="adm-input" id="editName" maxlength="100" required></label>
 <label class="adm-label">Descrição<textarea class="adm-textarea" id="editDescription" maxlength="300"></textarea></label>
+<div id="adminPhotoRow" class="adm-card" hidden>
+ <label class="adm-label">Foto do produto (JPG, PNG ou WebP, até 900 KB)<input id="editPhoto" class="adm-input" type="file" accept="image/jpeg,image/png,image/webp"></label>
+ <img id="editPhotoPreview" alt="Prévia da foto do produto" width="140" height="140" style="margin-top:12px;border:1px solid #594232;border-radius:12px;object-fit:contain;background:#0b0b0b" hidden>
+ <p class="adm-muted">Salve o produto para publicar também a foto na Black Hands Store.</p>
+</div>
 <div class="adm-grid"><label class="adm-label">Preço R$<input class="adm-input" id="editPrice" type="number" min="0" step="0.01" required></label><label class="adm-label" id="editDurationLabel">Duração (min)<input class="adm-input" id="editDuration" type="number" min="30" max="240" step="30" value="30"></label></div>
 <label class="adm-label" style="display:flex;align-items:center;gap:9px"><input id="editActive" type="checkbox" checked> Disponível no site</label>
 <div class="adm-actions"><button class="adm-button" type="submit">Salvar e publicar</button><button type="button" id="adminEditorCancel" class="adm-button alt">Cancelar</button></div><p id="adminEditorMessage" class="adm-msg" role="status"></p>
