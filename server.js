@@ -617,7 +617,13 @@ app.get('/api/booking/availability',async(req,res)=>{
  try{
   const rows=await bookingReservations(barber,date);
   res.setHeader('Cache-Control','no-store');
-  res.json({barber,date,times:BOOKING_SLOTS.filter(t=>slotAllowed(t,duration,date)&&!bookedSlots(rows,t,duration))});
+  const day=new Date(date+'T12:00:00Z').getUTCDay();
+  const closingMinutes=day===6?960:1140;
+  res.json({barber,date,open:'07:00',
+   close:day===6?'16:00':day===0?'Fechado':'19:00',
+   durationMinutes:duration,
+   lastPossibleStart:day===0?null:BOOKING_SLOTS.filter(t=>mins(t)+duration<=closingMinutes).at(-1)||null,
+   times:BOOKING_SLOTS.filter(t=>slotAllowed(t,duration,date)&&!bookedSlots(rows,t,duration))});
  }catch(e){console.error('Booking availability:',e.message);pixErr(res,'Não foi possível consultar os horários. Tente novamente.',503);}
 });
 // Consulta privada com código aleatório. Nunca aceita WhatsApp ou nome como prova de identidade.
