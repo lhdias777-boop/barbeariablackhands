@@ -94,3 +94,7 @@ Antes de permitir cobrança real, o responsável deve concluir e validar: chave 
 - `render.yaml` / `netlify.toml`: configurações legadas, não usadas na Cloudflare.
 
 **Não apague nada no Netlify, Render, GitHub ou Supabase durante a migração.**
+
+## Reconstruir após trocar a branch na Cloudflare
+
+Se a tela de implantações ainda mostrar o build antigo da branch `main`, é histórico: não repita essa compilação. A branch correta de produção é `cloudflare-blackhands`. Um **novo commit nesta branch** deve iniciar outra compilação automática se o GitHub estiver vinculado e os builds habilitados. Acesse a nova entrada em **Implantações**, confira que a branch é `cloudflare-blackhands` e veja o log de build. Se falhar, copie a mensagem de erro sem incluir segredos de ambiente. As implantações manuais marcadas como **Pronto** não comprovam que o site completo e a API foram publicados.
