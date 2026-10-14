@@ -163,6 +163,22 @@ function accountToken(req){
 }
 function accountHash(value){return accountCrypto.createHash('sha256').update(value).digest('hex');}
 async function accountPasswordHash(pass,salt){
+ // O Worker Free tem orçamento curto de CPU. Supabase Edge deriva exatamente o
+ // mesmo scrypt usado pelo Node original, sem armazenar senhas em texto claro.
+ if(process.env.BH_AUTH_PASSWORD_KDF==='supabase_edge'){
+  const url=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
+  const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(!url||!key)throw Error('KDF backend missing');
+  const response=await fetch(url+'/functions/v1/bh-password-derive',{
+   method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key,'apikey':key},
+   body:JSON.stringify({password:pass,salt})
+  });
+  if(!response.ok)throw Error('KDF service unavailable ('+response.status+')');
+  const data=await response.json();
+  if(typeof data.hash!=='string'||! /^[A-Za-z0-9_-]{80,90}$/.test(data.hash))
+   throw Error('KDF invalid output');
+  return data.hash;
+ }
  return (await accountScrypt(pass,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024})).toString('base64url');
 }
 async function accountPasswordVerify(pass,salt,hash){
