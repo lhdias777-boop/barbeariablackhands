@@ -35,7 +35,7 @@ exports.handler = async (event, context) => {
     };
   }
   // Apenas o ambiente Sandbox pode ser habilitado durante a homologação.
-  const pixRoute = /^\/api\/(booking\\/checkout|store\/checkout|vip\/checkout|asaas\/webhook)(?:\/|$)/.test(path);
+  const pixRoute = path.startsWith('/api/booking/checkout') || path.startsWith('/api/store/checkout') || path.startsWith('/api/vip/checkout') || path.startsWith('/api/asaas/webhook');
   const sandboxBase = ['https://api-sandbox', 'asaas.com/v3'].join('.');
   if (pixRoute && process.env.BH_PIX_ENABLED === 'true' && process.env.ASAAS_API_BASE !== sandboxBase) {
     return {
