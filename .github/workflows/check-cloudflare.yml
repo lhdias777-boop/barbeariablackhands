@@ -1,0 +1,42 @@
+name: Cloudflare Black Hands - validar build
+
+on:
+  push:
+    branches: [cloudflare-blackhands]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Verificar sintaxe
+        run: |
+          node --check server.js
+          node --check booking.js
+          node --check conta.js
+          node --check acompanhar.js
+          node --check admin-pix.js
+      - name: Gerar site publico
+        run: npm run build:cloudflare
+      - name: Verificar arquivos da interface
+        run: |
+          test -s public/index.html
+          test -s public/agendar.html
+          test -s public/conta.html
+          test -s public/acompanhar.html
+          test -s public/loja.html
+          test -s public/planos-vip.html
+      - name: Validar Worker sem implantar e sem usar secrets
+        run: npx wrangler deploy --dry-run
