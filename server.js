@@ -254,8 +254,11 @@ app.post('/api/account/login',accountSameOrigin,async(req,res)=>{
    p_expires_at:new Date(Date.now()+ACCOUNT_SESSION_MS).toISOString()
   })});
   if(!users.length)return res.status(401).json({error:ACCOUNT_LOGIN_FAILURE});
+  // Preferências do WhatsApp ficam no perfil, não no retorno legado do RPC.
+  const profiles=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(users[0].id)+
+   '&select=id,full_name,phone,phone_verified,created_at,whatsapp_opt_in&limit=1');
   accountSetCookie(res,sessionToken);
-  return res.json({account:accountPublic(users[0])});
+  return res.json({account:accountPublic(profiles[0]||users[0])});
  }catch(e){console.error('Account login:',String(e.message).slice(0,120));return res.status(503).json({error:'Acesso temporariamente indisponível. Tente novamente.'});}
 });
 app.post('/api/account/logout',accountSameOrigin,async(req,res)=>{
