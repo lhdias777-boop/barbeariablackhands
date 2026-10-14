@@ -1,0 +1,70 @@
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#0c0b09">
+<title>Área do Barbeiro | Black Hands</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090909;color:#fbf5ed;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.bh-staff-header{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#12100e;border-bottom:1px solid #66432b;padding:15px max(16px,calc((100% - 1180px)/2))}
+.bh-staff-brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:#fff;font-weight:900;letter-spacing:1px}
+.bh-staff-brand img{width:52px;height:52px;border-radius:12px;object-fit:contain;background:#060606}
+.bh-staff-brand small{display:block;color:#ffb96c;font-size:10px;letter-spacing:2px;margin-top:4px}
+.bh-staff-link{display:inline-flex;align-items:center;justify-content:center;padding:11px 13px;border:1px solid #8a582d;border-radius:11px;text-decoration:none;color:#ffba70;font-weight:800;font-size:13px}
+.bh-staff-wrap{max-width:1160px;margin:30px auto 90px;padding:0 18px}
+.bh-staff-eyebrow{color:#ffaa56;letter-spacing:3px;font-weight:900;font-size:11px}
+.bh-staff-title{font-size:clamp(31px,5vw,50px);line-height:1.05;margin:9px 0}.bh-staff-muted{color:#baaea2;line-height:1.6}
+.bh-staff-card{background:linear-gradient(125deg,#201911,#141212);border:1px solid #5d402b;border-radius:18px;padding:20px;margin-top:17px}
+.bh-staff-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:26px 0 8px}
+.bh-staff-btn{font:inherit;font-weight:850;border:1px solid #71492b;background:#1c1813;color:#ffb96d;padding:12px 16px;border-radius:12px;cursor:pointer;min-height:46px}
+.bh-staff-btn.active,.bh-staff-btn.primary{background:linear-gradient(110deg,#ffc06c,#ed8c32);color:#231509;border-color:#e69543}
+.bh-staff-btn:disabled{opacity:.45;cursor:wait}
+.bh-staff-input{font:inherit;color:#fff;background:#0d0d0e;border:1px solid #61442e;padding:12px 13px;border-radius:11px;min-height:48px;max-width:100%;width:100%}
+.bh-staff-input:focus{outline:2px solid #f6a14c}
+.bh-staff-label{display:grid;gap:6px;color:#ded1c4;font-size:12px;font-weight:700;flex:1;min-width:170px}
+.bh-staff-row{display:flex;align-items:end;gap:13px;flex-wrap:wrap}
+.bh-staff-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-top:20px}
+.bh-staff-stat{padding:16px;background:#191512;border:1px solid #5b3a26;border-radius:13px}
+.bh-staff-stat span{display:block;font-size:11px;color:#bdafa2}.bh-staff-stat strong{display:block;font-size:26px;color:#ffb467;margin-top:7px}
+.bh-staff-booking{border:1px solid #4c3b2d;border-radius:14px;padding:16px;background:#121111;margin:12px 0}
+.bh-staff-booking .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.bh-staff-booking h3{margin:0;font-size:19px}.bh-staff-time{font-weight:950;color:#ffc27a;font-size:22px}
+.bh-staff-badge{display:inline-block;border:1px solid #805938;border-radius:50px;padding:7px 11px;color:#ffbe78;background:#302016;font-size:11px;font-weight:850;margin:4px 5px 4px 0}
+.bh-staff-badge.paid{border-color:#42654c;color:#b2f1bc;background:#1b2b20}
+.bh-staff-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.bh-staff-note{margin-top:14px;padding:14px;border:1px solid #80522c;border-radius:12px;color:#ffd19c;background:#251b11;line-height:1.6}
+.bh-staff-empty{color:#ad9d90;padding:25px;text-align:center}
+.bh-staff-panel[hidden],#staffLogin[hidden]{display:none!important}
+@media(max-width:680px){.bh-staff-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.bh-staff-grid{grid-template-columns:1fr}.bh-staff-wrap{margin-top:25px}.bh-staff-card{padding:16px}.bh-staff-header{padding:13px}.bh-staff-brand{font-size:13px}.bh-staff-brand img{width:43px;height:43px}.bh-staff-header .bh-staff-link{font-size:11px}}
+</style></head>
+<body>
+<header class="bh-staff-header"><a class="bh-staff-brand" href="index.html"><img src="logo-oficial-black-hands.jpg" alt="Black Hands"><span>BLACK HANDS<small>ÁREA DO BARBEIRO</small></span></a><a class="bh-staff-link" href="index.html">← Ir ao site</a></header>
+<main class="bh-staff-wrap">
+<section id="staffLogin" class="bh-staff-card">
+<p class="bh-staff-eyebrow">ACESSO PROFISSIONAL</p><h1 class="bh-staff-title">Sua agenda em um só lugar.</h1>
+<p class="bh-staff-muted" id="staffLoginMessage">Entre com sua conta Black Hands autorizada pelo administrador para ver clientes, horários, pagamentos e VIP.</p>
+<a class="bh-staff-btn primary" style="display:inline-block;text-decoration:none;margin:12px 0" href="conta.html?mode=login&next=barbeiro.html">Entrar na minha conta →</a>
+</section>
+<section id="staffApp" hidden>
+<p class="bh-staff-eyebrow">PAINEL PROFISSIONAL</p><h1 class="bh-staff-title" id="staffTitle">Bom trabalho!</h1>
+<p class="bh-staff-muted">Agenda, atendimento do dia e calendário dos clientes VIP. Os pagamentos são atualizados pelo servidor.</p>
+<div class="bh-staff-tabs"><button type="button" class="bh-staff-btn active" id="staffTabDay">Agenda diária</button><button type="button" class="bh-staff-btn" id="staffTabVip">Agenda VIP</button><button type="button" class="bh-staff-btn" id="staffRefresh">↻ Atualizar</button></div>
+<section id="staffDay" class="bh-staff-panel">
+<div class="bh-staff-card"><div class="bh-staff-row"><label class="bh-staff-label">Dia do atendimento<input id="staffDate" type="date" class="bh-staff-input"></label><button class="bh-staff-btn primary" id="staffLoadDay">Consultar agenda</button></div>
+<div class="bh-staff-stats" id="staffStats"></div></div>
+<div class="bh-staff-card"><h2>Clientes e horários</h2><p class="bh-staff-muted">Serviços, forma de pagamento e pendências de cada atendimento. Dinheiro só é marcado como recebido após confirmação presencial.</p><div id="staffDayBookings" aria-live="polite"></div></div>
+</section>
+<section id="staffVip" class="bh-staff-panel" hidden>
+<div class="bh-staff-card"><h2>Calendário de cortes VIP</h2>
+<p class="bh-staff-muted">O barbeiro escolhe o dia e horário do atendimento. VIP disponível de segunda a quinta, até duas sessões por mês, com plano ativo e horário livre.</p>
+<form id="staffVipForm">
+<div class="bh-staff-grid">
+<label class="bh-staff-label">Cliente VIP<select class="bh-staff-input" id="staffVipCustomer" required><option value="">Selecione um cliente</option></select></label>
+<label class="bh-staff-label">Dia do corte<input class="bh-staff-input" id="staffVipDate" type="date" required></label>
+<label class="bh-staff-label">Horário disponível<select class="bh-staff-input" id="staffVipTime" required><option value="">Escolha o cliente e a data</option></select></label>
+</div>
+<button class="bh-staff-btn primary" id="staffVipSubmit" type="submit" style="margin-top:18px">Reservar horário VIP</button>
+</form><p class="bh-staff-note" id="staffVipMessage" role="status">Os cortes VIP confirmados entram automaticamente na agenda do dia.</p>
+</div><div class="bh-staff-card"><h2>Clientes com VIP ativo</h2><div id="staffVipList"></div></div>
+</section>
+</section></main>
+<script src="barbeiro.js"></script></body></html>
