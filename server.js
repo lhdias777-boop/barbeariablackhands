@@ -847,6 +847,137 @@ app.post('/api/admin/live/product-photo/:id',accountSameOrigin,requireAdmin,expr
   res.json({ok:true,imageUrl});
  }catch(e){console.error('Product photo:',String(e.message).slice(0,130));res.status(503).json({error:'Falha ao enviar a foto. Nenhum produto foi apagado.'});}
 });
+
+async function staffForRequest(req){
+ const user=await accountFromRequest(req);
+ if(!user)return null;
+ const links=await sbReq('bh_barber_staff','?account_id=eq.'+encodeURIComponent(user.id)+'&enabled=eq.true&select=barber&limit=1');
+ return links.length?{user,barber:links[0].barber}:null;
+}
+async function requireStaff(req,res,next){
+ try{
+  const staff=await staffForRequest(req);
+  if(!staff)return res.status(403).json({error:'Faça login com uma conta de barbeiro autorizada.'});
+  req.bhStaff=staff;next();
+ }catch(e){console.error('Staff session:',String(e.message).slice(0,120));res.status(503).json({error:'Área do barbeiro indisponível temporariamente.'});}
+}
+app.get('/api/admin/live/staff',requireAdmin,async(req,res)=>{
+ try{
+  const staff=await sbReq('bh_barber_staff','?select=account_id,barber,enabled,created_at&order=created_at.desc');
+  const accounts=await sbReq('bh_customer_accounts','?select=id,full_name,phone&limit=300');
+  const names=new Map(accounts.map(a=>[a.id,a]));
+  res.json({staff:staff.map(x=>({...x,name:names.get(x.account_id)?.full_name||'',phone:names.get(x.account_id)?.phone||''}))});
+ }catch(e){res.status(503).json({error:'Não foi possível consultar a equipe.'});}
+});
+app.post('/api/admin/live/staff',accountSameOrigin,requireAdmin,async(req,res)=>{
+ const phone=accountPhone(req.body?.phone),barber=String(req.body?.barber||'');
+ if(!phone||!BOOKING_BARBERS.has(barber))return res.status(400).json({error:'WhatsApp ou barbeiro inválido.'});
+ try{
+  const accounts=await sbReq('bh_customer_accounts','?phone=eq.'+encodeURIComponent(phone)+'&select=id,full_name&limit=1');
+  if(!accounts.length)return res.status(404).json({error:'O barbeiro deve criar sua conta Black Hands antes de receber acesso.'});
+  await sbReq('bh_barber_staff','?on_conflict=account_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+   body:JSON.stringify({account_id:accounts[0].id,barber,enabled:true})});
+  res.json({ok:true,name:accounts[0].full_name});
+ }catch(e){console.error('Grant staff:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível autorizar o barbeiro.'});}
+});
+app.post('/api/admin/live/staff/revoke',accountSameOrigin,requireAdmin,async(req,res)=>{
+ const id=String(req.body?.accountId||'');
+ if(!/^[0-9a-f-]{36}$/i.test(id))return res.status(400).json({error:'Conta inválida.'});
+ try{
+  await sbReq('bh_barber_staff','?account_id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({enabled:false})});
+  res.json({ok:true});
+ }catch(e){res.status(503).json({error:'Não foi possível revogar o acesso.'});}
+});
+app.get('/api/barber/me',requireStaff,(req,res)=>{
+ accountNoCache(res);res.json({name:req.bhStaff.user.full_name,barber:req.bhStaff.barber});
+});
+app.get('/api/barber/day',requireStaff,async(req,res)=>{
+ accountNoCache(res);
+ const date=String(req.query.date||spParts().date);
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date+'T12:00:00Z')))
+  return res.status(400).json({error:'Selecione uma data válida.'});
+ try{
+  const rows=await sbReq('bh_booking_reservations','?barber=eq.'+encodeURIComponent(req.bhStaff.barber)+
+   '&appointment_date=eq.'+date+'&select=id,appointment_time,duration_minutes,service_names,status,payment_method,customer_name,customer_phone,amount,pix_order_id,account_id&order=appointment_time.asc&limit=120');
+  const pixIds=rows.map(x=>x.pix_order_id).filter(Boolean),resIds=rows.map(x=>x.id);
+  const pix=pixIds.length?await sbReq('bh_pix_orders','?id=in.('+pixIds.join(',')+')&select=id,status,payment_environment,paid_at'):[];
+  const cash=resIds.length?await sbReq('bh_cash_receipts','?booking_id=in.('+resIds.join(',')+')&select=booking_id,collected_at'):[];
+  const vip=resIds.length?await sbReq('bh_vip_appointments','?reservation_id=in.('+resIds.join(',')+')&select=reservation_id,plan,status'):[];
+  const pMap=new Map(pix.map(x=>[x.id,x])),cMap=new Map(cash.map(x=>[x.booking_id,x])),vMap=new Map(vip.map(x=>[x.reservation_id,x]));
+  const appointments=rows.map(row=>{
+   const p=pMap.get(row.pix_order_id),v=vMap.get(row.id),c=cMap.get(row.id);
+   const paymentStatus=v?'VIP INCLUÍDO':row.payment_method==='PIX'?(p?.status==='PAID'?'PIX CONFIRMADO':'PIX PENDENTE'):(c?'DINHEIRO RECEBIDO':'A RECEBER NO DIA');
+   return {...row,paymentStatus,paymentEnvironment:p?.payment_environment||null,vipPlan:v?.plan||null};
+  });
+  res.json({date,barber:req.bhStaff.barber,appointments,summary:{
+   total:appointments.filter(a=>!['CANCELLED','EXPIRED','ERROR'].includes(a.status)).length,
+   confirmed:appointments.filter(a=>a.status==='CONFIRMED').length,
+   pending:appointments.filter(a=>a.status==='AWAITING_STAFF').length,
+   paid:appointments.filter(a=>['PIX CONFIRMADO','DINHEIRO RECEBIDO','VIP INCLUÍDO'].includes(a.paymentStatus)).length
+  }});
+ }catch(e){console.error('Barber agenda:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível carregar a agenda.'});}
+});
+app.post('/api/barber/cash/:id',accountSameOrigin,requireStaff,async(req,res)=>{
+ const id=String(req.params.id||'');
+ if(!/^[0-9a-f-]{36}$/i.test(id))return res.status(400).json({error:'Agendamento inválido.'});
+ try{
+  const rows=await sbReq('bh_booking_reservations','?id=eq.'+id+'&barber=eq.'+encodeURIComponent(req.bhStaff.barber)+
+   '&select=id,payment_method,status,amount&limit=1');
+  const row=rows[0];
+  if(!row||row.payment_method!=='PAY_ON_DAY'||!['AWAITING_STAFF','CONFIRMED'].includes(row.status))
+   return res.status(409).json({error:'Este agendamento não permite registrar dinheiro.'});
+  const existing=await sbReq('bh_cash_receipts','?booking_id=eq.'+id+'&select=booking_id&limit=1');
+  if(existing.length)return res.json({ok:true,alreadyRecorded:true});
+  await sbReq('bh_cash_receipts','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+   booking_id:id,amount:Number(row.amount),collected_by:req.bhStaff.user.id
+  })});
+  res.json({ok:true});
+ }catch(e){console.error('Barber cash:',String(e.message).slice(0,120));res.status(503).json({error:'Falha ao registrar recebimento.'});}
+});
+app.get('/api/barber/vip',requireStaff,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const today=spParts().date;
+  const memberships=await sbReq('bh_customer_vip_memberships','?status=eq.ACTIVE&paid_until=gt.'+encodeURIComponent(new Date().toISOString())+
+   '&select=account_id,plan,paid_until&limit=150');
+  const ids=memberships.map(x=>x.account_id);
+  const accounts=ids.length?await sbReq('bh_customer_accounts','?id=in.('+ids.join(',')+')&select=id,full_name,phone'):[];
+  const month=today.slice(0,7);
+  const used=ids.length?await sbReq('bh_vip_appointments','?account_id=in.('+ids.join(',')+')&appointment_date=gte.'+month+'-01&appointment_date=lt.'+
+   (new Date(Date.UTC(Number(today.slice(0,4)),Number(today.slice(5,7)),1)).toISOString().slice(0,10))+
+   '&status=eq.SCHEDULED&select=account_id,appointment_date'):[];
+  const names=new Map(accounts.map(x=>[x.id,x]));
+  res.json({members:memberships.map(m=>({accountId:m.account_id,name:names.get(m.account_id)?.full_name||'Cliente',
+    phone:names.get(m.account_id)?.phone||'',plan:m.plan,paidUntil:m.paid_until,
+    usedThisMonth:used.filter(u=>u.account_id===m.account_id).length}))});
+ }catch(e){console.error('VIP barber list:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível consultar clientes VIP.'});}
+});
+app.post('/api/barber/vip/schedule',accountSameOrigin,requireStaff,async(req,res)=>{
+ const accountId=String(req.body?.accountId||''),date=String(req.body?.date||''),time=String(req.body?.time||'');
+ if(!/^[0-9a-f-]{36}$/i.test(accountId)||!/\d{4}-\d{2}-\d{2}/.test(date)||!BOOKING_SLOTS.includes(time)||!validBookingDate(date))
+  return res.status(400).json({error:'Confira cliente, dia e horário.'});
+ if(new Date(date+'T12:00:00Z').getUTCDay()===0||new Date(date+'T12:00:00Z').getUTCDay()===5||new Date(date+'T12:00:00Z').getUTCDay()===6)
+  return res.status(400).json({error:'Cortes VIP somente de segunda a quinta.'});
+ try{
+  const member=await sbReq('bh_customer_vip_memberships','?account_id=eq.'+accountId+'&status=eq.ACTIVE&select=plan,paid_until&limit=1');
+  if(!member.length)return res.status(409).json({error:'Cliente sem VIP ativo.'});
+  const duration=member[0].plan==='vip1'?30:60;
+  if(!slotAllowed(time,duration,date))return res.status(409).json({error:'Horário fora do expediente.'});
+  const bookings=await bookingReservations(req.bhStaff.barber,date);
+  if(bookedSlots(bookings,time,duration))return res.status(409).json({error:'Horário já ocupado.'});
+  const id=await sbReq('rpc/bh_create_vip_appointment','',{method:'POST',body:JSON.stringify({
+   p_account_id:accountId,p_barber:req.bhStaff.barber,p_date:date,p_time:time,p_staff_id:req.bhStaff.user.id
+  })});
+  res.status(201).json({ok:true,id});
+ }catch(e){
+  const message=String(e.message);
+  if(message.includes('vip_monthly_limit'))return res.status(409).json({error:'Cliente já usou as duas sessões VIP deste mês.'});
+  if(message.includes('vip_not_active'))return res.status(409).json({error:'VIP não está ativo até o dia escolhido.'});
+  if(message.includes('bh_booking_reservations_no_overlap')||message.includes('23P01'))return res.status(409).json({error:'Horário ocupado. Atualize o calendário.'});
+  console.error('VIP scheduling:',message.slice(0,120));
+  res.status(503).json({error:'Não foi possível reservar o horário VIP.'});
+ }
+});
 app.post('/api/admin/live/content',accountSameOrigin,requireAdmin,async(req,res)=>{
  const key=String(req.body?.key||''),value=req.body?.value;
  const allowed=new Set(['hero_title','hero_text','promo_text','contact_whatsapp','instagram_url','vip1_price','vip2_price']);
