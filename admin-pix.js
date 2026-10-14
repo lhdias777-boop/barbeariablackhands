@@ -31,10 +31,40 @@ async function refreshBookingAgenda(){
   for(const value of [b.time+' ('+b.duration+' min)',b.barber,b.customerName+' · '+b.customerPhone,(b.services||[]).join(', '),b.paymentStatus,b.status]){
    const td=document.createElement('td');td.textContent=String(value||'—');tr.appendChild(td);
   }
+  const actions=document.createElement('td');
+  if(b.status==='AWAITING_STAFF'){
+   const confirm=document.createElement('button');
+   confirm.type='button';confirm.textContent='Confirmar';
+   confirm.addEventListener('click',()=>updateBooking(b.id,'CONFIRMED'));
+   actions.append(confirm);
+   const cancel=document.createElement('button');
+   cancel.type='button';cancel.textContent='Cancelar';cancel.style.marginLeft='8px';
+   cancel.addEventListener('click',()=>updateBooking(b.id,'CANCELLED'));
+   actions.append(cancel);
+  }else if(b.status==='CONFIRMED'){
+   const cancel=document.createElement('button');
+   cancel.type='button';cancel.textContent='Cancelar';cancel.addEventListener('click',()=>updateBooking(b.id,'CANCELLED'));
+   actions.append(cancel);
+  }else actions.textContent='—';
+  tr.append(actions);
   tbody.appendChild(tr);
  }
- if(!data.bookings.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=6;td.textContent='Nenhuma reserva Pix para esta data.';tr.append(td);tbody.append(tr);}
+ if(!data.bookings.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=7;td.textContent='Nenhuma reserva para esta data.';tr.append(td);tbody.append(tr);}
  set('bookingAgendaNotice',data.bookings.length+' reserva(s) consultada(s).');
+}
+async function updateBooking(id,status){
+ if(!token)throw Error('Faça login primeiro.');
+ const text=status==='CANCELLED'
+  ?'Cancelar esta reserva? Se já houver Pix pago, será necessário tratar o reembolso separadamente.'
+  :'Confirmar este horário para o cliente?';
+ if(!confirm(text))return;
+ try{
+  const r=await fetch('/api/admin/bookings/'+encodeURIComponent(id),{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({status})});
+  const data=await r.json();
+  if(!r.ok)throw Error(data.error||'Não foi possível alterar o agendamento.');
+  set('bookingAgendaNotice',data.note||'Agenda atualizada.');
+  await refreshBookingAgenda();
+ }catch(e){set('bookingAgendaNotice',e.message);}
 }
 $('bookingAgendaDate').value=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 $('refreshBookingAgenda').addEventListener('click',()=>refreshBookingAgenda().catch(e=>set('bookingAgendaNotice',e.message)));
