@@ -11,7 +11,27 @@ const products=[
 ];
 const money=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});let cart=JSON.parse(localStorage.getItem('bhStoreCart')||'{}');
 const productsEl=document.getElementById('products'), cartPanel=document.getElementById('cartPanel');
+
+/* Anima somente os produtos visiveis, inclusive apos atualizar o catalogo. */
+const storeRevealObserver=typeof IntersectionObserver==='function'
+ ?new IntersectionObserver((entries,observer)=>{
+  entries.forEach(entry=>{
+   if(!entry.isIntersecting)return;
+   entry.target.classList.add('bh-store-reveal');
+   observer.unobserve(entry.target);
+  });
+ },{threshold:0.12,rootMargin:'0px 0px -15px 0px'}):null;
+function revealStoreProducts(){
+ if(storeRevealObserver)storeRevealObserver.disconnect();
+ const cards=productsEl.querySelectorAll('.store-card');
+ cards.forEach((card,index)=>{
+  card.style.setProperty('--bh-store-delay',String((index%4)*55)+'ms');
+  if(storeRevealObserver)storeRevealObserver.observe(card);
+ });
+}
+
 productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.tag}</div><div class="details"><h2>${p.name}</h2><p>${p.description}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
+revealStoreProducts();
 function save(){localStorage.setItem('bhStoreCart',JSON.stringify(cart));renderCart()}
 function count(){return Object.values(cart).reduce((s,n)=>s+n,0)}
 function renderCart(){document.getElementById('cartCount').textContent=count();const ids=Object.keys(cart).filter(id=>cart[id]>0&&products.some(p=>p.id===id));const el=document.getElementById('cartItems');if(!ids.length){el.innerHTML='<p class="empty">Seu carrinho está vazio. Adicione produtos para continuar.</p>'}else{el.innerHTML=ids.map(id=>{const p=products.find(x=>x.id===id);return `<div class="cart-row"><div><strong>${p.name}</strong><div style="color:#f47b20;margin-top:6px">${money(p.price)} cada</div></div><div class="qty"><button type="button" data-change="${id}" data-delta="-1" aria-label="Diminuir">−</button><span>${cart[id]}</span><button type="button" data-change="${id}" data-delta="1" aria-label="Aumentar">+</button></div></div>`}).join('')};const total=ids.reduce((s,id)=>s+products.find(p=>p.id===id).price*cart[id],0);document.getElementById('cartTotal').textContent=money(total);document.querySelector('#checkoutForm button').disabled=!ids.length;document.querySelector('#checkoutForm button').style.opacity=ids.length?'1':'.5'}
@@ -36,6 +56,7 @@ async function syncStoreCatalog(){
   })));
   const safe=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.image_url?'<img src="'+safe(p.image_url)+'" alt="Foto de '+safe(p.name)+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">':safe(p.tag)}</div><div class="details"><h2>${safe(p.name)}</h2><p>${safe(p.description)}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
+  revealStoreProducts();
   for(const id of Object.keys(cart))if(!products.some(p=>p.id===id))delete cart[id];
   localStorage.setItem('bhStoreCart',JSON.stringify(cart));
   renderCart();
