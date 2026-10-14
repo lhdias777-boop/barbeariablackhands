@@ -994,11 +994,16 @@ app.post('/api/barber/attendance/:id',accountSameOrigin,requireStaff,async(req,r
   return res.status(400).json({error:'Atendimento ou situação inválida.'});
  try{
   const rows=await sbReq('bh_booking_reservations','?id=eq.'+id+'&barber=eq.'+
-   encodeURIComponent(req.bhStaff.barber)+'&select=id,appointment_date,appointment_time,status&limit=1');
+   encodeURIComponent(req.bhStaff.barber)+'&select=id,appointment_date,appointment_time,duration_minutes,status&limit=1');
   const booking=rows[0];
   if(!booking||booking.status!=='CONFIRMED')return res.status(409).json({error:'Somente agendamentos confirmados podem receber presença.'});
   const now=spParts(),bookingTime=String(booking.appointment_date)+'T'+String(booking.appointment_time).slice(0,5);
   if(bookingTime>now.date+'T'+now.time)return res.status(409).json({error:'O atendimento ainda não começou. Registre a presença no horário marcado.'});
+  if(status==='NO_SHOW'){
+   const end=mins(String(booking.appointment_time).slice(0,5))+Number(booking.duration_minutes||30);
+   if(now.date===String(booking.appointment_date)&&mins(now.time)<end)
+    return res.status(409).json({error:'Marque Não compareceu somente após o término do horário reservado.'});
+  }
   await sbReq('bh_booking_attendance','?on_conflict=booking_id',{
    method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
    body:JSON.stringify({booking_id:id,status,recorded_by:req.bhStaff.user.id,recorded_at:new Date().toISOString()})
