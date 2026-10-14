@@ -274,6 +274,53 @@ function startPixPolling(token,live){
  },15000);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&activePaymentCheck)verifyPaymentStatus();});
+let pendingBookingPixId=null;
+function showBookingPix(parent,data){
+ const elements=document.createElement('div');
+ parent.append(elements);
+ let attempts=0,timer=null;
+ const draw=info=>{
+  elements.replaceChildren();
+  if(info.pixCopyPaste){
+   if(info.qrCodeBase64){
+    const img=document.createElement('img');img.src='data:image/png;base64,'+info.qrCodeBase64;
+    img.alt=data.paymentMode==='production'?'QR Code Pix real':'QR Code de testes Asaas';
+    img.style.maxWidth='220px';elements.append(img);
+   }
+   const code=document.createElement('textarea');code.value=info.pixCopyPaste;
+   code.readOnly=true;code.rows=4;code.style.width='100%';elements.append(code);
+   const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar Pix';
+   copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(code.value);copy.textContent='Pix copiado ✓'}catch{code.select()}});
+   elements.append(copy);return;
+  }
+  const label=document.createElement('p');label.setAttribute('role','status');
+  label.textContent='Pré-reserva criada, mas o Asaas ainda prepara o QR Code. Não gere outra cobrança.';
+  elements.append(label);
+  const reload=document.createElement('button');reload.type='button';reload.textContent='↻ Consultar o mesmo QR Code';
+  reload.className='btn';elements.append(reload);
+  const load=async()=>{
+   if(reload.disabled)return;
+   reload.disabled=true;reload.textContent='Consultando a cobrança...';
+   try{
+    const response=await fetch('/api/pix/qr/booking/'+encodeURIComponent(data.orderId),{
+     cache:'no-store',credentials:'same-origin'
+    });
+    const next=await response.json().catch(()=>({}));
+    if(!response.ok&&response.status!==202)throw Error(next.error||'Falha na consulta do Pix');
+    if(next.status==='PAID'){elements.textContent='O pagamento já foi confirmado. Veja seu acompanhamento.';return;}
+    if(next.pixCopyPaste){draw(next);return;}
+    reload.disabled=false;reload.textContent='Consultar QR Code novamente';
+    if(++attempts<6)timer=setTimeout(load,4000);
+   }catch(err){
+    reload.disabled=false;reload.textContent='Tentar novamente';
+    label.textContent=err.message;
+   }
+  };
+  reload.addEventListener('click',()=>{if(timer)clearTimeout(timer);load()});
+  timer=setTimeout(load,4000);
+ };
+ draw(data);
+}
 form.addEventListener('submit',async e=>{
  e.preventDefault();
  if(!await window.BHSession.requireLogin({action:'agendar',next:location.href}))return;
@@ -288,18 +335,22 @@ form.addEventListener('submit',async e=>{
  try{
   let data,stored;
   if(payment==='online'){
+   if(pendingBookingPixId){
+    result.hidden=false;
+    result.textContent='Já existe uma cobrança pendente para esta pré-reserva. Consulte o Pix exibido abaixo ou abra Minha Conta, sem gerar uma nova cobrança.';
+    return;
+   }
    const cpfCnpj=prompt('Informe o CPF/CNPJ para gerar a cobrança Pix (somente números):');
    if(!cpfCnpj)return;
-   result.hidden=false;result.textContent='Gerando Pix no Asaas Sandbox...';
+   result.hidden=false;result.textContent='Solicitando cobrança Pix ao Asaas...';
    const response=await fetch('/api/booking/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...booking,cpfCnpj})});
    data=await response.json();
    if(!response.ok)throw Error(data.error||'Não foi possível gerar o Pix.');
    stored=storeTracking({...booking,trackingToken:data.trackingToken,orderId:data.orderId,amount:data.amount,paymentMethod:'PIX'});
    result.replaceChildren();
    const intro=document.createElement('p');intro.textContent='Pré-reserva registrada. '+(data.paymentMode==='production'?'Pix real':'Pix de TESTE')+': '+money(Number(data.amount))+'. Aguarde a confirmação pelo Asaas para enviar a mensagem de agendamento ao WhatsApp.';result.append(intro);
-   if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt=data.paymentMode==='production'?'QR Code Pix de pagamento real':'QR Code Pix do Asaas Sandbox';img.style.maxWidth='220px';result.append(img);}
-   const code=document.createElement('textarea');code.value=data.pixCopyPaste||'';code.readOnly=true;code.rows=4;code.style.width='100%';result.append(code);
-   const copy=document.createElement('button');copy.type='button';copy.textContent='Copiar Pix';copy.addEventListener('click',()=>navigator.clipboard.writeText(code.value));result.append(copy);
+   pendingBookingPixId=data.orderId;
+   showBookingPix(result,data);
    const live=document.createElement('p');live.setAttribute('role','status');live.textContent='Pagamento pendente. Quando o Asaas confirmar, abriremos o WhatsApp para preparar a mensagem.';result.append(live);
    const check=document.createElement('button');check.type='button';check.className='btn';check.textContent='Já confirmei no Asaas — verificar pagamento';check.style.marginTop='12px';check.addEventListener('click',verifyPaymentStatus);result.append(check);
    addTrackingLink(result);
