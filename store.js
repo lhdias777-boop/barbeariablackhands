@@ -147,7 +147,7 @@ cartItems.addEventListener('click',e=>{
  save();
 });
 
-let storePixRetry=null;
+let storePixRetry=null,pendingStoreOrderId=null;
 async function recoverStorePix(orderId){
  const r=await fetch('/api/pix/qr/store/'+encodeURIComponent(orderId),{
   credentials:'same-origin',cache:'no-store'});
@@ -156,6 +156,7 @@ async function recoverStorePix(orderId){
  return json;
 }
 function showStorePix(data,attempt=0){
+ if(data.orderId)pendingStoreOrderId=data.orderId;
  const target=document.getElementById('checkoutMessage');
  target.replaceChildren();
  const real=data.paymentMode==='production',pending=!!data.qrPending;
@@ -184,15 +185,16 @@ function showStorePix(data,attempt=0){
  if(pending){
   const reload=document.createElement('button');reload.type='button';reload.className='bh-cart-continue';
   reload.textContent='↻ Consultar o mesmo Pix (sem gerar outra cobrança)';target.append(reload);
+  let retryCount=attempt;
   const doRetry=async()=>{
    if(reload.disabled)return;
    reload.disabled=true;reload.textContent='Consultando Asaas...';
    try{
     const details=await recoverStorePix(data.orderId);
-    if(details.status==='PAID'){target.textContent='Pagamento confirmado. Confira em Minha Conta.';return}
+    if(details.status==='PAID'){pendingStoreOrderId=null;target.textContent='Pagamento confirmado. Confira em Minha Conta.';return}
     if(details.qrPending){
      reload.textContent='QR Code ainda em preparação';reload.disabled=false;
-     if(attempt<5)storePixRetry=setTimeout(()=>doRetry(),3500);
+     if(++retryCount<6)storePixRetry=setTimeout(()=>doRetry(),3500);
     }else showStorePix({...data,...details,qrPending:false});
    }catch(e){reload.textContent='Tentar novamente: '+e.message;reload.disabled=false;}
   };
@@ -218,12 +220,19 @@ document.getElementById('checkoutForm').addEventListener('submit',async e=>{
  button.disabled=true;msg.textContent='Solicitando o Pix ao Asaas. Aguarde...';
  if(storePixRetry){clearTimeout(storePixRetry);storePixRetry=null}
  try{
+  if(pendingStoreOrderId){
+   const details=await recoverStorePix(pendingStoreOrderId);
+   showStorePix({...details,orderId:pendingStoreOrderId,
+    paymentMode:msg.dataset.paymentMode||'sandbox'});
+   return;
+  }
   const response=await fetch('/api/store/checkout',{
    method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)
   });
   const data=await response.json().catch(()=>({}));
   if(!response.ok)throw Error(data.error||'O Asaas não conseguiu gerar a cobrança.');
   if(!data.orderId)throw Error('O servidor não retornou uma referência válida do pedido.');
+  msg.dataset.paymentMode=data.paymentMode;
   showStorePix(data);
  }catch(err){
   msg.textContent=err.message+
