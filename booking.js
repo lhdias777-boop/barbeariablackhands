@@ -67,6 +67,14 @@ serviceDone.addEventListener("click",()=>setServicePanel(false));
 barber.addEventListener("change",loadTimes);
 dateInput.addEventListener("change",loadTimes);
 restoreClientData();
+// Se houver sessão Minha Conta, preferir os dados do perfil cadastrado.
+(async()=>{try{
+ const response=await fetch('/api/account/me',{cache:'no-store',credentials:'same-origin'});
+ if(!response.ok)return;
+ const data=await response.json();
+ if(data.account?.fullName)nameInput.value=data.account.fullName;
+ if(data.account?.phone)phoneInput.value=data.account.phone.replace(/^\+55/,'');
+ }catch{}})();
 updateTotal();
 
 // Restaura a seleção múltipla feita em Serviços e Preços.
