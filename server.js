@@ -654,6 +654,135 @@ app.post('/api/booking/checkout',accountSameOrigin,requireAccount,checkoutLimit,
 });
 
 
+// Painel Black Hands conectado ao banco; usuario e senha administrativa
+// sao verificados no servidor, e o token privilegiado nunca chega ao browser.
+const ADMIN_COOKIE='__Host-bh_admin_session';
+const ADMIN_SESSION_MS=4*60*60*1000;
+function adminToken(req){
+ const cookie=String(req.headers.cookie||'').split(';').find(x=>x.trim().startsWith(ADMIN_COOKIE+'='));
+ const token=cookie?cookie.trim().slice(ADMIN_COOKIE.length+1):'';
+ return /^[A-Za-z0-9_-]{43}$/.test(token)?token:'';
+}
+async function adminMember(accountId){
+ const rows=await sbReq('bh_admin_authorized','?account_id=eq.'+encodeURIComponent(accountId)+'&select=account_id&limit=1');
+ return rows.length===1;
+}
+async function adminSession(req){
+ const account=await accountFromRequest(req);
+ const token=adminToken(req);
+ if(!account||!token||!await adminMember(account.id))return null;
+ const rows=await sbReq('bh_admin_sessions','?token_hash=eq.'+accountHash(token)+'&account_id=eq.'+encodeURIComponent(account.id)+'&expires_at=gt.'+encodeURIComponent(new Date().toISOString())+'&select=account_id&limit=1');
+ return rows.length?account:null;
+}
+async function requireAdmin(req,res,next){
+ try{
+  const account=await adminSession(req);
+  if(!account)return res.status(401).json({error:'Acesso administrativo necessário. Entre novamente.'});
+  req.bhAdmin=account;return next();
+ }catch(e){console.error('Admin session:',String(e.message).slice(0,90));return res.status(503).json({error:'Não foi possível verificar a sessão administrativa.'});}
+}
+app.post('/api/admin/live/login',accountSameOrigin,requireAccount,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const allowed=await accountLimit('admin:'+accountIpKey(req),6,1800);
+  if(!allowed)return res.status(429).json({error:'Muitas tentativas. Aguarde antes de entrar.'});
+  if(!await adminMember(req.bhAccount.id))return res.status(403).json({error:'Esta conta não tem permissão de administrador.'});
+  const password=req.body?.password;
+  if(typeof password!=='string'||password.length<8||password.length>128)return res.status(401).json({error:'Senha administrativa incorreta.'});
+  const rows=await sbReq('bh_admin_credential','?id=eq.1&select=salt_hex,hash_hex,iterations&limit=1');
+  if(!rows.length)throw Error('Admin credential missing');
+  const cred=rows[0],subtle=accountCrypto.webcrypto?.subtle||globalThis.crypto?.subtle;
+  if(!subtle)throw Error('WebCrypto unavailable');
+  const key=await subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+  const derived=Buffer.from(await subtle.deriveBits({name:'PBKDF2',salt:Buffer.from(cred.salt_hex,'hex'),iterations:Number(cred.iterations),hash:'SHA-256'},key,256));
+  const expected=Buffer.from(cred.hash_hex,'hex');
+  if(expected.length!==32||!accountCrypto.timingSafeEqual(derived,expected))
+   return res.status(401).json({error:'Senha administrativa incorreta.'});
+  const token=accountCrypto.randomBytes(32).toString('base64url');
+  await sbReq('bh_admin_sessions','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+   token_hash:accountHash(token),account_id:req.bhAccount.id,expires_at:new Date(Date.now()+ADMIN_SESSION_MS).toISOString()
+  })});
+  res.cookie(ADMIN_COOKIE,token,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:ADMIN_SESSION_MS});
+  return res.json({ok:true,expiresIn:ADMIN_SESSION_MS/1000});
+ }catch(e){console.error('Admin login:',String(e.message).slice(0,120));return res.status(503).json({error:'Acesso administrativo indisponível no momento.'});}
+});
+app.post('/api/admin/live/logout',accountSameOrigin,async(req,res)=>{
+ accountNoCache(res);
+ try{const token=adminToken(req);if(token)await sbReq('bh_admin_sessions','?token_hash=eq.'+accountHash(token),{method:'DELETE',headers:{Prefer:'return=minimal'}});}catch(e){console.error('Admin logout:',String(e.message).slice(0,80));}
+ res.clearCookie(ADMIN_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
+ return res.json({ok:true});
+});
+app.get('/api/admin/live/me',async(req,res)=>{
+ accountNoCache(res);
+ try{const account=await adminSession(req);if(!account)return res.status(401).json({error:'Entre na área administrativa.'});return res.json({ok:true,name:account.full_name});}
+ catch(e){return res.status(503).json({error:'Sessão indisponível.'});}
+});
+app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const q=[
+   ['customers','bh_customer_accounts','?select=id,full_name,phone,created_at&order=created_at.desc&limit=250'],
+   ['bookings','bh_booking_reservations','?select=id,barber,appointment_date,appointment_time,service_names,status,payment_method,customer_name,customer_phone,amount,account_id,created_at&order=created_at.desc&limit=250'],
+   ['orders','bh_pix_orders','?select=id,kind,amount,status,created_at,customer_name,customer_phone,payment_environment,details&order=created_at.desc&limit=250'],
+   ['vip','bh_customer_vip_memberships','?select=account_id,plan,status,paid_until,created_at&order=created_at.desc&limit=250'],
+   ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,status,amount,created_at,payment_environment&order=created_at.desc&limit=250'],
+   ['catalog','bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active,updated_at&order=kind.asc,name.asc'],
+   ['content','bh_management_content','?select=key,value,updated_at&order=key.asc']
+  ];
+  const results=await Promise.all(q.map(async ([key,table,query])=>[key,await sbReq(table,query)]));
+  const data=Object.fromEntries(results);
+  data.stats={
+   customers:data.customers.length,bookings:data.bookings.length,
+   paymentsReceived:data.orders.filter(x=>x.status==='PAID').reduce((n,x)=>n+Number(x.amount||0),0)+data.vipPayments.filter(x=>x.status==='PAID').reduce((n,x)=>n+Number(x.amount||0),0),
+   paymentsPending:data.orders.filter(x=>x.status==='PENDING').length+data.vipPayments.filter(x=>x.status==='PENDING').length,
+   vipActive:data.vip.filter(x=>x.status==='ACTIVE'&&Date.parse(x.paid_until)>Date.now()).length
+  };
+  res.json(data);
+ }catch(e){console.error('Admin dashboard:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível carregar os dados da gestão.'});}
+});
+app.get('/api/site/catalog',async(req,res)=>{
+ res.setHeader('Cache-Control','public,max-age=30');
+ try{
+  const rows=await sbReq('bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active&order=kind.asc,name.asc');
+  res.json({items:rows.filter(r=>r.active)});
+ }catch(e){res.status(503).json({error:'Catálogo indisponível.'});}
+});
+app.get('/api/site/content',async(req,res)=>{
+ res.setHeader('Cache-Control','public,max-age=30');
+ try{
+  const rows=await sbReq('bh_management_content','?select=key,value');
+  res.json({content:Object.fromEntries(rows.map(r=>[r.key,r.value]))});
+ }catch(e){res.status(503).json({error:'Conteúdo indisponível.'});}
+});
+app.post('/api/admin/live/catalog',accountSameOrigin,requireAdmin,async(req,res)=>{
+ const b=req.body||{};
+ const id=String(b.id||'').toLowerCase(),kind=b.kind;
+ const name=String(b.name||'').trim(),description=String(b.description||'').trim();
+ const price=Number(b.price),duration=Number(b.duration_minutes||30);
+ if(!/^[a-z0-9_-]{2,60}$/.test(id)||!['service','product'].includes(kind)||
+  name.length<2||name.length>100||description.length>300||!Number.isFinite(price)||price<0||price>100000||
+  !Number.isInteger(duration)||duration<30||duration>240||duration%30!==0||
+  typeof b.active!=='boolean')return res.status(400).json({error:'Confira os campos do catálogo.'});
+ try{
+  const rows=await sbReq('bh_management_catalog','?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({
+   id,kind,name,description,price,duration_minutes:duration,active:b.active,updated_at:new Date().toISOString()
+  })});
+  res.json({item:rows[0]});
+ }catch(e){console.error('Admin catalog:',String(e.message).slice(0,100));res.status(503).json({error:'Não foi possível publicar o item.'});}
+});
+app.post('/api/admin/live/content',accountSameOrigin,requireAdmin,async(req,res)=>{
+ const key=String(req.body?.key||''),value=req.body?.value;
+ const allowed=new Set(['hero_title','hero_text','promo_text','contact_whatsapp','instagram_url','vip1_price','vip2_price']);
+ if(!allowed.has(key)||typeof value!=='string'||value.length>900)return res.status(400).json({error:'Campo de conteúdo inválido.'});
+ if(key.endsWith('_price')&&(!Number.isFinite(Number(value))||Number(value)<1||Number(value)>10000))return res.status(400).json({error:'Preço inválido.'});
+ if(key==='contact_whatsapp'&&!/^\d{11,15}$/.test(value))return res.status(400).json({error:'WhatsApp inválido.'});
+ if(key==='instagram_url'&&!/^https:\/\/(?:www\.)?instagram\.com\//.test(value))return res.status(400).json({error:'Instagram inválido.'});
+ try{
+  await sbReq('bh_management_content','?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})});
+  return res.json({ok:true});
+ }catch(e){console.error('Admin site:',String(e.message).slice(0,100));res.status(503).json({error:'Falha ao publicar conteúdo.'});}
+});
+
 // Painel financeiro: somente usuário Supabase autorizado por email no servidor.
 async function verifyAdmin(req){
  const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
