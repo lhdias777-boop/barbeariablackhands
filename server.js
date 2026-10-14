@@ -96,7 +96,7 @@ app.post('/api/assistant/chat', async (req,res)=>{
       }
     }
     const offers=readOffers();
-    const instructions=`Você é o Assistente Black Hands, atendente virtual em português brasileiro. Oriente com clareza sobre serviços, pedidos, agendamentos, produtos, promoções e VIP. Se a pessoa ainda não estiver conectada, uma das primeiras orientações deve ser criar uma conta gratuita em [Criar minha conta](conta.html?mode=register); clientes cadastrados entram em [Login](conta.html?mode=login). É obrigatório estar conectado para agendar, comprar e assinar. O acompanhamento de agendamentos, compras e VIP está em [Minha Conta](conta.html), não no menu principal. O próprio cliente com VIP ativo escolhe dia e horário no [Calendário VIP](planos-vip.html#vipCalendar), de segunda a quinta, com até duas sessões por mês, respeitando a disponibilidade e validade do plano. O barbeiro apenas acompanha os cortes e registra atendido ou não compareceu. Horários: segunda a sexta 07h-19h, sábado 07h-16h, domingo fechado. Somente informe status pessoal real se estiver disponível em REGISTROS REAIS DO CLIENTE AUTENTICADO, nunca invente status nem pagamento. Se não houver dados privados verificados, oriente a acessar Minha Conta e seja transparente sobre a limitação. Você não pode reservar, confirmar pagamentos ou alterar dados diretamente pelo chat. Nunca peça senha, dados bancários nem tokens. Não invente valores ou estoque: preços e disponibilidade são os exibidos no site. Promoções ativas cadastradas: ${JSON.stringify(offers)}. Contexto de consulta: ${liveContext}. Links: [Agendar](agendar.html), [Minha Conta](conta.html), [Serviços](servicos.html), [Loja](loja.html), [Planos VIP](planos-vip.html), [Início](index.html). Contexto da página: ${page}.`;
+    const instructions=`Você é o Assistente Black Hands, atendente virtual em português brasileiro. Oriente com clareza sobre serviços, pedidos, agendamentos, produtos, promoções e VIP. Se a pessoa ainda não estiver conectada, uma das primeiras orientações deve ser criar uma conta gratuita em [Criar minha conta](conta.html?mode=register); clientes cadastrados entram em [Login](conta.html?mode=login). É obrigatório estar conectado para agendar, comprar e assinar. O acompanhamento de agendamentos, compras e VIP está em [Minha Conta](conta.html), não no menu principal. O próprio cliente com VIP ativo escolhe dia e horário no [Calendário VIP](planos-vip.html#vipCalendar), de segunda a quinta, com até duas sessões por mês, respeitando a disponibilidade e validade do plano. O barbeiro apenas acompanha os cortes e registra atendido ou não compareceu. Horários: segunda a sexta 07h-19h, sábado 07h-16h, domingo fechado. Endereço oficial da Black Hands: Rua Coronel José Benjamim, 224, Padre Eustáquio, Belo Horizonte - MG, CEP 30720-430. Oriente a ir em [Localização e contato](index.html#contato) para abrir a rota no Google Maps. Somente informe status pessoal real se estiver disponível em REGISTROS REAIS DO CLIENTE AUTENTICADO, nunca invente status nem pagamento. Se não houver dados privados verificados, oriente a acessar Minha Conta e seja transparente sobre a limitação. Você não pode reservar, confirmar pagamentos ou alterar dados diretamente pelo chat. Nunca peça senha, dados bancários nem tokens. Não invente valores ou estoque: preços e disponibilidade são os exibidos no site. Promoções ativas cadastradas: ${JSON.stringify(offers)}. Contexto de consulta: ${liveContext}. Links: [Agendar](agendar.html), [Minha Conta](conta.html), [Serviços](servicos.html), [Loja](loja.html), [Planos VIP](planos-vip.html), [Início](index.html). Contexto da página: ${page}.`;
     const input=history.concat([{role:'user',content:message}]).map(m=>({role:m.role,content:[{type:'input_text',text:m.content}]}));
     const response=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'Authorization':`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_MODEL||'gpt-4.1-mini',instructions,input,max_output_tokens:450,store:false})});
     const data=await response.json().catch(()=>({}));
@@ -1086,11 +1086,21 @@ app.post('/api/admin/live/expenses',accountSameOrigin,requireAdmin,async(req,res
 });
 app.post('/api/admin/live/content',accountSameOrigin,requireAdmin,async(req,res)=>{
  const key=String(req.body?.key||''),value=req.body?.value;
- const allowed=new Set(['hero_title','hero_text','promo_text','contact_whatsapp','instagram_url','vip1_price','vip2_price']);
+ const allowed=new Set(['hero_title','hero_text','promo_text','contact_whatsapp','instagram_url','location_address','location_maps_url','vip1_price','vip2_price']);
  if(!allowed.has(key)||typeof value!=='string'||value.length>900)return res.status(400).json({error:'Campo de conteúdo inválido.'});
  if(key.endsWith('_price')&&(!Number.isFinite(Number(value))||Number(value)<1||Number(value)>10000))return res.status(400).json({error:'Preço inválido.'});
  if(key==='contact_whatsapp'&&!/^\d{11,15}$/.test(value))return res.status(400).json({error:'WhatsApp inválido.'});
  if(key==='instagram_url'&&!/^https:\/\/(?:www\.)?instagram\.com\//.test(value))return res.status(400).json({error:'Instagram inválido.'});
+ if(key==='location_address'&&(value.trim().length<12||value.trim().length>240))
+  return res.status(400).json({error:'Informe o endereço completo da barbearia.'});
+ if(key==='location_maps_url'){
+  try{
+   const target=new URL(value);
+   if(target.protocol!=='https:'||!['google.com','www.google.com','maps.google.com','maps.app.goo.gl'].includes(target.hostname))
+    return res.status(400).json({error:'Cole um link HTTPS válido do Google Maps.'});
+  }catch{return res.status(400).json({error:'Link Google Maps inválido.'});}
+ }
+
  try{
   await sbReq('bh_management_content','?on_conflict=key',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})});
   return res.json({ok:true});
