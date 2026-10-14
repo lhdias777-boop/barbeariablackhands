@@ -10,6 +10,8 @@ const files = [
   'conta.html',
   'conta.js',
   'bh-session.js',
+  'bh-services-live.js',
+  'bh-content-live.js',
   'auth.js',
   'agendar.html',
   'acompanhar.html',
