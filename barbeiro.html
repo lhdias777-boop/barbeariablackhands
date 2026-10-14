@@ -35,6 +35,10 @@
 .bh-staff-empty{color:#ad9d90;padding:25px;text-align:center}
 .bh-staff-panel[hidden],#staffLogin[hidden]{display:none!important}
 @media(max-width:680px){.bh-staff-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.bh-staff-grid{grid-template-columns:1fr}.bh-staff-wrap{margin-top:25px}.bh-staff-card{padding:16px}.bh-staff-header{padding:13px}.bh-staff-brand{font-size:13px}.bh-staff-brand img{width:43px;height:43px}.bh-staff-header .bh-staff-link{font-size:11px}}
+.bh-staff-attendance{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px;padding-top:13px;border-top:1px solid #423021}
+.bh-staff-attendance button{flex:1;min-width:130px}
+.bh-staff-badge.attended{background:#163b27;color:#b6f0c5;border-color:#427a50}
+.bh-staff-badge.absent{background:#47251f;color:#ffbbac;border-color:#aa5b49}
 </style></head>
 <body>
 <header class="bh-staff-header"><a class="bh-staff-brand" href="index.html"><img src="logo-oficial-black-hands.jpg" alt="Black Hands"><span>BLACK HANDS<small>ÁREA DO BARBEIRO</small></span></a><a class="bh-staff-link" href="index.html">← Ir ao site</a></header>
@@ -46,25 +50,19 @@
 </section>
 <section id="staffApp" hidden>
 <p class="bh-staff-eyebrow">PAINEL PROFISSIONAL</p><h1 class="bh-staff-title" id="staffTitle">Bom trabalho!</h1>
-<p class="bh-staff-muted">Agenda, atendimento do dia e calendário dos clientes VIP. Os pagamentos são atualizados pelo servidor.</p>
+<p class="bh-staff-muted">Agenda detalhada, VIP reservado pelos próprios clientes, pagamentos e registro de presença.</p>
 <div class="bh-staff-tabs"><button type="button" class="bh-staff-btn active" id="staffTabDay">Agenda diária</button><button type="button" class="bh-staff-btn" id="staffTabVip">Agenda VIP</button><button type="button" class="bh-staff-btn" id="staffRefresh">↻ Atualizar</button></div>
 <section id="staffDay" class="bh-staff-panel">
 <div class="bh-staff-card"><div class="bh-staff-row"><label class="bh-staff-label">Dia do atendimento<input id="staffDate" type="date" class="bh-staff-input"></label><button class="bh-staff-btn primary" id="staffLoadDay">Consultar agenda</button></div>
 <div class="bh-staff-stats" id="staffStats"></div></div>
-<div class="bh-staff-card"><h2>Clientes e horários</h2><p class="bh-staff-muted">Serviços, forma de pagamento e pendências de cada atendimento. Dinheiro só é marcado como recebido após confirmação presencial.</p><div id="staffDayBookings" aria-live="polite"></div></div>
+<div class="bh-staff-card"><h2>Clientes e horários</h2><p class="bh-staff-muted">Confira o cliente, horário e pagamento. Após o horário marcado, registre <strong>Atendido</strong> ou <strong>Não compareceu</strong> sem alterar o pagamento.</p><div id="staffDayBookings" aria-live="polite"></div></div>
 </section>
 <section id="staffVip" class="bh-staff-panel" hidden>
-<div class="bh-staff-card"><h2>Calendário de cortes VIP</h2>
-<p class="bh-staff-muted">O barbeiro escolhe o dia e horário do atendimento. VIP disponível de segunda a quinta, até duas sessões por mês, com plano ativo e horário livre.</p>
-<form id="staffVipForm">
-<div class="bh-staff-grid">
-<label class="bh-staff-label">Cliente VIP<select class="bh-staff-input" id="staffVipCustomer" required><option value="">Selecione um cliente</option></select></label>
-<label class="bh-staff-label">Dia do corte<input class="bh-staff-input" id="staffVipDate" type="date" required></label>
-<label class="bh-staff-label">Horário disponível<select class="bh-staff-input" id="staffVipTime" required><option value="">Escolha o cliente e a data</option></select></label>
-</div>
-<button class="bh-staff-btn primary" id="staffVipSubmit" type="submit" style="margin-top:18px">Reservar horário VIP</button>
-</form><p class="bh-staff-note" id="staffVipMessage" role="status">Os cortes VIP confirmados entram automaticamente na agenda do dia.</p>
-</div><div class="bh-staff-card"><h2>Clientes com VIP ativo</h2><div id="staffVipList"></div></div>
-</section>
+<div class="bh-staff-card">
+<h2>Clientes VIP</h2>
+<p class="bh-staff-muted">O próprio cliente escolhe dia e horário pelo calendário VIP da sua conta. Os agendamentos aparecem automaticamente na sua agenda diária.</p>
+<p class="bh-staff-note">Acompanhe as sessões VIP e confirme os atendimentos em <strong>Agenda diária</strong>. O barbeiro não precisa escolher a data pelo cliente.</p>
+<h2 style="margin-top:22px">Assinantes VIP ativos</h2><div id="staffVipList" aria-live="polite"></div>
+</div></section>
 </section></main>
 <script src="barbeiro.js"></script></body></html>
