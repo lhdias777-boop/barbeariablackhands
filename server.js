@@ -162,7 +162,8 @@ function accountToken(req){
 }
 function accountHash(value){return accountCrypto.createHash('sha256').update(value).digest('hex');}
 function accountPublic(user){
- return {id:user.id,fullName:user.full_name,phone:user.phone,phoneVerified:user.phone_verified===true,memberSince:user.created_at};
+ return {id:user.id,fullName:user.full_name,phone:user.phone,phoneVerified:user.phone_verified===true,
+  memberSince:user.created_at,whatsappOptIn:user.whatsapp_opt_in===true};
 }
 function accountSetCookie(res,token){
  res.cookie(ACCOUNT_COOKIE,token,{httpOnly:true,secure:true,sameSite:'lax',path:'/',maxAge:ACCOUNT_SESSION_MS});
@@ -183,7 +184,7 @@ async function accountFromRequest(req){
  const sessions=await sbReq('bh_customer_sessions','?token_hash=eq.'+accountHash(token)+'&select=account_id,expires_at,revoked_at&limit=1');
  const session=sessions[0];
  if(!session||session.revoked_at||Date.parse(session.expires_at)<=Date.now())return null;
- const users=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(session.account_id)+'&select=id,full_name,phone,phone_verified,created_at&limit=1');
+ const users=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(session.account_id)+'&select=id,full_name,phone,phone_verified,created_at,whatsapp_opt_in&limit=1');
  return users[0]||null;
 }
 function accountIpKey(req){
@@ -216,8 +217,19 @@ app.post('/api/account/register',accountSameOrigin,async(req,res)=>{
    p_session_hash:accountHash(sessionToken),
    p_expires_at:new Date(Date.now()+ACCOUNT_SESSION_MS).toISOString()
   })});
-  const user=users[0];
+  let user=users[0];
   if(!user)throw Error('register returned no account');
+  if(req.body?.whatsappOptIn===true){
+   // Falhas do opt-in não invalidam o cadastro do cliente.
+   try{
+    const saved=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(user.id)+
+     '&select=id,full_name,phone,phone_verified,created_at,whatsapp_opt_in',{
+     method:'PATCH',headers:{Prefer:'return=representation'},
+     body:JSON.stringify({whatsapp_opt_in:true,whatsapp_opt_in_at:new Date().toISOString()})
+    });
+    if(saved[0])user=saved[0];
+   }catch(error){console.error('Registration notification preference:',String(error.message).slice(0,80));}
+  }
   accountSetCookie(res,sessionToken);
   return res.status(201).json({account:accountPublic(user),message:'Conta criada com sucesso. Seu WhatsApp ainda não foi verificado.'});
  }catch(e){
@@ -261,11 +273,31 @@ app.patch('/api/account/profile',accountSameOrigin,async(req,res)=>{
   if(!user)return res.status(401).json({error:'Entre na sua conta.'});
   const fullName=accountName(req.body?.fullName);
   if(fullName.length<3||fullName.length>120)return res.status(400).json({error:'Informe um nome válido.'});
-  const updated=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(user.id)+'&select=id,full_name,phone,phone_verified,created_at',{
+  const updated=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(user.id)+'&select=id,full_name,phone,phone_verified,created_at,whatsapp_opt_in',{
    method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({full_name:fullName,updated_at:new Date().toISOString()})
   });
   return res.json({account:accountPublic(updated[0])});
  }catch(e){console.error('Account profile:',e.message);return res.status(503).json({error:'Não foi possível salvar seu perfil.'});}
+});
+// Preferência voluntária: mensagens transacionais, jamais marketing automático.
+app.post('/api/account/whatsapp-preferences',accountSameOrigin,requireAccount,async(req,res)=>{
+ accountNoCache(res);
+ if(typeof req.body?.enabled!=='boolean')
+  return res.status(400).json({error:'Escolha ativar ou desativar as mensagens.'});
+ try{
+  const enabled=req.body.enabled;
+  const rows=await sbReq('bh_customer_accounts','?id=eq.'+encodeURIComponent(req.bhAccount.id)+
+   '&select=id,full_name,phone,phone_verified,created_at,whatsapp_opt_in',{
+   method:'PATCH',headers:{Prefer:'return=representation'},
+   body:JSON.stringify({whatsapp_opt_in:enabled,whatsapp_opt_in_at:enabled?new Date().toISOString():null})
+  });
+  if(!enabled){
+   await sbReq('bh_whatsapp_notifications','?account_id=eq.'+encodeURIComponent(req.bhAccount.id)+
+    '&status=in.(pending,processing)',{method:'PATCH',headers:{Prefer:'return=minimal'},
+    body:JSON.stringify({status:'cancelled',claim_until:null})});
+  }
+  return res.json({account:accountPublic(rows[0]),message:enabled?'Você autorizou as notificações de atendimento pelo WhatsApp.':'Notificações desativadas para esta conta.'});
+ }catch(e){console.error('WhatsApp opt-in:',String(e.message).slice(0,90));return res.status(503).json({error:'Não foi possível salvar sua preferência agora.'});}
 });
 app.post('/api/account/change-password',accountSameOrigin,async(req,res)=>{
  accountNoCache(res);
