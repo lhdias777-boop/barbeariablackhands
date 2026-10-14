@@ -753,7 +753,7 @@ app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
    ['orders','bh_pix_orders','?select=id,kind,amount,status,created_at,customer_name,customer_phone,payment_environment,details&order=created_at.desc&limit=250'],
    ['vip','bh_customer_vip_memberships','?select=account_id,plan,status,paid_until,created_at&order=created_at.desc&limit=250'],
    ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,status,amount,created_at,payment_environment&order=created_at.desc&limit=250'],
-   ['catalog','bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active,updated_at&order=kind.asc,name.asc'],
+   ['catalog','bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active,updated_at,image_url&order=kind.asc,name.asc'],
    ['content','bh_management_content','?select=key,value,updated_at&order=key.asc']
   ];
   const results=await Promise.all(q.map(async ([key,table,query])=>[key,await sbReq(table,query)]));
@@ -790,7 +790,7 @@ app.patch('/api/admin/live/bookings/:id',accountSameOrigin,requireAdmin,async(re
 app.get('/api/site/catalog',async(req,res)=>{
  res.setHeader('Cache-Control','public,max-age=30');
  try{
-  const rows=await sbReq('bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active&order=kind.asc,name.asc');
+  const rows=await sbReq('bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active,image_url&order=kind.asc,name.asc');
   res.json({items:rows.filter(r=>r.active)});
  }catch(e){res.status(503).json({error:'Catálogo indisponível.'});}
 });
@@ -816,6 +816,36 @@ app.post('/api/admin/live/catalog',accountSameOrigin,requireAdmin,async(req,res)
   })});
   res.json({item:rows[0]});
  }catch(e){console.error('Admin catalog:',String(e.message).slice(0,100));res.status(503).json({error:'Não foi possível publicar o item.'});}
+});
+app.post('/api/admin/live/product-photo/:id',accountSameOrigin,requireAdmin,express.raw({type:['image/jpeg','image/png','image/webp'],limit:'900kb'}),async(req,res)=>{
+ const id=String(req.params.id||'');
+ const mime=String(req.get('content-type')||'').split(';')[0];
+ const data=req.body;
+ if(!/^[a-z0-9_-]{2,60}$/.test(id)||!Buffer.isBuffer(data)||data.length<32||data.length>900000)
+  return res.status(400).json({error:'Escolha um produto e uma imagem de até 900 KB.'});
+ const jpg=data[0]===255&&data[1]===216&&data[2]===255;
+ const png=data.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+ const webp=data.subarray(0,4).toString()==='RIFF'&&data.subarray(8,12).toString()==='WEBP';
+ if(!((mime==='image/jpeg'&&jpg)||(mime==='image/png'&&png)||(mime==='image/webp'&&webp)))
+  return res.status(400).json({error:'Envie JPG, PNG ou WebP válido.'});
+ try{
+  const entries=await sbReq('bh_management_catalog','?id=eq.'+id+'&kind=eq.product&select=id&limit=1');
+  if(!entries.length)return res.status(404).json({error:'Salve o produto antes de enviar a foto.'});
+  const origin=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
+  if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(origin))throw Error('Storage not configured');
+  const ext=jpg?'jpg':png?'png':'webp';
+  const filename='products/'+id+'-'+accountCrypto.randomBytes(8).toString('hex')+'.'+ext;
+  const uploaded=await fetch(origin+'/storage/v1/object/bh-store-products/'+filename,{
+   method:'POST',headers:{apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,
+    Authorization:'Bearer '+process.env.SUPABASE_SERVICE_ROLE_KEY,'Content-Type':mime},
+   body:data
+  });
+  if(!uploaded.ok)throw Error('Storage upload HTTP '+uploaded.status);
+  const imageUrl=origin+'/storage/v1/object/public/bh-store-products/'+filename;
+  await sbReq('bh_management_catalog','?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},
+   body:JSON.stringify({image_url:imageUrl,updated_at:new Date().toISOString()})});
+  res.json({ok:true,imageUrl});
+ }catch(e){console.error('Product photo:',String(e.message).slice(0,130));res.status(503).json({error:'Falha ao enviar a foto. Nenhum produto foi apagado.'});}
 });
 app.post('/api/admin/live/content',accountSameOrigin,requireAdmin,async(req,res)=>{
  const key=String(req.body?.key||''),value=req.body?.value;
