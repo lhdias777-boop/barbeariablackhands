@@ -46,18 +46,63 @@ async function selectPlan(id){
  message('');
 }
 document.querySelectorAll('[data-plan]').forEach(button=>button.addEventListener('click',()=>selectPlan(button.dataset.plan)));
+let pendingVipOrder=null,vipQrRetry=null;
+async function retrieveVipQr(orderId){
+ const response=await fetch('/api/pix/qr/vip/'+encodeURIComponent(orderId),{
+  cache:'no-store',credentials:'same-origin'
+ });
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok&&response.status!==202)throw Error(data.error||'Não foi possível consultar o Pix.');
+ return data;
+}
+function displayVipQr(data,retries=0){
+ if(vipQrRetry){clearTimeout(vipQrRetry);vipQrRetry=null;}
+ if(data.status==='PAID'){
+  pendingVipOrder=null;$('vipPix').hidden=true;
+  message('Pagamento confirmado! Consultando sua assinatura...');loadCalendar();return;
+ }
+ if(data.pixCopyPaste){
+  $('pixCode').value=data.pixCopyPaste;$('vipPix').hidden=false;
+  $('pixQr').hidden=!data.qrCodeBase64;
+  if(data.qrCodeBase64)$('pixQr').src='data:image/png;base64,'+data.qrCodeBase64;
+  pendingVipOrder=data.orderId||pendingVipOrder;
+  message('Código Pix disponível. Sua assinatura VIP só é liberada após a confirmação no Asaas.');
+  return;
+ }
+ $('vipPix').hidden=true;
+ message('Cobrança criada no Asaas, mas o QR Code ainda está sendo preparado. Consultando a mesma cobrança, sem duplicar...');
+ if(!pendingVipOrder)return;
+ const current=pendingVipOrder;
+ if(retries>=5){message('QR Code ainda indisponível. Toque em "Consultar Pix existente" para tentar novamente, sem gerar outra cobrança.');return;}
+ vipQrRetry=setTimeout(async()=>{
+  if(current!==pendingVipOrder)return;
+  try{
+   const response=await retrieveVipQr(current);
+   displayVipQr({...response,orderId:current},retries+1);
+  }catch(e){message(e.message+' Você pode consultar novamente.')}
+ },3500);
+}
 $('vipForm').addEventListener('submit',async event=>{
  event.preventDefault();if(!plan||!await access('planos-vip.html?plano='+plan))return;
  const button=event.target.querySelector('button[type=submit]');button.disabled=true;
- message('Preparando cobrança Pix...');
  try{
+  if(pendingVipOrder){
+   message('Consultando sua cobrança VIP anterior...');
+   const data=await retrieveVipQr(pendingVipOrder);
+   displayVipQr({...data,orderId:pendingVipOrder});
+   return;
+  }
+  message('Preparando cobrança Pix no Asaas...');
   const form=new FormData(event.target);
-  const data=await request('/api/vip/checkout',{method:'POST',body:JSON.stringify({plan,cpfCnpj:form.get('cpfCnpj')})});
-  if(!data.pixCopyPaste)throw new Error('Cobrança criada sem código Pix. Procure a equipe.');
-  $('pixCode').value=data.pixCopyPaste;$('vipPix').hidden=false;
-  if(data.qrCodeBase64){$('pixQr').src='data:image/png;base64,'+data.qrCodeBase64;$('pixQr').hidden=false;}
-  message('Aguarde a confirmação do Asaas. Seu calendário será liberado após a ativação do plano.');
- }catch(e){message(e.message);}finally{button.disabled=false;}
+  const data=await request('/api/vip/checkout',{
+   method:'POST',body:JSON.stringify({plan,cpfCnpj:form.get('cpfCnpj')})
+  });
+  if(!data.orderId)throw Error('O servidor não retornou o identificador da cobrança.');
+  pendingVipOrder=data.orderId;
+  button.textContent='CONSULTAR PIX EXISTENTE';
+  displayVipQr(data);
+ }catch(e){message(e.message);}
+ finally{button.disabled=false;}
 });
 $('copyPix').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText($('pixCode').value);message('Código Pix copiado.')}
