@@ -16,6 +16,18 @@
   if(subtitle&&c.hero_text)subtitle.textContent=c.hero_text;
   const promo=document.querySelector('#promocoes-black-hands h2');
   if(promo&&c.promo_text)promo.textContent=c.promo_text;
+  // Atualiza a localização pública quando o ADM alterar o endereço no painel.
+  const address=document.getElementById('bhOfficialAddress');
+  if(address&&typeof c.location_address==='string'&&c.location_address.trim())
+   address.textContent=c.location_address.trim().slice(0,240);
+  const mapsLink=document.getElementById('bhDirections');
+  if(mapsLink&&typeof c.location_maps_url==='string'){
+   try{
+    const maps=new URL(c.location_maps_url);
+    if(maps.protocol==='https:'&&['google.com','www.google.com','maps.google.com','maps.app.goo.gl'].includes(maps.hostname))
+     mapsLink.href=maps.href;
+   }catch{}
+  }
   const phone=String(c.contact_whatsapp||'');
   if(/^\d{11,15}$/.test(phone)){
    for(const link of document.querySelectorAll('.contact-actions a[href^="https://wa.me"]'))link.href='https://wa.me/'+phone;
