@@ -1,6 +1,19 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const state={mode:'register',account:null,loading:false};
+const parameters=new URLSearchParams(location.search);
+function returnDestination(){
+ const value=parameters.get('next');
+ if(!value)return null;
+ try{
+  const url=new URL(value,location.href);
+  if(url.origin!==location.origin)return null;
+  const page=url.pathname.split('/').pop();
+  if(!['agendar.html','agendar','loja.html','loja','planos-vip.html','planos-vip','acompanhar.html','acompanhar'].includes(page))return null;
+  return url.pathname+url.search+url.hash;
+ }catch{return null}
+}
+const nextPage=returnDestination();
 const brl=value=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function displayPhone(raw){
  const d=String(raw||'').replace(/\D/g,'');
@@ -58,6 +71,7 @@ function dashboardAccount(account){
  $('profileName').value=account.fullName||'';
  $('profilePhone').value=displayPhone(account.phone);
  refreshBookings();
+ refreshOrdersVip();
 }
 function guest(){
  state.account=null;
@@ -94,10 +108,32 @@ async function refreshBookings(){
   node.replaceChildren();const alert=document.createElement('div');alert.className='dashboard-placeholder';alert.textContent=e.message;node.append(alert);
  }
 }
+async function refreshOrdersVip(){
+ const ordersNode=$('accountOrders'),vipNode=$('accountVip');
+ if(!ordersNode||!vipNode)return;
+ try{
+  const {orders}=await api('/api/account/orders');
+  ordersNode.replaceChildren();
+  if(!orders?.length){
+   const item=document.createElement('div');item.className='dashboard-placeholder';item.textContent='Você ainda não fez compras nesta conta.';ordersNode.append(item);
+  }else for(const order of orders){
+   const item=document.createElement('div');item.className='booking-mini';
+   const title=document.createElement('strong');title.textContent='Pedido '+order.reference+' · '+brl(order.amount);
+   const detail=document.createElement('p');detail.textContent=(order.itemCount||0)+' produto(s) · '+(order.status==='PAID'?'Pagamento confirmado':order.status==='PENDING'?'Aguardando pagamento':'Em processamento');
+   item.append(title,detail);ordersNode.append(item);
+  }
+ }catch(e){ordersNode.textContent=e.message;}
+ try{
+  const {membership}=await api('/api/vip/me');
+  if(!membership){vipNode.textContent='Você ainda não possui um plano VIP ativo.';return;}
+  const active=membership.status==='ACTIVE'&&new Date(membership.paid_until)>new Date();
+  vipNode.textContent=membership.plan.toUpperCase()+' · '+(active?'Ativo':'Inativo ou vencido')+' · Até '+new Date(membership.paid_until).toLocaleDateString('pt-BR');
+ }catch(e){vipNode.textContent=e.message;}
+}
 async function startup(){
  try{
   const {account}=await api('/api/account/me');
-  if(account)dashboardAccount(account);else guest();
+  if(account){dashboardAccount(account);if(nextPage)location.replace(nextPage);}else guest();
  }catch(e){
   guest();
   if(e.status!==401)message('authMsg','Não foi possível verificar sua sessão agora. Você pode tentar entrar novamente.','error');
@@ -132,6 +168,7 @@ $('authForm').addEventListener('submit',async e=>{
   e.target.reset();
   message('authMsg','');
   dashboardAccount(result.account);
+  if(nextPage){location.replace(nextPage);return;}
  }catch(err){message('authMsg',err.message,'error');}
  finally{state.loading=false;button.disabled=false;}
 });
@@ -179,6 +216,6 @@ $('claimForm').addEventListener('submit',async e=>{
  }catch(err){message('claimMsg',err.message,'error');}
  finally{button.disabled=false;}
 });
-setMode('register');
+setMode(parameters.get('mode')==='login'?'login':'register');
 startup();
 })();
