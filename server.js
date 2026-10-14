@@ -703,15 +703,11 @@ app.post('/api/admin/live/login',accountSameOrigin,requireAccount,async(req,res)
   if(!await adminMember(req.bhAccount.id))return res.status(403).json({error:'Esta conta não tem permissão de administrador.'});
   const password=req.body?.password;
   if(typeof password!=='string'||password.length<8||password.length>128)return res.status(401).json({error:'Senha administrativa incorreta.'});
-  const rows=await sbReq('bh_admin_credential','?id=eq.1&select=salt_hex,hash_hex,iterations&limit=1');
-  if(!rows.length)throw Error('Admin credential missing');
-  const cred=rows[0],subtle=accountCrypto.webcrypto?.subtle||globalThis.crypto?.subtle;
-  if(!subtle)throw Error('WebCrypto unavailable');
-  const key=await subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
-  const derived=Buffer.from(await subtle.deriveBits({name:'PBKDF2',salt:Buffer.from(cred.salt_hex,'hex'),iterations:Number(cred.iterations),hash:'SHA-256'},key,256));
-  const expected=Buffer.from(cred.hash_hex,'hex');
-  if(expected.length!==32||!accountCrypto.timingSafeEqual(derived,expected))
-   return res.status(401).json({error:'Senha administrativa incorreta.'});
+  // O próprio PostgreSQL verifica o bcrypt; nenhuma derivação custosa no Worker.
+  const verified=await sbReq('rpc/bh_admin_check_password','',{
+   method:'POST',body:JSON.stringify({p_password:password})
+  });
+  if(verified!==true)return res.status(401).json({error:'Senha administrativa incorreta.'});
   const token=accountCrypto.randomBytes(32).toString('base64url');
   await sbReq('bh_admin_sessions','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
    token_hash:accountHash(token),account_id:req.bhAccount.id,expires_at:new Date(Date.now()+ADMIN_SESSION_MS).toISOString()
@@ -732,14 +728,10 @@ app.post('/api/admin/live/change-password',accountSameOrigin,requireAdmin,async(
  if(typeof password!=='string'||password.length<14||password.length>128)
   return res.status(400).json({error:'Escolha uma senha administrativa exclusiva com pelo menos 14 caracteres.'});
  try{
-  const subtle=accountCrypto.webcrypto?.subtle||globalThis.crypto?.subtle;
-  if(!subtle)throw Error('WebCrypto unavailable');
-  const iterations=180000,salt=accountCrypto.randomBytes(16);
-  const key=await subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
-  const derived=Buffer.from(await subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},key,256));
-  await sbReq('bh_admin_credential','?id=eq.1',{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({
-   hash_hex:derived.toString('hex'),salt_hex:salt.toString('hex'),iterations,updated_at:new Date().toISOString()
-  })});
+  const changed=await sbReq('rpc/bh_admin_change_password','',{
+   method:'POST',body:JSON.stringify({p_new_password:password})
+  });
+  if(changed!==true)throw Error('Admin credential not updated');
   await sbReq('bh_admin_sessions','?account_id=eq.'+encodeURIComponent(req.bhAdmin.id),{method:'DELETE',headers:{Prefer:'return=minimal'}});
   res.clearCookie(ADMIN_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
   return res.json({ok:true,message:'Senha alterada. Entre novamente com a nova senha.'});
