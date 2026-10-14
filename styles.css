@@ -143,3 +143,27 @@
 
 /* Identidade oficial Black Hands */
 .brand-official,.brand-logo{height:58px!important;width:auto!important;max-width:145px;object-fit:contain;display:block;border-radius:3px}.topbar .brand{display:flex;align-items:center;gap:8px}.brand-mark{display:none}
+
+/* Black Hands • identidade da conta no menu e acesso exclusivo */
+.topbar-premium .main-nav>a.bh-account-menu{display:flex;align-items:center;gap:12px;padding:17px 14px 20px;border-radius:14px;background:linear-gradient(130deg,#302017,#171312 75%);border:1px solid #a06a39;margin-bottom:8px;color:#fff;white-space:normal}
+.bh-account-avatar{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:15px;background:linear-gradient(140deg,#ffbc65,#ed8327);box-shadow:0 5px 17px #ed832733;color:#1a1007;font-weight:900;font-size:17px;letter-spacing:1px}
+.bh-account-details{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.bh-account-details strong{font-size:15px;font-weight:850;overflow-wrap:anywhere;line-height:1.2}
+.bh-account-details small{font-size:11px;font-weight:550;color:#c5b4a2;overflow-wrap:anywhere}
+.bh-account-chevron{font-size:25px;color:#f5a54e}
+.topbar-premium .main-nav>a.bh-account-menu:hover{background:#33241a;border-color:#ffbd62}
+.topbar-premium .main-nav button.bh-menu-logout{width:100%;min-height:43px;background:#171312;border:1px solid #523929;color:#eeaa69;border-radius:9px;text-align:left;padding:10px 14px;font-weight:750;font-size:12px;cursor:pointer;margin:0 0 7px}
+.topbar-premium .main-nav button.bh-menu-logout[hidden]{display:none}
+.bh-auth-open{overflow:hidden}
+.bh-auth-overlay:not([hidden]){position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.79);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;padding:18px}
+.bh-auth-dialog{position:relative;width:min(440px,100%);max-height:calc(100vh - 40px);overflow:auto;border:1px solid #9b6030;border-radius:23px;background:linear-gradient(145deg,#221912,#111113 70%);padding:34px 27px 26px;box-shadow:0 26px 110px #000c;text-align:center;color:#f9f3ec;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.bh-auth-mark{width:63px;height:63px;display:grid;place-items:center;margin:0 auto 19px;border-radius:19px;background:linear-gradient(140deg,#ffbe71,#ea852c);color:#1c1007;font-weight:950;letter-spacing:1px;font-size:23px}
+.bh-auth-close{position:absolute;top:12px;right:14px;display:grid;place-items:center;width:40px;height:40px;border:1px solid #594333;background:#241b17;border-radius:12px;color:#eee;font-size:25px;cursor:pointer}
+.bh-auth-eyebrow{margin:0 0 9px;color:#f4a85c;font-size:10px;letter-spacing:2px;font-weight:850}
+.bh-auth-dialog h2{margin:0 0 10px;color:white;font-size:clamp(24px,5vw,32px);line-height:1.15;font-weight:900}
+.bh-auth-dialog p#bhAuthText{color:#c7beb5;font-size:14px;line-height:1.6;margin:0 0 21px}
+.bh-auth-dialog a.bh-auth-primary,.bh-auth-dialog a.bh-auth-secondary{display:flex;align-items:center;justify-content:center;min-height:52px;width:100%;border-radius:12px;font-weight:850;font-size:14px;text-decoration:none;margin-top:10px}
+.bh-auth-dialog a.bh-auth-primary{background:linear-gradient(105deg,#ffc069,#ef8c2a);color:#1d120b}
+.bh-auth-dialog a.bh-auth-secondary{background:#292019;color:#fcb66f;border:1px solid #a36d3e}
+.bh-auth-dialog .bh-auth-note{font-size:11px;color:#a99d92;line-height:1.6;margin:18px 0 0}
+@media(max-width:600px){.bh-auth-dialog{padding:30px 20px 24px}.bh-account-avatar{width:44px;height:44px}.topbar-premium .main-nav>a.bh-account-menu{padding:13px}}
