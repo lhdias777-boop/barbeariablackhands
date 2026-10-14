@@ -278,7 +278,7 @@ async function readBookingWithPayment(item){
      confirmed=['CONFIRMED','RECEIVED'].includes(real.status)&&Number(real.value)===Number(order.amount);
     }catch(e){console.error('Status Pix Asaas:',e.message);}
    }
-   if(confirmed && (order.status!=='PAID'||!['AWAITING_STAFF','CONFIRMED','PAID_NEEDS_REVIEW'].includes(item.status))){
+   if(confirmed && (order.status!=='PAID'||!['AWAITING_STAFF','CONFIRMED','PAID_NEEDS_REVIEW','CANCELLED'].includes(item.status))){
     await sbReq('rpc/bh_confirm_booking_pix','',{method:'POST',body:JSON.stringify({p_order_id:order.id})});
     const refreshed=await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(item.id)+'&select=status&limit=1');
     if(refreshed.length)item.status=refreshed[0].status;
