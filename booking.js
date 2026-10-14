@@ -205,6 +205,7 @@ function startPixPolling(token,live){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&activePaymentCheck)verifyPaymentStatus();});
 form.addEventListener('submit',async e=>{
  e.preventDefault();
+ if(!await window.BHSession.requireLogin({action:'agendar',next:location.href}))return;
  const services=selectedServices();
  if(!services.length){alert('Selecione pelo menos um serviço.');return;}
  if(!barber.value||!dateInput.value||!timeSelect.value||!nameInput.value.trim()||!phoneInput.value.trim())return;
