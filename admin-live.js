@@ -124,9 +124,11 @@ function renderCatalog(kind,target){
  const rows=items.map(x=>{
   const actions=document.createElement('div');
   actions.append(action('Editar',()=>openEditor(x)));
-  return [x.name,x.description||'—',money(x.price),kind==='service'?x.duration_minutes+' min':'—',chip(x.active?'ACTIVE':'INACTIVE'),actions];
+  const visual=kind==='product'&&x.image_url?document.createElement('img'):null;
+  if(visual){visual.src=x.image_url;visual.width=55;visual.height=55;visual.alt='Foto do produto';visual.loading='lazy';visual.style.cssText='border-radius:8px;object-fit:cover;background:#111';}
+  return [visual||'Sem foto',x.name,x.description||'—',money(x.price),kind==='service'?x.duration_minutes+' min':'—',chip(x.active?'ACTIVE':'INACTIVE'),actions];
  });
- replace(target,table(['Nome','Descrição','Preço','Duração','Disponível','Gerenciar'],rows));
+ replace(target,table(['Foto','Nome','Descrição','Preço','Duração','Disponível','Gerenciar'],rows));
  // Criar novas entradas e desativar existentes sem apagar pedidos históricos.
  const container=$(target);
  const newButton=action(kind==='product'?'+ Novo produto':'+ Novo serviço',()=>openEditor({
@@ -143,9 +145,26 @@ function openEditor(item){
  $('editPrice').value=item.price||0;$('editDuration').value=item.duration_minutes||30;
  $('editDurationLabel').hidden=item.kind==='product';
  $('editActive').checked=item.active!==false;$('adminEditorMessage').textContent='';
+ $('adminPhotoRow').hidden=item.kind!=='product';
+ $('editPhoto').value='';
+ const preview=$('editPhotoPreview');
+ preview.hidden=!item.image_url;
+ if(item.image_url)preview.src=item.image_url;else preview.removeAttribute('src');
  // Edicao segura: id imutavel. Para novos itens gerar apenas slug permitido.
  $('adminEditor').scrollIntoView({behavior:'smooth',block:'start'});
 }
+$('editPhoto').addEventListener('change',()=>{
+ const file=$('editPhoto').files[0];
+ const preview=$('editPhotoPreview');
+ if(!file)return;
+ if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>900000){
+  $('adminEditorMessage').textContent='Escolha uma imagem JPG, PNG ou WebP de até 900 KB.';
+  $('editPhoto').value='';return;
+ }
+ preview.hidden=false;
+ const local=URL.createObjectURL(file);
+ preview.onload=()=>URL.revokeObjectURL(local);preview.src=local;
+});
 $('adminEditorCancel').addEventListener('click',()=>{$('adminEditor').hidden=true});
 $('adminEditorForm').addEventListener('submit',async e=>{
  e.preventDefault();
@@ -157,6 +176,15 @@ $('adminEditorForm').addEventListener('submit',async e=>{
  const button=e.target.querySelector('[type=submit]');button.disabled=true;$('adminEditorMessage').textContent='Publicando...';
  try{
   await api('/api/admin/live/catalog',{method:'POST',body:JSON.stringify(body)});
+  const file=kind==='product'?$('editPhoto').files[0]:null;
+  if(file){
+   if(file.size>900000||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('Produto salvo, mas a foto precisa ser JPG, PNG ou WebP de até 900 KB.');
+   const response=await fetch('/api/admin/live/product-photo/'+encodeURIComponent(id),{
+    method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file
+   });
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok)throw Error(payload.error||'Produto salvo, mas o envio da foto falhou.');
+  }
   $('adminEditor').hidden=true;await refresh();
  }catch(error){$('adminEditorMessage').textContent=error.message;}
  finally{button.disabled=false;}
