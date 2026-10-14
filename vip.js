@@ -1,5 +1,25 @@
 (()=>{'use strict';
 let plan=null;
+let prices={vip1:70,vip2:160};
+(async()=>{
+ try{
+  const response=await fetch('/api/site/content',{cache:'no-store'});
+  if(!response.ok)return;
+  const {content}=await response.json();
+  for(const key of ['vip1','vip2']){
+   const amount=Number(content?.[key+'_price']);
+   if(!Number.isFinite(amount)||amount<=0)continue;
+   prices[key]=amount;
+   const button=document.querySelector('[data-plan="'+key+'"]');
+   const label=button?.closest('.vip-card')?.querySelector('strong');
+   if(label)label.textContent=amount.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})+' / mês';
+  }
+  if(plan)updatePlanTitle(plan);
+ }catch(e){console.warn('Preços VIP temporariamente indisponíveis:',e.message)}
+})();
+function updatePlanTitle(key){
+ $('selectedPlan').textContent='Assinar '+key.toUpperCase()+' — '+prices[key].toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+}
 const $=id=>document.getElementById(id), message=text=>$('vipMessage').textContent=text;
 async function request(path,options={}){
  const response=await fetch(path,{credentials:'same-origin',cache:'no-store',...options,headers:{'Content-Type':'application/json',...(options.headers||{})}});
@@ -15,7 +35,7 @@ async function selectPlan(id){
  if(!['vip1','vip2'].includes(id))return;
  if(!await window.BHSession.requireLogin({action:'assinar',next:'planos-vip.html?plano='+id}))return;
  plan=id;
- $('selectedPlan').textContent='Assinar '+(plan==='vip1'?'VIP 1 — R$ 70,00':'VIP 2 — R$ 160,00');
+ updatePlanTitle(plan);
  $('vipCheckout').hidden=false;$('vipPix').hidden=true;
  $('vipCheckout').scrollIntoView({behavior:'smooth'});
  message('');
