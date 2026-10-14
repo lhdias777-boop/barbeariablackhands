@@ -16,7 +16,12 @@ if (track && slides.length) {
   dots.forEach(d=>d.addEventListener("click",()=>showSlide(Number(d.dataset.slide))));
   function restartAuto(){ clearInterval(autoTimer); autoTimer=setInterval(()=>showSlide(currentSlide+1),6000); }
   restartAuto();
-  track.addEventListener("pointerdown", e=>{dragging=true;startX=e.clientX;deltaX=0;track.classList.add("dragging");clearInterval(autoTimer);track.setPointerCapture(e.pointerId);});
+  // Cliques em links/botoes nao devem virar gesto de arrastar o carrossel.
+  track.addEventListener("pointerdown", e=>{
+    if (e.target.closest("a, button, input, select, textarea, label")) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    dragging=true;startX=e.clientX;deltaX=0;track.classList.add("dragging");clearInterval(autoTimer);track.setPointerCapture(e.pointerId);
+  });
   track.addEventListener("pointermove", e=>{if(!dragging)return;deltaX=e.clientX-startX;track.style.transform=`translateX(calc(-${currentSlide*100}% + ${deltaX}px))`;});
   track.addEventListener("pointerup",()=>{if(!dragging)return;dragging=false;track.classList.remove("dragging");if(Math.abs(deltaX)>60)showSlide(currentSlide+(deltaX<0?1:-1));else showSlide(currentSlide);restartAuto();});
   track.addEventListener("pointercancel",()=>{dragging=false;track.classList.remove("dragging");showSlide(currentSlide);restartAuto();});
