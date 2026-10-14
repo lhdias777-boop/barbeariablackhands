@@ -23,6 +23,7 @@ const files = [
   'booking.js',
   'store.js',
   'vip.js',
+  'admin-live.js',
   'admin-pix.js',
   'admin-pix-config.js',
   'assistant.js',
