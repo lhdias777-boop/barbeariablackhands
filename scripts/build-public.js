@@ -9,6 +9,7 @@ const files = [
   'index.html',
   'conta.html',
   'conta.js',
+  'bh-session.js',
   'auth.js',
   'agendar.html',
   'acompanhar.html',
