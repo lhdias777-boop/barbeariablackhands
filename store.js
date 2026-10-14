@@ -32,10 +32,10 @@ async function syncStoreCatalog(){
   if(!latest.length){products.splice(0,products.length);productsEl.replaceChildren();renderCart();return;}
   products.splice(0,products.length,...latest.map(p=>({
    id:p.id,name:p.name,description:p.description||'',price:Number(p.price),
-   tag:String(p.name||'PRODUTO').slice(0,22).toUpperCase()
+   tag:String(p.name||'PRODUTO').slice(0,22).toUpperCase(),image_url:p.image_url||null
   })));
   const safe=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${safe(p.tag)}</div><div class="details"><h2>${safe(p.name)}</h2><p>${safe(p.description)}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
+  productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.image_url?'<img src="'+safe(p.image_url)+'" alt="Foto de '+safe(p.name)+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">':safe(p.tag)}</div><div class="details"><h2>${safe(p.name)}</h2><p>${safe(p.description)}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
   for(const id of Object.keys(cart))if(!products.some(p=>p.id===id))delete cart[id];
   localStorage.setItem('bhStoreCart',JSON.stringify(cart));
   renderCart();
