@@ -230,7 +230,7 @@ function asBookingDetails(items){
 }
 function trackingHash(token){return require('crypto').createHash('sha256').update(token).digest('hex');}
 function activeReservation(row){
- return row.status==='AWAITING_STAFF'||(row.status==='HOLD'&&Date.parse(row.hold_until)>Date.now());
+ return ['AWAITING_STAFF','CONFIRMED'].includes(row.status)||(row.status==='HOLD'&&Date.parse(row.hold_until)>Date.now());
 }
 function bookedSlots(rows,time,duration){
  const start=mins(time),end=start+duration;
@@ -254,17 +254,94 @@ app.get('/api/booking/availability',async(req,res)=>{
  }catch(e){console.error('Booking availability:',e.message);pixErr(res,'Não foi possível consultar os horários. Tente novamente.',503);}
 });
 // Consulta privada com código aleatório. Nunca aceita WhatsApp ou nome como prova de identidade.
-app.post('/api/booking/status',checkoutLimit,async(req,res)=>{
+
+// Limite de consultas para os códigos privados; o navegador consulta a cada ~15 segundos.
+const bookingStatusBuckets = new Map();
+function bookingStatusLimit(req,res,next){
+ const key=String(req.ip||req.socket.remoteAddress||'unknown'),now=Date.now();
+ const recent=(bookingStatusBuckets.get(key)||[]).filter(t=>now-t<10*60*1000);
+ if(recent.length>=60)return pixErr(res,'Muitas consultas; aguarde um pouco e tente novamente.',429);
+ recent.push(now);bookingStatusBuckets.set(key,recent);next();
+}
+const SANDBOX_URL=['https://api-sandbox','asaas.com/v3'].join('.');
+async function readBookingWithPayment(item){
+ let order=null;
+ if(item.pix_order_id){
+  const orders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=id,status,amount,paid_at,asaas_payment_id&limit=1');
+  order=orders[0]||null;
+  // Dupla checagem do pagamento no próprio Asaas para o caso do webhook demorar.
+  if(order && process.env.BH_PIX_ENABLED==='true'&&process.env.ASAAS_API_BASE===SANDBOX_URL){
+   let confirmed=order.status==='PAID';
+   if(!confirmed && order.asaas_payment_id){
+    try{
+     const real=await asaas('/payments/'+encodeURIComponent(order.asaas_payment_id));
+     confirmed=['CONFIRMED','RECEIVED'].includes(real.status)&&Number(real.value)===Number(order.amount);
+    }catch(e){console.error('Status Pix Asaas:',e.message);}
+   }
+   if(confirmed && (order.status!=='PAID'||!['AWAITING_STAFF','CONFIRMED','PAID_NEEDS_REVIEW'].includes(item.status))){
+    await sbReq('rpc/bh_confirm_booking_pix','',{method:'POST',body:JSON.stringify({p_order_id:order.id})});
+    const refreshed=await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(item.id)+'&select=status&limit=1');
+    if(refreshed.length)item.status=refreshed[0].status;
+    const paidOrders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=id,status,amount,paid_at,asaas_payment_id&limit=1');
+    if(paidOrders.length)order=paidOrders[0];
+   }
+  }
+ }
+ return order;
+}
+app.post('/api/booking/status',bookingStatusLimit,async(req,res)=>{
  const token=String(req.body?.token||'');
  if(!/^[A-Za-z0-9_-]{40,90}$/.test(token))return pixErr(res,'Código de acompanhamento inválido.',400);
  try{
-  const rows=await sbReq('bh_booking_reservations','?access_token_hash=eq.'+trackingHash(token)+'&select=pix_order_id,barber,appointment_date,appointment_time,service_names,status,hold_until&limit=1');
+  const rows=await sbReq('bh_booking_reservations','?access_token_hash=eq.'+trackingHash(token)+'&select=id,pix_order_id,barber,appointment_date,appointment_time,service_names,status,hold_until,payment_method,customer_name,customer_phone,amount&limit=1');
   if(!rows.length)return pixErr(res,'Agendamento não encontrado.',404);
-  const item=rows[0];
-  const orders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=status,amount,paid_at&limit=1');
+  const item=rows[0],order=await readBookingWithPayment(item);
+  const method=item.payment_method==='PAY_ON_DAY'?'PAY_ON_DAY':'PIX';
+  const paid=method==='PIX'&&order?.status==='PAID';
+  // Não enviar mensagem de horário confirmado se houver conflito ou pagamento pendente.
+  const whatsappEligible=(method==='PAY_ON_DAY'||paid)&&['AWAITING_STAFF','CONFIRMED'].includes(item.status);
   res.setHeader('Cache-Control','no-store');
-  res.json({barber:item.barber,date:item.appointment_date,time:String(item.appointment_time).slice(0,5),services:item.service_names,bookingStatus:item.status,paymentStatus:orders[0]?.status||'UNKNOWN',amount:orders[0]?.amount||0,paid:!!orders[0]?.paid_at,holdUntil:item.hold_until});
+  res.json({
+   reference:String(item.id).slice(0,8).toUpperCase(),barber:item.barber,
+   date:item.appointment_date,time:String(item.appointment_time).slice(0,5),
+   services:item.service_names,bookingStatus:item.status,paymentMethod:method,
+   paymentStatus:method==='PAY_ON_DAY'?'PAY_ON_DAY':order?.status||'UNKNOWN',
+   customerName:item.customer_name||'',customerPhone:item.customer_phone||'',
+   amount:method==='PAY_ON_DAY'?item.amount||0:order?.amount||item.amount||0,
+   paid,whatsappEligible,holdUntil:item.hold_until
+  });
  }catch(e){console.error('Booking status:',e.message);pixErr(res,'Acompanhamento indisponível no momento.',503);}
+});
+app.post('/api/booking/pay-on-day',checkoutLimit,async(req,res)=>{
+ const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
+ const details=asBookingDetails(b.services);
+ if(name.length<3||!validPhone(phone)||!details||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,details?.duration||30,date))
+  return pixErr(res,'Confira seus dados e selecione um horário disponível.',400);
+ const crypto=require('crypto'),referenceId=crypto.randomUUID(),token=crypto.randomBytes(32).toString('base64url');
+ try{
+  await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
+  await sbReq('bh_booking_reservations','',{
+   method:'POST',headers:{Prefer:'return=minimal'},
+   body:JSON.stringify({
+    id:referenceId,barber,appointment_date:date,appointment_time:time,
+    duration_minutes:details.duration,service_names:details.services,
+    status:'AWAITING_STAFF',payment_method:'PAY_ON_DAY',
+    customer_name:name,customer_phone:phone,amount:details.amount,
+    access_token_hash:trackingHash(token)
+   })
+  });
+  res.setHeader('Cache-Control','no-store');
+  res.status(201).json({
+   reservationId:referenceId,reference:referenceId.slice(0,8).toUpperCase(),
+   trackingToken:token,amount:details.amount,paymentMethod:'PAY_ON_DAY',
+   bookingStatus:'AWAITING_STAFF',
+   note:'Solicitação registrada no banco. O horário fica bloqueado enquanto aguarda a confirmação da barbearia. Pagamento no dia.'
+  });
+ }catch(e){
+  console.error('Pay on day booking:',e.message);
+  if(/Erro Supabase 409:/.test(e.message))return pixErr(res,'Este horário acabou de ser escolhido por outra pessoa. Selecione outro.',409);
+  return pixErr(res,'Não foi possível registrar o agendamento. Tente novamente.',503);
+ }
 });
 app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
@@ -281,6 +358,7 @@ app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
   await sbReq('bh_booking_reservations','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
    pix_order_id:orderId,barber,appointment_date:date,appointment_time:time,
    duration_minutes:parsed.duration,service_names:parsed.services,status:'HOLD',
+   payment_method:'PIX',customer_name:name,customer_phone:phone,amount:parsed.amount,
    hold_until:new Date(Date.now()+30*60000).toISOString(),access_token_hash:trackingHash(trackingToken)
   })});
   holdCreated=true;
@@ -318,19 +396,42 @@ async function verifyAdmin(req){
  if(!allowed.length||!allowed.includes(String(user.email||'').toLowerCase()))throw Error('forbidden');
  return user;
 }
+app.patch('/api/admin/bookings/:id',async(req,res)=>{
+ try{
+  await verifyAdmin(req);
+  const id=String(req.params.id||''),target=String(req.body?.status||'');
+  if(!/^[0-9a-fA-F-]{36}$/.test(id)||!['CONFIRMED','CANCELLED'].includes(target))
+   return pixErr(res,'Dados da ação inválidos.',400);
+  const rows=await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(id)+'&select=id,status,payment_method,pix_order_id&limit=1');
+  if(!rows.length)return pixErr(res,'Agendamento não encontrado.',404);
+  if(!['AWAITING_STAFF','CONFIRMED'].includes(rows[0].status))return pixErr(res,'Somente pedidos aguardando ou já confirmados podem ser alterados.',409);
+  const current=rows[0];
+  if(target==='CONFIRMED'&&current.payment_method==='PIX'){
+   const paid=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(current.pix_order_id)+'&select=status&limit=1');
+   if(paid[0]?.status!=='PAID')return pixErr(res,'Pagamento Pix não confirmado.',409);
+  }
+  if(current.status!==target){
+   await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(id),{
+    method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:target,updated_at:new Date().toISOString()})
+   });
+  }
+  res.setHeader('Cache-Control','no-store');
+  res.json({ok:true,status:target,note:target==='CANCELLED'?'Cancelamento da agenda não reembolsa pagamentos automaticamente.':'Horário confirmado pela equipe.'});
+ }catch(e){console.error('Admin booking action:',e.message);res.status(['unauthorized','forbidden'].includes(e.message)?403:503).json({error:'Não foi possível atualizar o agendamento ou acesso não autorizado.'});}
+});
 app.get('/api/admin/bookings',async(req,res)=>{
  try{
   await verifyAdmin(req);
   const date=cleanText(req.query.date,10)||spParts().date;
   if(!validBookingDate(date)&&date!==spParts().date)return pixErr(res,'Data inválida.');
-  const bookings=await sbReq('bh_booking_reservations','?appointment_date=eq.'+encodeURIComponent(date)+'&select=id,pix_order_id,barber,appointment_date,appointment_time,duration_minutes,service_names,status&order=appointment_time.asc&limit=100');
+  const bookings=await sbReq('bh_booking_reservations','?appointment_date=eq.'+encodeURIComponent(date)+'&select=id,pix_order_id,barber,appointment_date,appointment_time,duration_minutes,service_names,status,payment_method,customer_name,customer_phone,amount&order=appointment_time.asc&limit=100');
   const orderIds=bookings.map(x=>x.pix_order_id).filter(Boolean);
   const orders=orderIds.length?await sbReq('bh_pix_orders','?id=in.('+orderIds.map(x=>encodeURIComponent(x)).join(',')+')&select=id,customer_name,customer_phone,status,amount'):[];
   const byOrder=new Map(orders.map(o=>[o.id,o]));
   res.setHeader('Cache-Control','no-store');
   res.json({date,bookings:bookings.map(b=>{
    const o=byOrder.get(b.pix_order_id)||{};
-   return {id:b.id,barber:b.barber,date:b.appointment_date,time:String(b.appointment_time).slice(0,5),duration:b.duration_minutes,services:b.service_names,status:b.status,customerName:o.customer_name||'',customerPhone:o.customer_phone||'',paymentStatus:o.status||'',amount:o.amount||0};
+   return {id:b.id,barber:b.barber,date:b.appointment_date,time:String(b.appointment_time).slice(0,5),duration:b.duration_minutes,services:b.service_names,status:b.status,paymentMethod:b.payment_method,customerName:b.customer_name||o.customer_name||'',customerPhone:b.customer_phone||o.customer_phone||'',paymentStatus:b.payment_method==='PAY_ON_DAY'?'PAY_ON_DAY':o.status||'',amount:b.amount||o.amount||0};
   })});
  }catch(e){console.error('Admin bookings:',e.message);res.status(['unauthorized','forbidden'].includes(e.message)?403:503).json({error:'Acesso à agenda indisponível ou não autorizado.'});}
 });
