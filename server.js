@@ -109,8 +109,8 @@ app.post('/api/assistant/chat', async (req,res)=>{
 
 // VIP: preços e benefícios fixados no servidor, nunca recebidos do navegador.
 const VIP_PLANS = {
-  vip1: {name:'VIP 1',value:70,benefits:'2 cortes + acabamento por mês'},
-  vip2: {name:'VIP 2',value:160,benefits:'2 atendimentos: corte, barba, sobrancelhas e acabamento'}
+  vip1: {name:'VIP 1',value:70,benefits:'4 atendimentos semanais: corte, acabamento, corte, acabamento'},
+  vip2: {name:'VIP 2',value:160,benefits:'4 atendimentos semanais: corte + barba + sobrancelhas, acabamento, corte + barba + sobrancelhas, acabamento'}
 };
 function sbHeaders(){return {'apikey':process.env.SUPABASE_SERVICE_ROLE_KEY,'Authorization':'Bearer '+process.env.SUPABASE_SERVICE_ROLE_KEY,'Content-Type':'application/json'};}
 function sbBase(){if(!process.env.SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)throw Error('Supabase não configurado');return process.env.SUPABASE_URL.replace(/\/$/,'')+'/rest/v1/';}
