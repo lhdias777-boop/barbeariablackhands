@@ -19,7 +19,7 @@ function paymentEnvironment(){
  const base=process.env.ASAAS_API_BASE;
  if(process.env.BH_PIX_ENABLED!=='true'||!process.env.ASAAS_API_KEY)return 'disabled';
  if(mode==='sandbox' && base===ASAAS_SANDBOX_BASE)return 'sandbox';
- if(mode==='production'&&base===ASAAS_PRODUCTION_BASE&&process.env.BH_REAL_PIX_ENABLED==='true')return 'production';
+ if(mode==='production'&&base===ASAAS_PRODUCTION_BASE&&process.env.BH_REAL_PIX_ENABLED==='true'&&process.env.ASAAS_WEBHOOK_TOKEN)return 'production';
  return 'disabled';
 }
 app.use((req,res,next)=>{
