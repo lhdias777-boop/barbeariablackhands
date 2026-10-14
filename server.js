@@ -978,6 +978,58 @@ app.post('/api/barber/vip/schedule',accountSameOrigin,requireStaff,async(req,res
   res.status(503).json({error:'Não foi possível reservar o horário VIP.'});
  }
 });
+
+app.get('/api/admin/live/finance',requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ const from=String(req.query.from||spParts().date.slice(0,7)+'-01');
+ const to=String(req.query.to||spParts().date);
+ const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+ if(!valid(from)||!valid(to)||from>to||(Date.parse(to)-Date.parse(from))/86400000>92)
+  return res.status(400).json({error:'Escolha um período válido de até 93 dias.'});
+ const nextDate=new Date(Date.parse(to+'T00:00:00Z')+86400000).toISOString().slice(0,10);
+ const rangeStart=from+'T00:00:00-03:00',rangeEnd=nextDate+'T00:00:00-03:00';
+ const dateRange=col=>'&'+col+'=gte.'+encodeURIComponent(rangeStart)+'&'+col+'=lt.'+encodeURIComponent(rangeEnd);
+ try{
+  const queries=[
+   ['ordersCreated','bh_pix_orders','?select=id,kind,amount,status,created_at,paid_at,payment_environment,details,customer_name,customer_phone&order=created_at.desc&limit=1000'+dateRange('created_at')],
+   ['ordersPaid','bh_pix_orders','?select=id,kind,amount,status,created_at,paid_at,payment_environment,details,customer_name,customer_phone&order=paid_at.desc&limit=1000'+dateRange('paid_at')],
+   ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,amount,status,created_at,payment_environment&order=created_at.desc&limit=1000'+dateRange('created_at')],
+   ['cash','bh_cash_receipts','?select=booking_id,amount,collected_at&order=collected_at.desc&limit=1000'+dateRange('collected_at')],
+   ['expenses','bh_financial_expenses','?select=id,category,description,amount,expense_date,created_at&order=expense_date.desc&limit=1000&expense_date=gte.'+from+'&expense_date=lte.'+to],
+   ['bookings','bh_booking_reservations','?select=id,customer_name,barber,service_names,amount,status,payment_method,appointment_date&order=appointment_date.desc&limit=1000&appointment_date=gte.'+from+'&appointment_date=lte.'+to]
+  ];
+  const entries=await Promise.all(queries.map(async ([k,t,q])=>[k,await sbReq(t,q)]));
+  const data=Object.fromEntries(entries);
+  const allOrders=new Map([...data.ordersCreated,...data.ordersPaid].map(x=>[x.id,x]));
+  const orders=[...allOrders.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+  const sum=arr=>Math.round(arr.reduce((n,x)=>n+Number(x.amount||0),0)*100)/100;
+  const paid=orders.filter(o=>o.status==='PAID'&&o.payment_environment==='production'&&o.paid_at?.slice(0,10)>=from&&o.paid_at?.slice(0,10)<=to);
+  const vipReal=data.vipPayments.filter(x=>x.status==='PAID'&&x.payment_environment==='production');
+  const cashReceived=data.cash,expenses=data.expenses;
+  const pixPaid=paid.filter(x=>x.kind==='booking'),storePaid=paid.filter(x=>x.kind==='store');
+  const revenue={appointments:sum(pixPaid),store:sum(storePaid),vip:sum(vipReal),cash:sum(cashReceived)};
+  const income=Math.round(Object.values(revenue).reduce((a,b)=>a+b,0)*100)/100;
+  const costs=sum(expenses);
+  const pending=orders.filter(o=>o.status==='PENDING').concat(data.vipPayments.filter(p=>p.status==='PENDING'));
+  res.json({from,to,revenue,expensesTotal:costs,income,balance:Math.round((income-costs)*100)/100,pendingAmount:sum(pending),
+   pendingCount:pending.length,orders,vipPayments:data.vipPayments,cash:cashReceived,expenses,bookings:data.bookings,
+   notes:'Receita Pix inclui apenas recebimentos de produção confirmados. Valores de sandbox não entram como recebidos. Dinheiro entra após registro manual; VIP por confirmação do servidor.'});
+ }catch(e){console.error('Finance dashboard:',String(e.message).slice(0,130));res.status(503).json({error:'Não foi possível gerar o financeiro deste período.'});}
+});
+app.post('/api/admin/live/expenses',accountSameOrigin,requireAdmin,async(req,res)=>{
+ const b=req.body||{},category=String(b.category||''),description=String(b.description||'').trim(),
+  amount=Number(b.amount),day=String(b.date||'');
+ const accepted=['Produtos','Funcionários','Aluguel','Contas','Marketing','Manutenção','Outros'];
+ if(!accepted.includes(category)||description.length<3||description.length>220||!Number.isFinite(amount)||amount<=0||amount>1000000||
+    !/^\d{4}-\d{2}-\d{2}$/.test(day)||Number.isNaN(Date.parse(day+'T12:00:00Z')))
+   return res.status(400).json({error:'Confira data, categoria, descrição e valor.'});
+ try{
+  await sbReq('bh_financial_expenses','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+   category,description,amount,expense_date:day,entered_by:req.bhAdmin.id
+  })});
+  res.status(201).json({ok:true});
+ }catch(e){console.error('Finance expense:',String(e.message).slice(0,100));res.status(503).json({error:'Não foi possível registrar essa despesa.'});}
+});
 app.post('/api/admin/live/content',accountSameOrigin,requireAdmin,async(req,res)=>{
  const key=String(req.body?.key||''),value=req.body?.value;
  const allowed=new Set(['hero_title','hero_text','promo_text','contact_whatsapp','instagram_url','vip1_price','vip2_price']);
