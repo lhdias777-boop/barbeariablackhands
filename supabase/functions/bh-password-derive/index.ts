@@ -15,29 +15,21 @@ function reply(status: number, message: string) {
 }
 // Caso uma chave administrativa tenha sido renovada, conferir acesso real
 // ao Supabase. Nunca decodificar JWTs sem verificar assinaturas.
+// Esta funcao atende apenas ao servidor da Black Hands. Nao aceita
+// credenciais publicas nem sessao de cliente. A permisao real e verificada
+// no PostgREST do mesmo projeto, sem consultar ou retornar registros.
 async function isInternalCall(req: Request): Promise<boolean> {
   const supplied = req.headers.get("authorization");
   if (!supplied?.startsWith("Bearer ")) return false;
   const actual = supplied.slice(7);
   if (!actual || actual.length > 2048) return false;
 
-  const expected = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (expected) {
-    const a = Buffer.from(actual, "utf8");
-    const b = Buffer.from(expected, "utf8");
-    if (a.length === b.length && timingSafeEqual(a, b)) return true;
-  }
-
-  // Consulta somente de permissao, sem retornar dados de clientes.
-  let supabase: URL;
-  try {
-    supabase = new URL(Deno.env.get("SUPABASE_URL") || "");
-    if (supabase.protocol !== "https:" || !supabase.hostname.endsWith(".supabase.co")) return false;
-    if (supabase.pathname !== "/" || supabase.search || supabase.hash) return false;
-  } catch { return false; }
+  // O endereco do projeto nao e segredo. Usar o destino fixo evita depender
+  // das variaveis internas opcionais de Edge Functions.
+  const projectUrl = "https://nfemozpmqfgedxfuzamm.supabase.co";
   try {
     const response = await fetch(
-      supabase.origin + "/rest/v1/bh_customer_accounts?select=id&limit=0",
+      projectUrl + "/rest/v1/bh_customer_accounts?select=id&limit=0",
       {
         method: "GET",
         headers: {
@@ -45,12 +37,13 @@ async function isInternalCall(req: Request): Promise<boolean> {
           "authorization": "Bearer " + actual,
           "accept": "application/json"
         },
-        cache: "no-store",
-        signal: AbortSignal.timeout(5000)
+        cache: "no-store"
       }
     );
+    if (!response.ok) console.error("KDF authorization rejected by Supabase:", response.status);
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error("KDF authorization request failed:", error instanceof Error ? error.name : "unknown");
     return false;
   }
 }
