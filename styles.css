@@ -214,6 +214,10 @@ body.bh-shared-menu .bh-site-menu-toggle[aria-expanded=true]{background:#392318;
 .bh-site-menu-close{appearance:none;display:grid;place-items:center;flex:none;margin-left:auto;width:41px;height:41px;border-radius:11px;border:1px solid #815535;color:#f9c086;background:#231a14;font-size:27px;cursor:pointer}
 .bh-site-menu-account{display:flex;align-items:center;gap:12px;margin:23px 0 14px;padding:12px;border-radius:15px;border:1px solid #966136;background:linear-gradient(110deg,#352316,#1b1510);text-decoration:none;color:#ffdfb8}
 .bh-site-menu-account img{flex:none;width:44px;height:44px;object-fit:contain;border-radius:11px;background:#050505}
+.bh-site-menu-account .bh-site-menu-user-avatar{flex:none;display:grid;place-items:center;width:44px;height:44px;overflow:hidden;border-radius:12px;background:#080808;border:1px solid #845433;color:#ffcb8b;font-size:17px;font-weight:900;letter-spacing:.4px}
+.bh-site-menu-account .bh-site-menu-user-avatar img{display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit;background:#080808}
+.bh-site-menu-account .bh-site-menu-user-avatar.is-logged-in{background:linear-gradient(140deg,#4b2e19,#21160e);border-color:#bd7b3b;box-shadow:0 0 0 1px #aa652b44}
+
 .bh-site-menu-account strong{font-size:15px;font-weight:850;display:block}
 .bh-site-menu-account small{font-size:12px;line-height:1.4;display:block;margin-top:4px;color:#c4ad99}
 .bh-site-menu-chevron{font-size:28px;line-height:1;margin-left:auto}
