@@ -22,7 +22,7 @@
  const logo=document.createElement('div');logo.className='bh-site-menu-head';
  logo.innerHTML='<img src="logo-oficial-black-hands.jpg" alt="Black Hands Barber Shop" width="59" height="59"><div><strong>BLACK HANDS</strong><small>BARBER SHOP • NAVEGAÇÃO</small></div><button type="button" class="bh-site-menu-close" aria-label="Fechar menu">×</button>';
  const intro=document.createElement('a');intro.className='bh-site-menu-account';intro.href='conta.html';
- intro.innerHTML='<img src="logo-oficial-black-hands.jpg" alt="" width="44" height="44"><span><strong data-account-title>Minha Conta</strong><small data-account-description>Entrar ou criar conta</small></span><span aria-hidden="true" class="bh-site-menu-chevron">›</span>';
+ intro.innerHTML='<span class="bh-site-menu-user-avatar" data-account-avatar aria-hidden="true"><img src="logo-oficial-black-hands.jpg" alt=""></span><span><strong data-account-title>Minha Conta</strong><small data-account-description>Entrar ou criar conta</small></span><span aria-hidden="true" class="bh-site-menu-chevron">›</span>';
  const nav=document.createElement('nav');nav.className='bh-site-menu-links';nav.setAttribute('aria-label','Acessar páginas da barbearia');
  const items=[
   ['Início','index.html','house'],
@@ -57,14 +57,41 @@
   button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menu de navegação');
   before?.focus?.();before=null;
  }
+ const avatar=intro.querySelector('[data-account-avatar]');
+ const accountName=intro.querySelector('[data-account-title]');
+ const accountDescription=intro.querySelector('[data-account-description]');
+ const userInitials=name=>{
+  const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length)return 'BH';
+  const first=Array.from(parts[0])[0]||'B';
+  const last=parts.length>1?(Array.from(parts[parts.length-1])[0]||'H'):(Array.from(parts[0])[1]||'');
+  return (first+last).toLocaleUpperCase('pt-BR');
+ };
+ let requestVersion=0;
  async function updateAccount(){
+  const version=++requestVersion;
   try{
    const user=window.BHSession?.get?await window.BHSession.get():
     (await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null))?.account;
-   if(!user)return;
-   intro.querySelector('[data-account-title]').textContent='Olá, '+String(user.fullName||'Cliente').trim().split(/\s+/)[0]+'!';
-   intro.querySelector('[data-account-description]').textContent='Consultar meu perfil, pedidos e VIP';
-  }catch{}
+   if(version!==requestVersion)return;
+   if(user){
+    const fullName=String(user.fullName||'').trim();
+    avatar.classList.add('is-logged-in');
+    avatar.textContent=userInitials(fullName);
+    accountName.textContent='Olá, '+(fullName.split(/\s+/)[0]||'Cliente')+'!';
+    accountDescription.textContent='Consultar meu perfil, pedidos e VIP';
+   }else{
+    avatar.classList.remove('is-logged-in');
+    const image=document.createElement('img');image.src='logo-oficial-black-hands.jpg';image.alt='';
+    avatar.replaceChildren(image);
+    accountName.textContent='Minha Conta';
+    accountDescription.textContent='Entrar ou criar conta';
+   }
+  }catch{
+   if(version!==requestVersion)return;
+   accountName.textContent='Minha Conta';
+   accountDescription.textContent='Acesse seu perfil';
+  }
  }
  function openMenu(){
   before=document.activeElement;panel.hidden=false;mask.hidden=false;
