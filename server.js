@@ -355,8 +355,11 @@ app.post('/api/vip/checkout',accountSameOrigin,requireAccount,async(req,res)=>{
  try{
   const user=await vipAuth(req);
   const planId=String(req.body?.plan||'');
-  const plan=VIP_PLANS[planId];
-  if(!plan)return res.status(400).json({error:'Plano inválido'});
+  const basePlan=VIP_PLANS[planId];
+  if(!basePlan)return res.status(400).json({error:'Plano inválido'});
+  const vipSetting=await sbReq('bh_management_content','?key=eq.'+(planId==='vip1'?'vip1_price':'vip2_price')+'&select=value&limit=1');
+  const configured=Number(vipSetting[0]?.value),plan={...basePlan,value:configured};
+  if(!Number.isFinite(configured)||configured<1||configured>10000)throw Error('VIP settings invalid');
   const name=user.full_name;
   const cpfCnpj=String(req.body?.cpfCnpj||'').replace(/\D/g,'');
   if(name.length<3||![11,14].includes(cpfCnpj.length))return res.status(400).json({error:'Informe nome e CPF/CNPJ válido para gerar a cobrança.'});
@@ -448,7 +451,13 @@ app.post('/api/store/checkout',accountSameOrigin,requireAccount,checkoutLimit,as
   const name=req.bhAccount.full_name,phone=req.bhAccount.phone,email=cleanText(customer.email);
   if(name.length<3||!validPhone(phone)||!Array.isArray(items)||!items.length||items.length>30)return pixErr(res,'Preencha os dados e selecione produtos válidos');
   let amount=0;const validated=[];const seen=new Set();
-  for(const item of items){const id=cleanText(item.productId,70),q=Number(item.quantity);if(!Object.hasOwn(BH_CATALOG,id)||!Number.isInteger(q)||q<1||q>20||seen.has(id))return pixErr(res,'Carrinho inválido');seen.add(id);amount+=BH_CATALOG[id]*q;validated.push({productId:id,quantity:q,unitPrice:BH_CATALOG[id]});}
+  const catalog=await sbReq('bh_management_catalog','?kind=eq.product&active=eq.true&select=id,price');
+  const priceMap=new Map(catalog.map(x=>[x.id,Number(x.price)]));
+  for(const item of items){
+   const id=cleanText(item.productId,70),q=Number(item.quantity),price=priceMap.get(id);
+   if(price===undefined||!Number.isInteger(q)||q<1||q>20||seen.has(id))return pixErr(res,'Carrinho inválido');
+   seen.add(id);amount+=price*q;validated.push({productId:id,quantity:q,unitPrice:price});
+  }
   amount=Math.round(amount*100)/100;
   if(amount<=0||amount>5000)return pixErr(res,'Valor de pedido inválido');
   const orderId=require('crypto').randomUUID();
@@ -479,13 +488,15 @@ function slotAllowed(time,duration,date){
  const a=mins(time),b=a+duration;
  return (a>=480&&b<=720)||(a>=780&&b<=1140);
 }
-function asBookingDetails(items){
+async function asBookingDetails(items){
  if(!Array.isArray(items)||!items.length||items.length>7)return null;
+ const services=await sbReq('bh_management_catalog','?kind=eq.service&active=eq.true&select=name,price,duration_minutes');
+ const prices=new Map(services.map(item=>[item.name,item]));
  const seen=new Set();let amount=0,duration=0;
  for(const item of items){
-  const name=cleanText(typeof item==='string'?item:item?.name,80);
-  if(!Object.hasOwn(BH_SERVICES,name)||seen.has(name))return null;
-  seen.add(name);amount+=BH_SERVICES[name];duration+=BH_SERVICE_DURATIONS[name]||30;
+  const name=cleanText(typeof item==='string'?item:item?.name,80),service=prices.get(name);
+  if(!service||seen.has(name))return null;
+  seen.add(name);amount+=Number(service.price);duration+=Number(service.duration_minutes)||30;
  }
  if((seen.has('Combo Corte + Sobrancelha')||seen.has('Pacote Completo'))&&seen.size!==1)return null;
  return {services:[...seen],amount:Math.round(amount*100)/100,duration};
@@ -577,7 +588,8 @@ app.post('/api/booking/status',accountSameOrigin,requireAccount,bookingStatusLim
 });
 app.post('/api/booking/pay-on-day',accountSameOrigin,requireAccount,checkoutLimit,async(req,res)=>{
  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
- const details=asBookingDetails(b.services);
+ let details;
+ try{details=await asBookingDetails(b.services);}catch(e){return pixErr(res,'Não foi possível consultar o catálogo agora.',503);}
  if(name.length<3||!validPhone(phone)||!details||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,details?.duration||30,date))
   return pixErr(res,'Confira seus dados e selecione um horário disponível.',400);
  const crypto=require('crypto'),referenceId=crypto.randomUUID(),token=crypto.randomBytes(32).toString('base64url');
@@ -610,7 +622,9 @@ app.post('/api/booking/pay-on-day',accountSameOrigin,requireAccount,checkoutLimi
 });
 app.post('/api/booking/checkout',accountSameOrigin,requireAccount,checkoutLimit,async(req,res)=>{
  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
- const parsed=asBookingDetails(b.services),cpf=String(b.cpfCnpj||'').replace(/\D/g,'');
+ const cpf=String(b.cpfCnpj||'').replace(/\D/g,'');
+ let parsed;
+ try{parsed=await asBookingDetails(b.services);}catch(e){return pixErr(res,'Não foi possível consultar o catálogo agora.',503);}
  if(name.length<3||!validPhone(phone)||!parsed||![11,14].includes(cpf.length)||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,parsed?.duration||30,date))
   return pixErr(res,'Confira os dados, a data, o horário e os serviços do agendamento.');
  const crypto=require('crypto'),orderId=crypto.randomUUID(),trackingToken=crypto.randomBytes(32).toString('base64url');
