@@ -753,6 +753,7 @@ app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
    ['orders','bh_pix_orders','?select=id,kind,amount,status,created_at,customer_name,customer_phone,payment_environment,details&order=created_at.desc&limit=250'],
    ['vip','bh_customer_vip_memberships','?select=account_id,plan,status,paid_until,created_at&order=created_at.desc&limit=250'],
    ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,status,amount,created_at,payment_environment&order=created_at.desc&limit=250'],
+   ['cash','bh_cash_receipts','?select=booking_id,amount,collected_at&order=collected_at.desc&limit=250'],
    ['catalog','bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active,updated_at,image_url&order=kind.asc,name.asc'],
    ['content','bh_management_content','?select=key,value,updated_at&order=key.asc']
   ];
@@ -760,7 +761,9 @@ app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
   const data=Object.fromEntries(results);
   data.stats={
    customers:data.customers.length,bookings:data.bookings.length,
-   paymentsReceived:data.orders.filter(x=>x.status==='PAID').reduce((n,x)=>n+Number(x.amount||0),0)+data.vipPayments.filter(x=>x.status==='PAID').reduce((n,x)=>n+Number(x.amount||0),0),
+   paymentsReceived:data.orders.filter(x=>x.status==='PAID'&&x.payment_environment==='production').reduce((n,x)=>n+Number(x.amount||0),0)+
+    data.vipPayments.filter(x=>x.status==='PAID'&&x.payment_environment==='production').reduce((n,x)=>n+Number(x.amount||0),0)+
+    data.cash.reduce((n,x)=>n+Number(x.amount||0),0),
    paymentsPending:data.orders.filter(x=>x.status==='PENDING').length+data.vipPayments.filter(x=>x.status==='PENDING').length,
    vipActive:data.vip.filter(x=>x.status==='ACTIVE'&&Date.parse(x.paid_until)>Date.now()).length
   };
@@ -906,7 +909,7 @@ app.get('/api/barber/day',requireStaff,async(req,res)=>{
   const pMap=new Map(pix.map(x=>[x.id,x])),cMap=new Map(cash.map(x=>[x.booking_id,x])),vMap=new Map(vip.map(x=>[x.reservation_id,x]));
   const appointments=rows.map(row=>{
    const p=pMap.get(row.pix_order_id),v=vMap.get(row.id),c=cMap.get(row.id);
-   const paymentStatus=v?'VIP INCLUÍDO':row.payment_method==='PIX'?(p?.status==='PAID'?'PIX CONFIRMADO':'PIX PENDENTE'):(c?'DINHEIRO RECEBIDO':'A RECEBER NO DIA');
+   const paymentStatus=v?'VIP INCLUÍDO':row.payment_method==='PIX'?(p?.status==='PAID'?(p.payment_environment==='production'?'PIX CONFIRMADO':'PIX TESTE CONFIRMADO'):'PIX PENDENTE'):(c?'DINHEIRO RECEBIDO':'A RECEBER NO DIA');
    return {...row,paymentStatus,paymentEnvironment:p?.payment_environment||null,vipPlan:v?.plan||null};
   });
   res.json({date,barber:req.bhStaff.barber,appointments,summary:{
@@ -983,7 +986,11 @@ app.get('/api/admin/live/finance',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  const from=String(req.query.from||spParts().date.slice(0,7)+'-01');
  const to=String(req.query.to||spParts().date);
- const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+ const valid=x=>{
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(x))return false;
+  const time=new Date(x+'T12:00:00Z');
+  return Number.isFinite(time.getTime())&&time.toISOString().slice(0,10)===x;
+ };
  if(!valid(from)||!valid(to)||from>to||(Date.parse(to)-Date.parse(from))/86400000>92)
   return res.status(400).json({error:'Escolha um período válido de até 93 dias.'});
  const nextDate=new Date(Date.parse(to+'T00:00:00Z')+86400000).toISOString().slice(0,10);
