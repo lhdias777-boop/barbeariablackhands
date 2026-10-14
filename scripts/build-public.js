@@ -7,6 +7,9 @@ const out = path.join(root, 'public');
 
 const files = [
   'index.html',
+  'conta.html',
+  'conta.js',
+  'auth.js',
   'agendar.html',
   'acompanhar.html',
   'servicos.html',
