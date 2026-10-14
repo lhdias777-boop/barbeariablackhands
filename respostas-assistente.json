@@ -1,7 +1,21 @@
 {
-  "saudacao": "Olá! 👋 Sou o Assistente Black Hands. Escolha uma pergunta sugerida abaixo ou escreva sua dúvida sobre agendamentos, serviços, preços, loja, VIP e promoções.",
-  "nao_entendi": "Ainda não tenho uma resposta cadastrada para isso. Você pode reformular a pergunta ou falar com nossa equipe pelo WhatsApp: https://wa.me/5531971245200",
+  "saudacao": "Olá! 👋 Sou o Assistente Black Hands. Posso ajudar com serviços, horários, produtos, agendamentos e VIP. Para realizar pedidos ou marcar horários, você precisa de uma conta. Se ainda não tiver: [Criar minha conta](conta.html?mode=register).",
+  "nao_entendi": "Não encontrei uma resposta exata. Posso orientar sobre cadastro, agendamento, Store, VIP e horários. Você pode acessar [Minha Conta](conta.html) ou falar com a equipe pelo WhatsApp: https://wa.me/5531971245200",
   "assuntos": [
+    {
+      "id": "cadastro",
+      "palavras": [
+        "criar conta",
+        "fazer cadastro",
+        "cadastrar",
+        "cadastro",
+        "entrar na conta",
+        "login",
+        "registrar conta",
+        "como acessar conta"
+      ],
+      "resposta": "Crie sua conta Black Hands com nome, WhatsApp e senha: [Criar minha conta](conta.html?mode=register). Se já tem cadastro, acesse [Entrar na minha conta](conta.html?mode=login). Para agendar, comprar e assinar VIP, o login é obrigatório."
+    },
     {
       "id": "combos_promocionais",
       "palavras": [
@@ -27,7 +41,7 @@
         "disponibilidade",
         "horario livre"
       ],
-      "resposta": "Você pode escolher os serviços e solicitar seu horário na página de agendamento: [Agendar horário](agendar.html)."
+      "resposta": "Para agendar, entre na sua conta Black Hands ou faça seu cadastro. Depois escolha serviço, dia e horário em [Agendar horário](agendar.html). O sistema mostra apenas os horários disponíveis."
     },
     {
       "id": "acompanhar",
@@ -39,7 +53,7 @@
         "meu horario",
         "meu corte"
       ],
-      "resposta": "Para consultar seus agendamentos, acesse [Meus agendamentos](acompanhar.html). Não consigo verificar sua situação individual por este chat ainda."
+      "resposta": "Para acompanhar seus horários, clique em [Minha Conta](conta.html). Lá ficam seus agendamentos, compras e VIP. Agendamentos antigos podem ser consultados pelo código privado no próprio perfil."
     },
     {
       "id": "pedidos",
@@ -51,7 +65,7 @@
         "minha compra",
         "entrega"
       ],
-      "resposta": "Para saber o andamento de um pedido, entre em contato pelo WhatsApp (31) 97124-5200 e informe o número do pedido. Este assistente ainda não consulta pedidos automaticamente."
+      "resposta": "Os pedidos feitos com sua conta aparecem em [Minha Conta](conta.html), na seção Minhas compras. Caso precise de suporte sobre entrega ou pagamento, fale com a equipe pelo WhatsApp."
     },
     {
       "id": "precos",
@@ -75,7 +89,7 @@
         "planos mensais",
         "mensalidade"
       ],
-      "resposta": "Temos VIP 1 por R$ 70/mês (2 cortes com acabamento) e VIP 2 por R$ 160/mês (2 atendimentos com corte, barba, sobrancelhas e acabamento). Uso de segunda a quinta. Veja [Planos VIP](planos-vip.html). A ativação automática do Pix ainda está em configuração."
+      "resposta": "Temos dois planos mensais: VIP 1 (2 cortes com acabamento) e VIP 2 (2 atendimentos com corte, barba, sobrancelhas e acabamento). O próprio cliente VIP escolhe suas datas no calendário, de segunda a quinta, após confirmação da assinatura. Veja [Planos VIP](planos-vip.html)."
     },
     {
       "id": "promocoes",
@@ -145,7 +159,7 @@
         "abre hoje",
         "aberto hoje"
       ],
-      "resposta": "Os horários de funcionamento devem ser confirmados com a equipe pelo WhatsApp: https://wa.me/5531971245200. Para escolher um horário disponível, acesse [Agendar horário](agendar.html)."
+      "resposta": "Funcionamento da Black Hands: segunda a sexta das 7h às 19h, sábado das 7h às 16h e domingo fechado. Agendamentos terminam até o fechamento. Cortes VIP: apenas de segunda a quinta, conforme horários disponíveis."
     },
     {
       "id": "localizacao",
@@ -167,7 +181,7 @@
         "alterar agendamento",
         "desmarcar"
       ],
-      "resposta": "Para conferir seu agendamento, acesse [Meus agendamentos](acompanhar.html). Para solicitar cancelamento ou remarcação, fale com a equipe pelo WhatsApp: https://wa.me/5531971245200."
+      "resposta": "Acompanhe seu horário em [Minha Conta](conta.html). Para solicitar remarcação ou cancelamento, entre em contato com a barbearia; não cancelo agendamentos pelo chat."
     },
     {
       "id": "multiplos",
@@ -188,7 +202,7 @@
         "quero ser vip",
         "virar vip"
       ],
-      "resposta": "Acesse [Planos VIP](planos-vip.html) e escolha VIP 1 ou VIP 2. A ativação automática por Pix ainda depende da integração final; confirme com a equipe antes de pagar."
+      "resposta": "Abra [Planos VIP](planos-vip.html), escolha VIP 1 ou VIP 2 e faça login. A cobrança PIX depende da habilitação de pagamentos no servidor. Após confirmar a mensalidade, o próprio cliente poderá escolher até duas sessões no [Calendário VIP](planos-vip.html#vipCalendar), de segunda a quinta."
     },
     {
       "id": "vip_status",
@@ -199,7 +213,7 @@
         "validade do vip",
         "sou vip"
       ],
-      "resposta": "Consulte a área Meu plano VIP em [Planos VIP](planos-vip.html). Este assistente ainda não acessa sua assinatura individual."
+      "resposta": "O status da assinatura e os cortes podem ser consultados em [Meu calendário VIP](planos-vip.html#vipCalendar) ou [Minha Conta](conta.html). O barbeiro recebe as reservas automaticamente na agenda. Este assistente não altera pagamentos."
     },
     {
       "id": "entrega_loja",
@@ -229,7 +243,7 @@
         "senha",
         "dados pessoais"
       ],
-      "resposta": "Por segurança, não envie senha, CPF, dados bancários ou informações pessoais neste chat. Para assuntos do seu perfil, use as áreas de acesso do site ou fale com a equipe."
+      "resposta": "Não envie senhas, documentos completos ou dados bancários neste chat. Para cadastrar-se, use a página segura [Criar minha conta](conta.html?mode=register), e para ver seus dados pessoais use [Minha Conta](conta.html)."
     }
   ]
 }
