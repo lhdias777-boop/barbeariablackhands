@@ -286,6 +286,17 @@ app.post('/api/account/change-password',accountSameOrigin,async(req,res)=>{
   return res.json({ok:true,message:'Senha alterada. Outros dispositivos foram desconectados.'});
  }catch(e){console.error('Account change password:',e.message);return res.status(503).json({error:'Não foi possível trocar a senha.'});}
 });
+app.get('/api/account/orders',requireAccount,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const orders=await sbReq('bh_pix_orders','?account_id=eq.'+encodeURIComponent(req.bhAccount.id)+'&kind=eq.store&select=id,status,amount,details,created_at&order=created_at.desc&limit=30');
+  return res.json({orders:orders.map(order=>({
+   reference:String(order.id).slice(0,8).toUpperCase(),
+   status:order.status,amount:order.amount,createdAt:order.created_at,
+   itemCount:Array.isArray(order.details?.items)?order.details.items.reduce((n,item)=>n+Number(item.quantity||0),0):0
+  }))});
+ }catch(e){console.error('Account store orders:',String(e.message).slice(0,120));return res.status(503).json({error:'Não foi possível consultar suas compras no momento.'});}
+});
 app.get('/api/account/bookings',async(req,res)=>{
  accountNoCache(res);
  try{
