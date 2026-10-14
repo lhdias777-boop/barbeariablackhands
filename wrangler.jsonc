@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "blackhands-barber-cloudflare-test",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-10-14",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/health"],
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "vars": {
+    "BH_PAYMENTS_MODE": "disabled",
+    "BH_PIX_ENABLED": "false",
+    "BH_REAL_PIX_ENABLED": "false",
+    "NODE_ENV": "production"
+  }
+}
