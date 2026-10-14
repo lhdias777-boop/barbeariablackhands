@@ -52,6 +52,8 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 .adm-title .adm-muted{margin:8px 0 0}
 @media(max-width:970px){.adm-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.adm-row{grid-template-columns:1fr}}
 @media(max-width:600px){.adm-app{padding:22px 14px 65px}.adm-header{padding:13px 14px}.adm-brand img{width:45px;height:45px}.adm-brand strong{font-size:12px}.adm-brand small{font-size:9px}.adm-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.adm-metric{padding:13px}.adm-grid{grid-template-columns:1fr}.adm-login{padding:26px 19px}.adm-nav button{padding:10px 12px}.adm-card{padding:15px}}
+.adm-toolbar label{display:grid;gap:5px;font-weight:750;color:#cfc2b5;font-size:12px}.adm-toolbar input{min-width:150px}
+.adm-note{padding:10px 13px;border:1px solid #54351f;border-radius:11px;color:#ffb767;margin-bottom:12px}
 </style>
 </head>
 <body class="adm-body">
@@ -82,6 +84,7 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 <button type="button" data-panel="products" aria-selected="false">Produtos</button>
 <button type="button" data-panel="services" aria-selected="false">Serviços</button>
 <button type="button" data-panel="vip" aria-selected="false">VIP</button>
+<button type="button" data-panel="team" aria-selected="false">Equipe / Barbeiros</button>
 <button type="button" data-panel="content" aria-selected="false">Editar site</button>
 <button type="button" data-panel="security" aria-selected="false">Segurança</button>
 </nav>
@@ -91,10 +94,40 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 </section>
 <section class="adm-panel" id="panel-bookings" hidden><article class="adm-card"><h2>Agenda da Black Hands</h2><p class="adm-muted">Confirmar ou cancelar horários diretamente no banco. Agendamentos pagos devem ser conferidos antes de qualquer cancelamento.</p><div id="adminBookingTable" class="adm-table-wrap"></div></article></section>
 <section class="adm-panel" id="panel-customers" hidden><article class="adm-card"><h2>Clientes cadastrados</h2><div class="adm-toolbar"><input id="customerFilter" class="adm-input" placeholder="Buscar por nome ou WhatsApp" aria-label="Buscar clientes"></div><div id="adminCustomerTable" class="adm-table-wrap"></div></article></section>
-<section class="adm-panel" id="panel-finance" hidden><article class="adm-card"><h2>Pagamentos reais no banco</h2><p class="adm-muted">O status 'PAID' é recebido do processamento no servidor. Valores de pagamentos desabilitados ou pendentes não são receita recebida.</p><div id="adminFinanceTable" class="adm-table-wrap"></div></article></section>
+<section class="adm-panel" id="panel-finance" hidden>
+ <article class="adm-card"><h2>Financeiro Black Hands</h2><p class="adm-muted">Acompanhe entradas, saídas, pendências e a origem de cada pagamento. Valores de testes não entram nas receitas reais.</p>
+ <div class="adm-toolbar"><label>De <input id="financeFrom" type="date" class="adm-input"></label><label>Até <input id="financeTo" type="date" class="adm-input"></label><button type="button" class="adm-button" id="financeFilter">Consultar período</button></div>
+ <p id="financeMessage" class="adm-msg" role="status"></p><div id="financeMetrics" class="adm-metrics"></div>
+ <h2>Receitas por categoria</h2><div id="financeCategories" class="adm-table-wrap"></div>
+ </article>
+ <article class="adm-card"><h2>Entradas e cobranças por pedido</h2><div id="financeTransactions" class="adm-table-wrap"></div></article>
+ <article class="adm-card"><h2>Despesas e gastos</h2>
+ <form id="financeExpenseForm" class="adm-form">
+  <div class="adm-grid"><label class="adm-label">Data<input id="financeExpenseDate" type="date" class="adm-input" required></label><label class="adm-label">Categoria<select id="financeExpenseCategory" class="adm-select"><option>Produtos</option><option>Funcionários</option><option>Aluguel</option><option>Contas</option><option>Marketing</option><option>Manutenção</option><option>Outros</option></select></label></div>
+  <div class="adm-grid"><label class="adm-label">Descrição<input id="financeExpenseDescription" maxlength="220" minlength="3" class="adm-input" required></label><label class="adm-label">Valor (R$)<input id="financeExpenseAmount" type="number" min="0.01" step="0.01" class="adm-input" required></label></div>
+  <button class="adm-button" type="submit">+ Registrar despesa</button>
+ </form>
+ <div id="financeExpenses" class="adm-table-wrap" style="margin-top:18px"></div>
+ </article>
+ <article class="adm-card"><h2>Extrato simplificado</h2><p class="adm-muted">Pedidos com Pix, dinheiro registrado e assinaturas; confira seus comprovantes para conciliação.</p><div id="adminFinanceTable" class="adm-table-wrap"></div></article>
+</section>
 <section class="adm-panel" id="panel-products" hidden><article class="adm-card"><h2>Produtos da Black Hands Store</h2><p class="adm-muted">Preços, nomes, descrições e disponibilidade publicados no catálogo compartilhado.</p><div id="adminProductsTable" class="adm-table-wrap"></div></article></section>
 <section class="adm-panel" id="panel-services" hidden><article class="adm-card"><h2>Serviços, combos e preços</h2><p class="adm-muted">Catálogo central da barbearia. Confira os valores antes de publicar alterações.</p><div id="adminServicesTable" class="adm-table-wrap"></div></article></section>
 <section class="adm-panel" id="panel-vip" hidden><article class="adm-card"><h2>Assinaturas VIP</h2><p class="adm-muted">Planos ativos e pagamentos registrados pelas contas Black Hands.</p><div id="adminVipTable" class="adm-table-wrap"></div></article></section>
+<section class="adm-panel" id="panel-team" hidden>
+ <article class="adm-card">
+ <h2>Equipe e acesso dos barbeiros</h2>
+ <p class="adm-muted">O barbeiro usa sua própria conta Black Hands, com acesso apenas à agenda vinculada. Somente o administrador pode liberar esse acesso.</p>
+ <form id="staffGrantForm" class="adm-form">
+ <div class="adm-grid"><label class="adm-label">WhatsApp do barbeiro (DDD)<input id="staffPhone" class="adm-input" type="tel" inputmode="numeric" placeholder="31999999999" required></label>
+ <label class="adm-label">Barbeiro<select id="staffBarber" class="adm-select"><option value="WELIGOL">WELIGOL</option></select></label></div>
+ <button class="adm-button" type="submit">Autorizar área do barbeiro</button>
+ </form>
+ <p id="staffMessage" class="adm-msg"></p>
+ <p><a class="adm-link" href="barbeiro.html" target="_blank" rel="noopener">Abrir área separada do barbeiro ↗</a></p>
+ <div id="staffList" class="adm-table-wrap"></div>
+ </article>
+ </section>
 <section class="adm-panel" id="panel-content" hidden><article class="adm-card"><h2>Conteúdo do site</h2><p class="adm-muted">Textos de início, promoções e contatos salvos no banco e usados no site.</p><div id="adminContentFields" class="adm-grid"></div></article></section>
 <section class="adm-panel" id="panel-security" hidden>
 <article class="adm-card adm-compact">
@@ -122,6 +155,6 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 <div class="adm-actions"><button class="adm-button" type="submit">Salvar e publicar</button><button type="button" id="adminEditorCancel" class="adm-button alt">Cancelar</button></div><p id="adminEditorMessage" class="adm-msg" role="status"></p>
 </form></section>
 </main>
-<script src="admin-live.js"></script>
+<script src="admin-live.js"></script><script src="admin-extras.js"></script>
 </body>
 </html>
