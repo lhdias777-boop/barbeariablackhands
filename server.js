@@ -4,10 +4,30 @@ const path = require('path');
 const fs = require('fs');
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const PUBLIC_DIR = __dirname;
+const PUBLIC_DIR = path.join(__dirname, 'public');
 app.disable('x-powered-by');
 app.use(express.json({ limit: '12kb' }));
 app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');next();});
+
+// No Render a API Express recebe as rotas diretamente, sem o guard do Netlify.
+// Pix e webhook só ficam ativos se a flag estiver ligada E a API for Sandbox.
+app.use((req,res,next)=>{
+ const protectedPix=/^\/api\/(?:booking\/checkout|store\/checkout|vip\/checkout|asaas\/webhook)(?:\/|$)/.test(req.path);
+ if(!protectedPix)return next();
+ res.setHeader('Cache-Control','no-store');
+ if(process.env.BH_PIX_ENABLED!=='true')
+  return res.status(503).json({error:'Pix de teste desabilitado até concluir a configuração. Nenhuma cobrança foi gerada.'});
+ if(process.env.ASAAS_API_BASE!=='https://api-sandbox.asaas.com/v3')
+  return res.status(503).json({error:'Por segurança, esta versão aceita apenas o Asaas Sandbox.'});
+ next();
+});
+app.get('/api/health',(_req,res)=>{
+ res.setHeader('Cache-Control','no-store');
+ res.json({
+  ok:true,service:'black-hands-api',hosting:process.env.RENDER?'render':'other',
+  pixTest:{enabled:process.env.BH_PIX_ENABLED==='true',sandboxConfigured:process.env.ASAAS_API_BASE==='https://api-sandbox.asaas.com/v3'}
+ });
+});
 // Small in-memory rate limit. Use a shared store such as Redis for multi-instance production deployments.
 const buckets = new Map();
 app.use('/api/assistant', (req,res,next)=>{
@@ -92,7 +112,12 @@ const accountScrypt=require('util').promisify(accountCrypto.scrypt);
 const ACCOUNT_COOKIE='__Host-bh_session';
 const ACCOUNT_SESSION_MS=14*24*60*60*1000;
 const ACCOUNT_LOGIN_FAILURE='WhatsApp ou senha incorretos.';
-const ACCOUNT_ORIGINS=new Set(['https://blackhands-barber.netlify.app']);
+// O Render fornece automaticamente a URL pública desta instância.
+const ACCOUNT_ORIGINS=new Set([
+ 'https://blackhands-barber.netlify.app',
+ process.env.RENDER_EXTERNAL_URL,
+ process.env.PUBLIC_SITE_ORIGIN
+].filter(x=>typeof x==='string'&&/^https:\/\/[a-z0-9.-]+(?::[0-9]+)?$/i.test(x)));
 function accountNoCache(res){res.setHeader('Cache-Control','no-store, private');res.setHeader('Pragma','no-cache');}
 function accountPhone(value){
  const digits=String(value||'').replace(/\D/g,'');
@@ -664,6 +689,6 @@ app.get('/api/admin/pix/summary',async(req,res)=>{
  }catch(err){console.error('Admin Pix:',err.message);res.status(['unauthorized','forbidden'].includes(err.message)?403:503).json({error:['unauthorized','forbidden'].includes(err.message)?'Acesso negado. Entre com uma conta administrativa autorizada.':'Não foi possível consultar os pagamentos.'});}
 });
 app.get('/health',(_req,res)=>res.json({ok:true,service:'black-hands-site'}));
-if (require.main === module) app.use(express.static(PUBLIC_DIR,{extensions:['html']}));
-if (require.main === module) app.listen(PORT,()=>console.log(`Black Hands site running on port ${PORT}`));
+if (require.main === module) app.use(express.static(PUBLIC_DIR,{extensions:['html'],index:'index.html',dotfiles:'deny',redirect:false}));
+if (require.main === module) app.listen(PORT,'0.0.0.0',()=>console.log('Black Hands iniciada na porta '+PORT));
 module.exports=app;
