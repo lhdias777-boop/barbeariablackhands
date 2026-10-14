@@ -1065,6 +1065,34 @@ app.get('/api/barber/vip',requireStaff,async(req,res)=>{
  }catch(e){console.error('VIP barber list:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível consultar clientes VIP.'});}
 });
 // Visibilidade administrativa da fila, sem expor tokens nem números completos.
+// Diagnóstico sem segredos. Nunca retorna chave API, token do webhook ou dados de cobrança.
+app.get('/api/admin/live/pix-readiness',requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ const mode=String(process.env.BH_PAYMENTS_MODE||'disabled');
+ const base=String(process.env.ASAAS_API_BASE||'');
+ const endpointOk=(mode==='sandbox'&&base===ASAAS_SANDBOX_BASE)||
+  (mode==='production'&&base===ASAAS_PRODUCTION_BASE);
+ const apiKeyPresent=Boolean(process.env.ASAAS_API_KEY);
+ const webhookTokenPresent=Boolean(process.env.ASAAS_WEBHOOK_TOKEN);
+ const pixEnabled=process.env.BH_PIX_ENABLED==='true';
+ const realEnabled=process.env.BH_REAL_PIX_ENABLED==='true';
+ const ready=paymentEnvironment()!=='disabled'&&webhookTokenPresent;
+ return res.json({
+  mode:paymentEnvironment(),requestedMode:mode,
+  apiKeyConfigured:apiKeyPresent,webhookTokenConfigured:webhookTokenPresent,
+  apiBaseMatchesMode:endpointOk,pixEnabled,realPixEnabled:realEnabled,
+  configurationReady:ready,
+  liveChargesEnabled:paymentEnvironment()==='production',
+  webhookPath:'/api/asaas/webhook',
+  warnings:[
+   ...(mode==='production'&&!realEnabled?['Liberação de cobrança real ainda está desligada.']:[]),
+   ...(!apiKeyPresent?['Chave da API Asaas ainda não configurada no servidor.']:[]),
+   ...(!webhookTokenPresent?['Token de autenticação de Webhook ainda não configurado.']:[]),
+   ...(!endpointOk?['URL da API ainda não corresponde ao ambiente selecionado.']:[]),
+   ...(mode==='disabled'?['Pagamentos ainda desativados para homologação.']:[])
+  ]
+ });
+});
 app.get('/api/admin/live/notifications',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  try{
