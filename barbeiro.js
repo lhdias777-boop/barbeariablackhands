@@ -179,7 +179,13 @@ async function loadVip(){
    box.append(node('p','bhb-label','BLACK HANDS CLUB'),node('h3','',member.name),
     node('p','bhb-muted','Válido até '+new Date(member.paidUntil).toLocaleDateString('pt-BR')));
    const chips=node('div','bhb-chips');addChip(chips,member.plan.toUpperCase(),'pending');
-   addChip(chips,member.usedThisMonth+'/2 cortes no mês','success');box.append(chips);root.append(box);
+   addChip(chips,member.usedThisCycle+'/4 atendimentos por mensalidade','success');
+   const weeks=[1,2,3,4].map(week=>{
+    const service=week%2===0?'Acabamento':member.plan==='vip2'?'Corte + barba + sobrancelhas':'Corte';
+    return 'Semana '+week+': '+service+' — '+(member.bookedWeeks?.includes(week)?'Reservado':'Não reservado');
+   });
+   const details=node('p','bhb-muted',weeks.join(' | '));
+   box.append(chips,details);root.append(box);
   }
  }catch(e){root.replaceChildren(node('div','bhb-empty',e.message))}
 }
