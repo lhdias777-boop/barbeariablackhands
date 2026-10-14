@@ -83,6 +83,7 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 <button type="button" data-panel="services" aria-selected="false">Serviços</button>
 <button type="button" data-panel="vip" aria-selected="false">VIP</button>
 <button type="button" data-panel="content" aria-selected="false">Editar site</button>
+<button type="button" data-panel="security" aria-selected="false">Segurança</button>
 </nav>
 <section class="adm-panel" id="panel-overview">
 <div id="adminMetrics" class="adm-metrics"></div>
@@ -95,6 +96,18 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
 <section class="adm-panel" id="panel-services" hidden><article class="adm-card"><h2>Serviços, combos e preços</h2><p class="adm-muted">Catálogo central da barbearia. Confira os valores antes de publicar alterações.</p><div id="adminServicesTable" class="adm-table-wrap"></div></article></section>
 <section class="adm-panel" id="panel-vip" hidden><article class="adm-card"><h2>Assinaturas VIP</h2><p class="adm-muted">Planos ativos e pagamentos registrados pelas contas Black Hands.</p><div id="adminVipTable" class="adm-table-wrap"></div></article></section>
 <section class="adm-panel" id="panel-content" hidden><article class="adm-card"><h2>Conteúdo do site</h2><p class="adm-muted">Textos de início, promoções e contatos salvos no banco e usados no site.</p><div id="adminContentFields" class="adm-grid"></div></article></section>
+<section class="adm-panel" id="panel-security" hidden>
+<article class="adm-card adm-compact">
+<h2>Proteção do painel</h2>
+<p class="adm-muted">A senha inicial foi compartilhada durante a configuração. Crie uma senha nova e exclusiva; ao salvar, todos os acessos administrativos atuais serão desconectados.</p>
+<form id="adminChangeForm" class="adm-form">
+<label class="adm-label">Nova senha administrativa<input class="adm-input" id="adminNewPass" type="password" minlength="14" maxlength="128" autocomplete="new-password" required></label>
+<label class="adm-label">Confirmar nova senha<input class="adm-input" id="adminConfirmPass" type="password" minlength="14" maxlength="128" autocomplete="new-password" required></label>
+<button class="adm-button" type="submit">Trocar senha e encerrar sessões</button>
+<p id="adminChangeMessage" class="adm-msg" role="status"></p>
+</form>
+</article>
+</section>
 <section id="adminEditor" class="adm-card adm-compact" hidden><h2 id="adminEditorTitle">Editar item</h2><form class="adm-form" id="adminEditorForm">
 <input type="hidden" id="editId"><input type="hidden" id="editKind">
 <label class="adm-label">Nome<input class="adm-input" id="editName" maxlength="100" required></label>
