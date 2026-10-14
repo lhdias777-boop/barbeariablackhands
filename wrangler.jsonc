@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "blackhands-barber-cloudflare-test",
+  "name": "barbeariablackhands",
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-10-14",
   "assets": {
