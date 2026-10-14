@@ -212,6 +212,8 @@ const contentNames={
  promo_text:'Anúncio promocional',
  contact_whatsapp:'WhatsApp oficial com DDI',
  instagram_url:'Link do Instagram',
+ location_address:'Endereço oficial da barbearia',
+ location_maps_url:'Link Google Maps — Como chegar',
  vip1_price:'Preço mensal VIP 1 (R$)',
  vip2_price:'Preço mensal VIP 2 (R$)'
 };
