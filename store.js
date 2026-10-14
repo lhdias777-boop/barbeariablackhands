@@ -32,15 +32,123 @@ function revealStoreProducts(){
 
 productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.tag}</div><div class="details"><h2>${p.name}</h2><p>${p.description}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
 revealStoreProducts();
-function save(){localStorage.setItem('bhStoreCart',JSON.stringify(cart));renderCart()}
-function count(){return Object.values(cart).reduce((s,n)=>s+n,0)}
-function renderCart(){document.getElementById('cartCount').textContent=count();const ids=Object.keys(cart).filter(id=>cart[id]>0&&products.some(p=>p.id===id));const el=document.getElementById('cartItems');if(!ids.length){el.innerHTML='<p class="empty">Seu carrinho está vazio. Adicione produtos para continuar.</p>'}else{el.innerHTML=ids.map(id=>{const p=products.find(x=>x.id===id);return `<div class="cart-row"><div><strong>${p.name}</strong><div style="color:#f47b20;margin-top:6px">${money(p.price)} cada</div></div><div class="qty"><button type="button" data-change="${id}" data-delta="-1" aria-label="Diminuir">−</button><span>${cart[id]}</span><button type="button" data-change="${id}" data-delta="1" aria-label="Aumentar">+</button></div></div>`}).join('')};const total=ids.reduce((s,id)=>s+products.find(p=>p.id===id).price*cart[id],0);document.getElementById('cartTotal').textContent=money(total);document.querySelector('#checkoutForm button').disabled=!ids.length;document.querySelector('#checkoutForm button').style.opacity=ids.length?'1':'.5'}
-productsEl.addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(!b)return;cart[b.dataset.add]=(cart[b.dataset.add]||0)+1;save();b.textContent='ADICIONADO ✓';setTimeout(()=>b.textContent='ADICIONAR AO CARRINHO',1000)});
-document.getElementById('cartItems').addEventListener('click',e=>{const b=e.target.closest('[data-change]');if(!b)return;const id=b.dataset.change;cart[id]=(cart[id]||0)+Number(b.dataset.delta);if(cart[id]<=0)delete cart[id];save()});
-document.getElementById('openCart').addEventListener('click',async()=>{if(await window.BHSession.requireLogin({action:'comprar',next:'loja.html?carrinho=1'}))cartPanel.classList.add('open')});document.getElementById('closeCart').addEventListener('click',()=>cartPanel.classList.remove('open'));cartPanel.addEventListener('click',e=>{if(e.target===cartPanel)cartPanel.classList.remove('open')});
-document.getElementById('checkoutForm').addEventListener('submit',async e=>{e.preventDefault();const ids=Object.keys(cart).filter(id=>cart[id]>0&&products.some(p=>p.id===id));if(!ids.length)return;if(!await window.BHSession.requireLogin({action:'comprar',next:'loja.html?carrinho=1'}))return;const account=await window.BHSession.get();const order={customer:{name:account.fullName,phone:account.phone,email:document.getElementById('customerEmail').value.trim(),cpfCnpj:document.getElementById('customerCpf').value.trim()},fulfillment:document.getElementById('fulfillment').value,items:ids.map(id=>({productId:id,quantity:cart[id]}))};const msg=document.getElementById('checkoutMessage');try{const res=await fetch('/api/store/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)});const data=await res.json();if(!res.ok)throw new Error(data.error||'O checkout ainda não está configurado.');if(data.paymentUrl)location.href=data.paymentUrl;else if(data.qrCodeBase64||data.pixCopyPaste){msg.innerHTML=''; const title=document.createElement('p');title.textContent='Pix gerado! Pedido '+data.orderId+' — aguardando confirmação do pagamento.';msg.append(title); if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt='QR Code Pix';img.style.maxWidth='190px';msg.append(img);} if(data.pixCopyPaste){const code=document.createElement('textarea');code.readOnly=true;code.value=data.pixCopyPaste;code.rows=4;code.style.width='100%';msg.append(code);const btn=document.createElement('button');btn.type='button';btn.textContent='Copiar Pix';btn.onclick=()=>navigator.clipboard.writeText(code.value);msg.append(btn);}}else msg.textContent='Pedido criado; aguarde as instruções de pagamento.';}catch(err){msg.textContent='Carrinho pronto, mas o Pix automático ainda não está conectado ao servidor. Configure o backend/Asaas antes de receber pagamentos. Seus itens continuam salvos no navegador.';console.warn(err)}});renderCart();
 
-if(new URLSearchParams(location.search).has('carrinho'))window.BHSession.get().then(account=>{if(account)cartPanel.classList.add('open')});
+const cartToggle=document.getElementById('openCart');
+const cartClose=document.getElementById('closeCart');
+const cartItems=document.getElementById('cartItems');
+const cartDrawer=cartPanel.querySelector('.cart-content');
+let previousFocus=null;
+const cartNode=(tag,cls,text)=>{
+ const el=document.createElement(tag);
+ if(cls)el.className=cls;
+ if(text!==undefined)el.textContent=String(text);
+ return el;
+};
+function cartEntries(){return Object.entries(cart).filter(([id,q])=>Number.isInteger(q)&&q>0&&products.some(p=>p.id===id))}
+function count(){return cartEntries().reduce((sum,[,qty])=>sum+qty,0)}
+function save(){
+ try{localStorage.setItem('bhStoreCart',JSON.stringify(cart))}catch(e){console.warn('Carrinho não pôde ser salvo:',e.message)}
+ renderCart();
+}
+function renderCart(){
+ const entries=cartEntries(),qty=count(),total=entries.reduce((sum,[id,n])=>{
+  const product=products.find(p=>p.id===id);
+  return sum+Number(product?.price||0)*n;
+ },0);
+ document.getElementById('cartCount').textContent=qty>99?'99+':String(qty);
+ document.getElementById('cartHeaderCount').textContent='('+qty+')';
+ document.getElementById('cartQtySummary').textContent=qty+' '+(qty===1?'item':'itens');
+ document.getElementById('cartTotal').textContent=money(total);
+ document.querySelector('#checkoutForm button[type="submit"]').disabled=!entries.length;
+ cartItems.replaceChildren();
+ if(!entries.length){
+  const empty=cartNode('div','bh-cart-empty');
+  const graphic=cartNode('span','bh-cart-empty-icon','🛒');graphic.setAttribute('aria-hidden','true');
+  empty.append(graphic,cartNode('strong','','Seu carrinho está vazio'),
+   cartNode('p','','Escolha seus produtos e adicione ao carrinho para continuar.'));
+  cartItems.append(empty);return;
+ }
+ for(const [id,n] of entries){
+  const p=products.find(x=>x.id===id);
+  const row=cartNode('article','bh-cart-item');
+  const art=cartNode('div','bh-cart-item-art');
+  if(p.image_url&&/^https:\/\//i.test(p.image_url)){
+   const img=document.createElement('img');img.src=p.image_url;img.alt='';
+   img.loading='lazy';art.append(img);
+  }else art.textContent=p.tag||p.name.slice(0,16);
+  const information=cartNode('div','bh-cart-item-copy');
+  const heading=cartNode('h3','',p.name);
+  const description=cartNode('p','',(p.description||'Produto Black Hands').slice(0,90));
+  const cost=cartNode('strong','',money(p.price*n));
+  const controls=cartNode('div','bh-cart-item-ctrl');
+  const countControl=cartNode('div','qty');
+  for(const [delta,symbol,word] of [[-1,'−','Diminuir'],[0,String(n),''],[1,'+','Aumentar']]){
+   if(delta===0){countControl.append(cartNode('span','',symbol));continue}
+   const btn=cartNode('button','',symbol);
+   btn.type='button';btn.dataset.change=id;btn.dataset.delta=String(delta);
+   btn.disabled=delta===1&&n>=20;
+   btn.setAttribute('aria-label',word+' quantidade de '+p.name);
+   countControl.append(btn);
+  }
+  const remove=cartNode('button','bh-cart-remove','Remover');
+  remove.type='button';remove.dataset.remove=id;
+  remove.setAttribute('aria-label','Remover '+p.name+' do carrinho');
+  controls.append(countControl,remove);
+  information.append(heading,description,cost,controls);row.append(art,information);cartItems.append(row);
+ }
+}
+function openCart(){
+ previousFocus=document.activeElement;
+ cartPanel.classList.add('open');cartPanel.setAttribute('aria-hidden','false');
+ cartToggle.setAttribute('aria-expanded','true');
+ document.body.classList.add('bh-store-cart-open');
+ cartDrawer.focus();
+}
+function closeCart(){
+ if(!cartPanel.classList.contains('open'))return;
+ cartPanel.classList.remove('open');cartPanel.setAttribute('aria-hidden','true');
+ cartToggle.setAttribute('aria-expanded','false');
+ document.body.classList.remove('bh-store-cart-open');
+ previousFocus?.focus?.();previousFocus=null;
+}
+cartToggle.addEventListener('click',openCart);
+cartClose.addEventListener('click',closeCart);
+document.getElementById('continueShopping').addEventListener('click',closeCart);
+cartPanel.addEventListener('mousedown',e=>{if(e.target===cartPanel)closeCart()});
+document.addEventListener('keydown',e=>{
+ if(!cartPanel.classList.contains('open'))return;
+ if(e.key==='Escape'){e.preventDefault();closeCart();return}
+ if(e.key!=='Tab')return;
+ const controls=[...cartDrawer.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]')];
+ if(!controls.length)return;
+ if(e.shiftKey&&document.activeElement===controls[0]){e.preventDefault();controls[controls.length-1].focus()}
+ else if(!e.shiftKey&&document.activeElement===controls[controls.length-1]){e.preventDefault();controls[0].focus()}
+});
+productsEl.addEventListener('click',e=>{
+ const b=e.target.closest('[data-add]');if(!b)return;
+ const id=b.dataset.add;
+ if(!products.some(p=>p.id===id))return;
+ cart[id]=Math.min(20,(Number(cart[id])||0)+1);
+ save();
+ cartToggle.classList.remove('bh-cart-added');void cartToggle.offsetWidth;cartToggle.classList.add('bh-cart-added');
+ b.textContent='ADICIONADO ✓';
+ setTimeout(()=>{if(b.isConnected)b.textContent='ADICIONAR AO CARRINHO';cartToggle.classList.remove('bh-cart-added')},900);
+});
+cartItems.addEventListener('click',e=>{
+ const btn=e.target.closest('[data-change],[data-remove]');
+ if(!btn)return;
+ const id=btn.dataset.change||btn.dataset.remove;
+ if(!(id in cart))return;
+ if(btn.hasAttribute('data-remove'))delete cart[id];
+ else{
+  cart[id]=Math.max(0,Math.min(20,cart[id]+Number(btn.dataset.delta)));
+  if(cart[id]===0)delete cart[id];
+ }
+ save();
+});
+document.getElementById('checkoutForm').addEventListener('submit',async e=>{e.preventDefault();const ids=Object.keys(cart).filter(id=>cart[id]>0&&products.some(p=>p.id===id));if(!ids.length)return;if(!await window.BHSession.get()){closeCart();await window.BHSession.requireLogin({action:'comprar',next:'loja.html?carrinho=1'});return;}const account=await window.BHSession.get();const order={customer:{name:account.fullName,phone:account.phone,email:document.getElementById('customerEmail').value.trim(),cpfCnpj:document.getElementById('customerCpf').value.trim()},fulfillment:document.getElementById('fulfillment').value,items:ids.map(id=>({productId:id,quantity:cart[id]}))};const msg=document.getElementById('checkoutMessage');try{const res=await fetch('/api/store/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)});const data=await res.json();if(!res.ok)throw new Error(data.error||'O checkout ainda não está configurado.');if(data.paymentUrl)location.href=data.paymentUrl;else if(data.qrCodeBase64||data.pixCopyPaste){msg.innerHTML=''; const title=document.createElement('p');title.textContent='Pix gerado! Pedido '+data.orderId+' — aguardando confirmação do pagamento.';msg.append(title); if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt='QR Code Pix';img.style.maxWidth='190px';msg.append(img);} if(data.pixCopyPaste){const code=document.createElement('textarea');code.readOnly=true;code.value=data.pixCopyPaste;code.rows=4;code.style.width='100%';msg.append(code);const btn=document.createElement('button');btn.type='button';btn.textContent='Copiar Pix';btn.onclick=()=>navigator.clipboard.writeText(code.value);msg.append(btn);}}else msg.textContent='Pedido criado; aguarde as instruções de pagamento.';}catch(err){msg.textContent='Carrinho pronto, mas o Pix automático ainda não está conectado ao servidor. Configure o backend/Asaas antes de receber pagamentos. Seus itens continuam salvos no navegador.';console.warn(err)}});renderCart();
+
+if(new URLSearchParams(location.search).has('carrinho'))window.BHSession.get().then(account=>{if(account)openCart()});
 
 
 async function syncStoreCatalog(){
