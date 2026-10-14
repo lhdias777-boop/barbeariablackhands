@@ -80,7 +80,9 @@ function sbBase(){if(!process.env.SUPABASE_URL||!process.env.SUPABASE_SERVICE_RO
 async function sbReq(table,query='',opts={}){
  const r=await fetch(sbBase()+table+query,{...opts,headers:{...sbHeaders(),...(opts.headers||{})}});
  if(!r.ok)throw Error('Erro Supabase '+r.status+': '+(await r.text()).slice(0,200));
- return r.status===204?[]:await r.json();
+ const body=await r.text();
+ if(!body.trim())return [];
+ try{return JSON.parse(body);}catch{throw Error('Resposta inválida do Supabase');}
 }
 async function vipAuth(req){
  const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
