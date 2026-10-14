@@ -177,3 +177,88 @@
 .bh-contact-route{margin-top:12px;white-space:normal;text-align:center}
 .bh-contact-location iframe{width:100%;min-height:285px;height:100%;border:0;border-radius:13px;background:#1b1917}
 @media(max-width:780px){.bh-contact-location{grid-template-columns:1fr;padding:12px;gap:12px}.bh-contact-location-copy{padding:17px 12px}.bh-contact-location iframe{height:275px;min-height:275px}}
+
+
+/* Navegação global Black Hands, sem esconder ações como Carrinho/Agendar */
+body.bh-shared-menu > header > nav,
+body.bh-shared-menu > header > .account-nav {display:none!important}
+body.bh-shared-menu.bh-site-menu-open{overflow:hidden}
+body.bh-shared-menu .bh-site-menu-toggle{
+ appearance:none;flex:none;display:inline-flex;align-items:center;justify-content:center;
+ gap:9px;min-width:49px;min-height:45px;padding:10px 14px;margin-left:auto;
+ border-radius:12px;border:1px solid #a36837;
+ color:#ffc481;background:linear-gradient(155deg,#211810,#100e0c);
+ font:800 13px/1 system-ui,-apple-system,sans-serif;cursor:pointer;
+ box-shadow:inset 0 1px #ffffff12
+}
+body.bh-shared-menu .bh-site-menu-toggle:hover,
+body.bh-shared-menu .bh-site-menu-toggle[aria-expanded=true]{background:#392318;border-color:#f4a25a}
+.bh-site-menu-bars{display:grid;gap:4px;width:21px}
+.bh-site-menu-bars i{display:block;width:21px;height:2px;border-radius:3px;background:#ffb86d}
+.bh-site-menu-bars i:nth-child(2){width:16px}
+.bh-site-menu-mask{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1700;backdrop-filter:blur(5px)}
+.bh-site-menu-mask[hidden],.bh-site-menu-panel[hidden]{display:none!important}
+.bh-site-menu-panel{
+ position:fixed;z-index:1701;top:0;right:0;bottom:0;overflow-y:auto;
+ width:min(400px,100vw);max-height:100dvh;
+ padding:22px 20px 26px;
+ background:linear-gradient(153deg,#25180e 0%,#11100f 31%,#0c0b0a 100%);
+ border-left:1px solid #86502c;box-shadow:-18px 0 65px #000b;
+ color:#f8eee4;font-family:system-ui,-apple-system,"Segoe UI",sans-serif
+}
+.bh-site-menu-panel *{box-sizing:border-box}
+.bh-site-menu-head{display:flex;align-items:center;gap:12px;padding:4px 0 22px;border-bottom:1px solid #573923}
+.bh-site-menu-head img{flex:none;width:59px;height:59px;object-fit:contain;border-radius:14px;background:#090909}
+.bh-site-menu-head strong{display:block;font-weight:900;letter-spacing:1.7px;font-size:16px}
+.bh-site-menu-head small{display:block;color:#bda78f;font-weight:750;letter-spacing:2px;font-size:9px;margin-top:5px}
+.bh-site-menu-close{appearance:none;display:grid;place-items:center;flex:none;margin-left:auto;width:41px;height:41px;border-radius:11px;border:1px solid #815535;color:#f9c086;background:#231a14;font-size:27px;cursor:pointer}
+.bh-site-menu-account{display:flex;align-items:center;gap:12px;margin:23px 0 14px;padding:12px;border-radius:15px;border:1px solid #966136;background:linear-gradient(110deg,#352316,#1b1510);text-decoration:none;color:#ffdfb8}
+.bh-site-menu-account img{flex:none;width:44px;height:44px;object-fit:contain;border-radius:11px;background:#050505}
+.bh-site-menu-account strong{font-size:15px;font-weight:850;display:block}
+.bh-site-menu-account small{font-size:12px;line-height:1.4;display:block;margin-top:4px;color:#c4ad99}
+.bh-site-menu-chevron{font-size:28px;line-height:1;margin-left:auto}
+body.bh-shared-menu .bh-site-menu-panel .bh-site-menu-links{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px!important;
+ width:100%!important;position:static!important;background:transparent!important;
+ border:none!important;padding:0!important;max-height:none!important;overflow:visible!important;
+ margin:0!important;box-shadow:none!important
+}
+.bh-site-menu-panel .bh-site-menu-links a{
+ display:flex;align-items:center;gap:15px;border-radius:11px;border:1px solid transparent;
+ min-height:49px;padding:12px 13px;color:#efe6dd!important;text-decoration:none;
+ font-size:14px!important;font-weight:690;transition:background .2s,border-color .2s
+}
+.bh-site-menu-panel .bh-site-menu-links a:hover,
+.bh-site-menu-panel .bh-site-menu-links a[aria-current=page]{
+ color:#ffc389!important;background:#271c13;border-color:#624129
+}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-book{
+ background:#f0a052!important;color:#1d1108!important;font-weight:900;border-color:#f0a052;margin:8px 0
+}
+.bh-site-menu-icon{display:grid;place-items:center;flex:none;width:27px;height:27px;font-size:22px;color:#e5a160}
+.bh-site-menu-links .bh-site-menu-book .bh-site-menu-icon{color:#2c1a0e}
+.bh-site-menu-foot{font-size:10px;letter-spacing:1.6px;color:#9f8774;border-top:1px solid #4b3322;margin-top:18px;padding-top:24px;text-align:center}
+.bh-site-menu-panel a:focus-visible,.bh-site-menu-panel button:focus-visible,
+.bh-site-menu-toggle:focus-visible{outline:2px solid #ffbf72;outline-offset:3px}
+.bh-account-avatar.is-brand img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}
+.bh-auth-mark:has(img){overflow:hidden;padding:4px}
+.bh-auth-mark img{display:block;width:100%;height:100%;object-fit:contain;border-radius:10px}
+@media(max-width:680px){
+ body.bh-shared-menu .bh-site-menu-text{display:none}
+ body.bh-shared-menu .bh-site-menu-toggle{min-width:45px;width:45px;height:45px;padding:8px;margin-left:8px}
+ body.bh-shared-menu .brand{min-width:0}
+ body.bh-shared-menu .brand strong{font-size:16px}
+ body.bh-shared-menu .brand small{font-size:7px;letter-spacing:2px}
+ body.bh-shared-menu .brand-official{max-width:45px;max-height:45px}
+ body.bh-shared-menu .account-brand{min-width:0}
+ body.bh-shared-menu .account-brand img{width:45px;height:45px}
+ body.bh-shared-menu .account-brand strong{font-size:13px;letter-spacing:1px}
+ body.bh-shared-menu .account-brand small{font-size:8px;letter-spacing:1.5px}
+ body.bh-shared-menu .topbar{padding:0 13px}
+ body.bh-shared-menu .topbar>.btn-small{padding:9px;font-size:11px}
+ body.bh-shared-menu .topbar .cart-open{font-size:11px;padding:10px 9px;min-width:0}
+ body.bh-shared-menu .booking-header-actions .service-action{display:none}
+ body.bh-shared-menu .bhb-head-actions{gap:6px}
+ body.bh-shared-menu .bhb-head-actions a{padding:9px 8px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.bh-site-menu-panel .bh-site-menu-links a{transition:none}}
