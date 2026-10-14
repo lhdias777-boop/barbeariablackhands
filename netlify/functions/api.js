@@ -15,5 +15,8 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({error:'Pagamentos temporariamente indisponíveis. A integração está em validação; nenhuma cobrança foi gerada.'})
     };
   }
-  return handler(event, context);
+ return handler({
+  ...event,
+  path: route.startsWith('/api/') ? route : '/api' + (route === '/' ? '' : route)
+}, context);
 };
