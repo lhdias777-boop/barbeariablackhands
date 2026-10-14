@@ -41,7 +41,7 @@ body{background:#0b0a09;color:#fff8ef}
 .vip-calendar-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:17px 0 23px}
 .vip-calendar-steps div{padding:13px;border-radius:12px;background:#17130f;border:1px solid #5a422d;color:#d7c3b1;font-size:12px;line-height:1.55}
 .vip-calendar-steps strong{display:block;color:#f8af63;font-size:16px;margin-bottom:4px}
-.vip-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:13px}
+.vip-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:13px}
 .vip-label{display:grid;gap:8px;font-size:12px;color:#d8c8b9;font-weight:750}
 .vip-label input,.vip-label select,#pixCode{width:100%;min-height:48px;padding:12px 13px;border:1px solid #725037;border-radius:11px;background:#100f0e;color:#fff;font:inherit}
 .vip-label input:focus,.vip-label select:focus{outline:2px solid #f0a052}
@@ -67,36 +67,38 @@ body{background:#0b0a09;color:#fff8ef}
 <main class="vip-wrap">
 <section class="vip-hero"><p class="vip-eyebrow">EXCLUSIVO BLACK HANDS CLUB</p><h1>Seu estilo merece <span>ser VIP.</span></h1>
 <p>Escolha o plano ideal, tenha seus benefícios garantidos e marque você mesmo os dias dos seus cortes.</p>
-<div class="vip-hero-tags"><span>✂ 2 sessões por mês</span><span>◷ Segunda a quinta</span><span>♛ Área VIP exclusiva</span></div></section>
+<div class="vip-hero-tags"><span>✂ 4 atendimentos mensais</span><span>◷ Segunda a quinta</span><span>♛ Área VIP exclusiva</span></div></section>
 <section class="vip-cards" aria-label="Escolha seu plano VIP">
 <article class="vip-card"><span class="vip-card-kicker">O ESSENCIAL DO SEU ESTILO</span><h2>VIP 1</h2>
 <div class="vip-price"><strong>R$ 70,00</strong><span>/ mês</span></div>
-<p>Seu corte sempre em dia, com a liberdade de escolher quando quer ser atendido.</p>
-<ul class="vip-benefits"><li>2 cortes com acabamento por mês</li><li>Escolha seus horários no calendário VIP</li><li>Atendimento de segunda a quinta</li><li>Acompanhamento na Minha Conta</li></ul>
+<p>Um plano completo com corte e acabamento em semanas alternadas.</p>
+<ul class="vip-benefits"><li>Semana 1: Corte</li><li>Semana 2: Acabamento</li><li>Semana 3: Corte</li><li>Semana 4: Acabamento</li><li>Escolha seus horários no calendário VIP</li><li>Atendimento de segunda a quinta</li><li>Acompanhamento na Minha Conta</li></ul>
 <button class="vip-action" data-plan="vip1" type="button">QUERO SER VIP 1 →</button></article>
 <article class="vip-card vip-featured"><span class="vip-card-kicker">EXPERIÊNCIA COMPLETA</span><h2>VIP 2</h2>
 <div class="vip-price"><strong>R$ 160,00</strong><span>/ mês</span></div>
 <p>Mais cuidados e praticidade para manter todos os detalhes do visual.</p>
-<ul class="vip-benefits"><li>2 atendimentos por mês</li><li>Corte, barba, sobrancelhas e acabamento</li><li>Agendamento VIP de segunda a quinta</li><li>Seus horários registrados automaticamente</li></ul>
+<ul class="vip-benefits"><li>Semana 1: Corte + barba + sobrancelhas</li><li>Semana 2: Acabamento</li><li>Semana 3: Corte + barba + sobrancelhas</li><li>Semana 4: Acabamento</li><li>Agendamento VIP de segunda a quinta</li><li>Seus horários registrados automaticamente</li></ul>
 <button class="vip-action" data-plan="vip2" type="button">QUERO SER VIP 2 →</button></article>
 </section>
 <section class="vip-status" id="vipMembership">
 <div class="vip-status-row"><div><p class="vip-status-label">MINHA ASSINATURA</p><h2>Seu status VIP</h2><p id="vipStatus">Entre na conta para consultar seus benefícios.</p></div>
 <button class="vip-action vip-outline" id="checkVip" type="button">CONSULTAR MEU PLANO</button></div></section>
 <section class="vip-calendar" id="vipCalendar">
-<div class="vip-calendar-head"><div><p class="vip-status-label">CALENDÁRIO VIP</p><h2>Você escolhe quando cortar.</h2><p>Após a ativação do plano, selecione seus horários. A reserva aparecerá automaticamente para o barbeiro WELIGOL.</p></div><span class="vip-hero-tags"><span>Seg a Qui · 7h–19h</span></span></div>
-<div class="vip-calendar-steps"><div><strong>01</strong>Tenha um plano VIP ativo</div><div><strong>02</strong>Escolha dia e horário livre</div><div><strong>03</strong>Receba sua confirmação e compareça</div></div>
+<div class="vip-calendar-head"><div><p class="vip-status-label">CALENDÁRIO VIP</p><h2>Você escolhe quando cortar.</h2><p>Após a ativação da mensalidade, escolha um dia de segunda a quinta para cada uma das quatro semanas. Cada reserva entra automaticamente na agenda do barbeiro WELIGOL.</p></div><span class="vip-hero-tags"><span>Seg a Qui · 7h–19h</span></span></div>
+<div class="vip-calendar-steps"><div><strong>01</strong>Tenha um plano VIP ativo</div><div><strong>02</strong>Agende um benefício por semana</div><div><strong>03</strong>Receba sua confirmação e compareça</div></div>
 <p id="vipCalendarSummary" class="vip-status-label">Consultando sua conta VIP...</p>
 <form class="vip-calendar-form" id="vipCalendarForm" hidden>
+<p class="vip-status-label" id="vipWeeklyService">Escolha a semana do seu benefício.</p>
 <div class="vip-form-grid">
-<label class="vip-label">Escolha o dia do corte<input id="vipVisitDate" type="date" required></label>
+<label class="vip-label">Semana do plano<select id="vipVisitWeek" required><option value="">Escolha a semana</option></select></label>
+<label class="vip-label">Escolha o dia do atendimento<input id="vipVisitDate" type="date" required></label>
 <label class="vip-label">Horários disponíveis<select id="vipVisitTime" required><option value="">Escolha a data primeiro</option></select></label>
 </div><button class="vip-action" id="vipVisitSubmit" type="submit">CONFIRMAR MEU CORTE VIP →</button>
 </form>
 <p id="vipCalendarMessage" role="status"></p>
-<h2 style="font-size:23px;margin-top:25px">Meus cortes VIP</h2>
+<h2 style="font-size:23px;margin-top:25px">Meus atendimentos VIP</h2>
 <div id="vipVisitList" class="vip-visit-list" aria-live="polite"><p class="vip-help">Entre na sua conta para conferir suas sessões.</p></div>
-<p class="vip-help">Cada plano inclui até duas sessões por mês. O horário precisa estar dentro da validade da assinatura. Não há cobrança extra pela reserva do corte já incluído no VIP.</p>
+<p class="vip-help">Cada mensalidade inclui quatro benefícios, um em cada semana. Semanas 1 e 3 são de corte; semanas 2 e 4 são de acabamento. O horário deve estar dentro da validade do plano. Não há cobrança extra pela reserva do corte já incluído no VIP.</p>
 </section>
 <section class="vip-checkout" id="vipCheckout" hidden>
 <h2 id="selectedPlan">Assinar plano</h2><p>Você receberá uma cobrança Pix pelo Asaas. O calendário VIP será liberado somente depois da confirmação do pagamento no servidor.</p>
