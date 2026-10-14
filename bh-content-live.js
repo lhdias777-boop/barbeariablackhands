@@ -18,8 +18,12 @@
   if(promo&&c.promo_text)promo.textContent=c.promo_text;
   // Atualiza a localização pública quando o ADM alterar o endereço no painel.
   const address=document.getElementById('bhOfficialAddress');
-  if(address&&typeof c.location_address==='string'&&c.location_address.trim())
-   address.textContent=c.location_address.trim().slice(0,240);
+  if(address&&typeof c.location_address==='string'&&c.location_address.trim()){
+   const updated=c.location_address.trim().slice(0,240);
+   address.textContent=updated;
+   const embed=document.getElementById('bhOfficialMap');
+   if(embed)embed.src='https://www.google.com/maps?q='+encodeURIComponent(updated)+'&output=embed';
+  }
   const mapsLink=document.getElementById('bhDirections');
   if(mapsLink&&typeof c.location_maps_url==='string'){
    try{
