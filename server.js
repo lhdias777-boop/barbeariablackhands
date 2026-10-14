@@ -519,14 +519,28 @@ const BH_CATALOG = {"gel-cola": 25.0, "gel-boy": 35.0, "gel-cola-black": 25.0, "
 const BH_SERVICES = {"Combo Corte + Sobrancelha": 40.0, "Pacote Completo": 50.0, "Cabelo": 35.0, "Barba": 30.0, "Pintura": 15.0, "Relaxamento": 15.0, "Pigmentação": 15.0, "Pezinho": 10.0, "Sobrancelha": 10.0};
 function pixErr(res,error,status=400){return res.status(status).json({error});}
 function cleanText(v,max=120){return String(v||'').trim().slice(0,max);}
-function todayPlusOne(){return new Date(Date.now()+86400000).toISOString().slice(0,10);}
+// Vencimento sempre na data local da barbearia, não em UTC (evita troca de dia).
+function todayPlusOne(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',
+ year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+86400000));}
 function validPhone(v){return String(v||'').replace(/\D/g,'').length>=10;}
-async function createPixForOrder({name,cpfCnpj,amount,description,externalReference}){
+// Primeiro persiste a cobrança. Se o QR ainda não existir, não cria outra cobrança.
+async function getPixQr(paymentId){
+ try{
+  const pix=await asaas('/payments/'+encodeURIComponent(paymentId)+'/pixQrCode');
+  return pix?.payload?pix:null;
+ }catch(e){
+  console.error('Asaas Pix QR indisponível temporariamente:',String(e.message).slice(0,100));
+  return null;
+ }
+}
+async function createPixForOrder({name,cpfCnpj,amount,description,externalReference,onCreated}){
  const digits=String(cpfCnpj||'').replace(/\D/g,'');
  if(![11,14].includes(digits.length))throw Error('CPF/CNPJ necessário para gerar Pix');
  const customer=await asaas('/customers',{method:'POST',body:JSON.stringify({name,cpfCnpj:digits})});
  const payment=await asaas('/payments',{method:'POST',body:JSON.stringify({customer:customer.id,billingType:'PIX',value:amount,dueDate:todayPlusOne(),description,externalReference})});
- const pix=await asaas('/payments/'+encodeURIComponent(payment.id)+'/pixQrCode');
+ if(!payment?.id)throw Error('Cobrança Asaas sem identificador de pagamento');
+ if(onCreated)await onCreated(payment.id);
+ const pix=await getPixQr(payment.id);
  return {payment,pix};
 }
 async function savePixOrder(record){
@@ -610,6 +624,45 @@ function bookedSlots(rows,time,duration){
 async function bookingReservations(barber,date){
  return sbReq('bh_booking_reservations','?barber=eq.'+encodeURIComponent(barber)+'&appointment_date=eq.'+encodeURIComponent(date)+'&select=appointment_time,duration_minutes,status,hold_until');
 }
+// Recuperar QR já criado, sem gerar cobranças duplicadas. Exige a conta dona do pedido.
+app.get('/api/pix/qr/:kind/:id',requireAccount,async(req,res)=>{
+ accountNoCache(res);
+ const kind=String(req.params.kind||''),id=String(req.params.id||'');
+ if(!['store','booking','vip'].includes(kind)||!/^[0-9a-f-]{36}$/i.test(id))
+  return res.status(400).json({error:'Pedido Pix inválido.'});
+ if(paymentEnvironment()==='disabled')
+  return res.status(503).json({error:'O Pix ainda não está habilitado nesta Black Hands.'});
+ try{
+  const table=kind==='vip'?'bh_customer_vip_payments':'bh_pix_orders';
+  const rows=await sbReq(table,'?id=eq.'+id+'&account_id=eq.'+
+   encodeURIComponent(req.bhAccount.id)+'&select=id,status,asaas_payment_id,payment_environment'+
+   (kind==='vip'?'':',kind')+'&limit=1');
+  const payment=rows[0];
+  if(!payment||(kind!=='vip'&&payment.kind!==kind))
+   return res.status(404).json({error:'Pedido não encontrado nesta conta.'});
+  if(payment.payment_environment!==paymentEnvironment())
+   return res.status(409).json({error:'Este pedido foi criado em outro ambiente de pagamentos.'});
+  if(payment.status==='PAID')return res.json({status:'PAID',message:'Pagamento confirmado pelo Asaas.'});
+  if(!['PENDING','CREATING'].includes(payment.status)||!payment.asaas_payment_id)
+   return res.status(409).json({error:'Não existe uma cobrança Pix válida para este pedido.'});
+  if(kind==='booking'){
+   const bookings=await sbReq('bh_booking_reservations','?pix_order_id=eq.'+id+
+    '&select=status,hold_until&limit=1');
+   const slot=bookings[0];
+   if(!slot||!['HOLD','AWAITING_STAFF','CONFIRMED'].includes(slot.status)||
+      (slot.status==='HOLD'&&Date.parse(slot.hold_until)<=Date.now()))
+    return res.status(409).json({error:'A pré-reserva expirou. Escolha outro horário antes de pagar.'});
+  }
+  const pix=await getPixQr(payment.asaas_payment_id);
+  if(!pix)return res.status(202).json({status:'PENDING',qrPending:true,
+   message:'Cobrança criada. O Asaas ainda está preparando o código Pix; tente atualizar em instantes.'});
+  res.json({status:'PENDING',pixCopyPaste:pix.payload,qrCodeBase64:pix.encodedImage||null,
+   expiresAt:pix.expirationDate||null,paymentMode:paymentEnvironment()});
+ }catch(e){
+  console.error('Pix QR recovery:',String(e.message).slice(0,120));
+  res.status(503).json({error:'Não foi possível recuperar seu Pix agora. Tente novamente.'});
+ }
+});
 app.get('/api/booking/availability',async(req,res)=>{
  const barber=cleanText(req.query.barber,80),date=cleanText(req.query.date,10),duration=Number(req.query.duration||30);
  if(!BOOKING_BARBERS.has(barber)||!validBookingDate(date)||!Number.isInteger(duration)||duration<30||duration>240||duration%30)
