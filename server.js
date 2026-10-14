@@ -170,6 +170,13 @@ function accountSetCookie(res,token){
 function accountClearCookie(res){
  res.clearCookie(ACCOUNT_COOKIE,{httpOnly:true,secure:true,sameSite:'lax',path:'/'});
 }
+async function requireAccount(req,res,next){
+ try{
+  const account=await accountFromRequest(req);
+  if(!account)return res.status(401).json({error:'Entre ou crie sua conta Black Hands para continuar.'});
+  req.bhAccount=account;next();
+ }catch(e){console.error('Account guard:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível validar sua conta agora.'});}
+}
 async function accountFromRequest(req){
  const token=accountToken(req);
  if(!token)return null;
@@ -316,11 +323,7 @@ app.post('/api/account/claim-booking',accountSameOrigin,async(req,res)=>{
  }catch(e){console.error('Account claim:',e.message);return res.status(503).json({error:'Não foi possível vincular o agendamento.'});}
 });
 
-async function vipAuth(req){
- const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'').trim();
- if(!token)throw Error('login_required');
- return verifyCustomer(token);
-}
+async function vipAuth(req){const account=req.bhAccount||await accountFromRequest(req);if(!account)throw Error('login_required');return account;}
 async function asaas(endpoint,options={}){
  if(!process.env.ASAAS_API_KEY)throw Error('Asaas não configurado');
  if(paymentEnvironment()==='disabled')throw Error('Asaas não habilitado para este ambiente');
@@ -330,28 +333,28 @@ async function asaas(endpoint,options={}){
  if(!r.ok)throw Error('Asaas '+r.status+': '+JSON.stringify(j.errors||j).slice(0,250));
  return j;
 }
-app.get('/api/vip/me',async(req,res)=>{
+app.get('/api/vip/me',requireAccount,async(req,res)=>{
  try{
   const user=await vipAuth(req);
-  const rows=await sbReq('bh_vip_memberships','?user_id=eq.'+encodeURIComponent(user.id)+'&select=plan,status,paid_until,created_at&order=created_at.desc&limit=1');
+  const rows=await sbReq('bh_customer_vip_memberships','?account_id=eq.'+encodeURIComponent(user.id)+'&select=plan,status,paid_until,created_at&order=created_at.desc&limit=1');
   res.json({membership:rows[0]||null});
  }catch(e){res.status(e.message==='login_required'?401:503).json({error:'Faça login para consultar seu plano VIP ou configure o servidor.'});}
 });
-app.post('/api/vip/checkout',async(req,res)=>{
+app.post('/api/vip/checkout',accountSameOrigin,requireAccount,async(req,res)=>{
  try{
   const user=await vipAuth(req);
   const planId=String(req.body?.plan||'');
   const plan=VIP_PLANS[planId];
   if(!plan)return res.status(400).json({error:'Plano inválido'});
-  const name=String(req.body?.name||'').trim();
+  const name=user.full_name;
   const cpfCnpj=String(req.body?.cpfCnpj||'').replace(/\D/g,'');
   if(name.length<3||![11,14].includes(cpfCnpj.length))return res.status(400).json({error:'Informe nome e CPF/CNPJ válido para gerar a cobrança.'});
   const vipPaymentId=require('crypto').randomUUID();
-  await sbReq('bh_vip_payments','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:vipPaymentId,user_id:user.id,plan:planId,status:'CREATING',amount:plan.value,payment_environment:paymentEnvironment()})});
+  await sbReq('bh_customer_vip_payments','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:vipPaymentId,account_id:user.id,plan:planId,status:'CREATING',amount:plan.value,payment_environment:paymentEnvironment()})});
   const customer=await asaas('/customers',{method:'POST',body:JSON.stringify({name,cpfCnpj,externalReference:user.id})});
   const dueDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
   const payment=await asaas('/payments',{method:'POST',body:JSON.stringify({customer:customer.id,billingType:'PIX',value:plan.value,dueDate,description:'Black Hands '+plan.name+' - mensalidade',externalReference:user.id+':'+planId})});
-  await sbReq('bh_vip_payments','?id=eq.'+encodeURIComponent(vipPaymentId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
+  await sbReq('bh_customer_vip_payments','?id=eq.'+encodeURIComponent(vipPaymentId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
   const pix=await asaas('/payments/'+encodeURIComponent(payment.id)+'/pixQrCode');
   res.json({paymentId:payment.id,plan:plan.name,amount:plan.value,pixCopyPaste:pix.payload||null,qrCodeBase64:pix.encodedImage||null,expiresAt:pix.expirationDate||null,status:'PENDING'});
  }catch(e){console.error('VIP checkout:',e.message);res.status(503).json({error:'Não foi possível gerar o Pix. Confira login e configurações do servidor.'});}
@@ -376,6 +379,18 @@ app.post('/api/asaas/webhook',async(req,res)=>{
    }else if(order.status!=='PAID'){
     await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID',paid_at:new Date().toISOString()})});
    }
+   return res.sendStatus(200);
+  }
+  const newVip=await sbReq('bh_customer_vip_payments','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,account_id,plan,status,amount,payment_environment&limit=1');
+  if(newVip.length){
+   const v=newVip[0];
+   if(v.payment_environment!==paymentEnvironment())return res.sendStatus(200);
+   const real=await asaas('/payments/'+encodeURIComponent(paymentId));
+   if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(v.amount))return res.sendStatus(200);
+   if(v.status==='PAID')return res.sendStatus(200);
+   const until=new Date();until.setMonth(until.getMonth()+1);
+   await sbReq('bh_customer_vip_memberships','?on_conflict=account_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({account_id:v.account_id,plan:v.plan,status:'ACTIVE',paid_until:until.toISOString()})});
+   await sbReq('bh_customer_vip_payments','?id=eq.'+encodeURIComponent(v.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID'})});
    return res.sendStatus(200);
   }
   const rows=await sbReq('bh_vip_payments','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,user_id,plan,status,amount,payment_environment&limit=1');
@@ -416,17 +431,17 @@ async function savePixOrder(record){
 // Limite básico de tentativas; em produção usar rate limit distribuído.
 const checkoutBuckets=new Map();
 function checkoutLimit(req,res,next){const k=req.ip||'unknown',now=Date.now(),b=checkoutBuckets.get(k)||[];const recent=b.filter(t=>now-t<3600000);if(recent.length>=12)return pixErr(res,'Limite de cobranças por hora atingido',429);recent.push(now);checkoutBuckets.set(k,recent);next();}
-app.post('/api/store/checkout',checkoutLimit,async(req,res)=>{
+app.post('/api/store/checkout',accountSameOrigin,requireAccount,checkoutLimit,async(req,res)=>{
  try{
   const body=req.body||{}, customer=body.customer||{}, items=body.items;
-  const name=cleanText(customer.name),phone=cleanText(customer.phone),email=cleanText(customer.email);
+  const name=req.bhAccount.full_name,phone=req.bhAccount.phone,email=cleanText(customer.email);
   if(name.length<3||!validPhone(phone)||!Array.isArray(items)||!items.length||items.length>30)return pixErr(res,'Preencha os dados e selecione produtos válidos');
   let amount=0;const validated=[];const seen=new Set();
   for(const item of items){const id=cleanText(item.productId,70),q=Number(item.quantity);if(!Object.hasOwn(BH_CATALOG,id)||!Number.isInteger(q)||q<1||q>20||seen.has(id))return pixErr(res,'Carrinho inválido');seen.add(id);amount+=BH_CATALOG[id]*q;validated.push({productId:id,quantity:q,unitPrice:BH_CATALOG[id]});}
   amount=Math.round(amount*100)/100;
   if(amount<=0||amount>5000)return pixErr(res,'Valor de pedido inválido');
   const orderId=require('crypto').randomUUID();
-  await savePixOrder({id:orderId,kind:'store',amount,status:'CREATING',customer_name:name,customer_phone:phone,customer_email:email,details:{items:validated,fulfillment:cleanText(body.fulfillment,40)}});
+  await savePixOrder({id:orderId,account_id:req.bhAccount.id,kind:'store',amount,status:'CREATING',customer_name:name,customer_phone:phone,customer_email:email,details:{items:validated,fulfillment:cleanText(body.fulfillment,40)}});
   const {payment,pix}=await createPixForOrder({name,cpfCnpj:customer.cpfCnpj,amount,description:'Black Hands Store - '+orderId,externalReference:'store:'+orderId});
   await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(orderId),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({asaas_payment_id:payment.id,status:'PENDING'})});
   res.json({orderId,paymentId:payment.id,amount,pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',status:'PENDING'});
@@ -525,12 +540,13 @@ async function readBookingWithPayment(item){
  }
  return order;
 }
-app.post('/api/booking/status',bookingStatusLimit,async(req,res)=>{
+app.post('/api/booking/status',accountSameOrigin,requireAccount,bookingStatusLimit,async(req,res)=>{
  const token=String(req.body?.token||'');
  if(!/^[A-Za-z0-9_-]{40,90}$/.test(token))return pixErr(res,'Código de acompanhamento inválido.',400);
  try{
-  const rows=await sbReq('bh_booking_reservations','?access_token_hash=eq.'+trackingHash(token)+'&select=id,pix_order_id,barber,appointment_date,appointment_time,service_names,status,hold_until,payment_method,customer_name,customer_phone,amount&limit=1');
+  const rows=await sbReq('bh_booking_reservations','?access_token_hash=eq.'+trackingHash(token)+'&select=id,pix_order_id,barber,appointment_date,appointment_time,service_names,status,hold_until,payment_method,customer_name,customer_phone,amount,account_id&limit=1');
   if(!rows.length)return pixErr(res,'Agendamento não encontrado.',404);
+  if(rows[0].account_id!==req.bhAccount.id)return pixErr(res,'Agendamento não vinculado a esta conta.',403);
   const item=rows[0],order=await readBookingWithPayment(item);
   const method=item.payment_method==='PAY_ON_DAY'?'PAY_ON_DAY':'PIX';
   const paid=method==='PIX'&&order?.status==='PAID';
@@ -548,14 +564,14 @@ app.post('/api/booking/status',bookingStatusLimit,async(req,res)=>{
   });
  }catch(e){console.error('Booking status:',e.message);pixErr(res,'Acompanhamento indisponível no momento.',503);}
 });
-app.post('/api/booking/pay-on-day',checkoutLimit,async(req,res)=>{
+app.post('/api/booking/pay-on-day',accountSameOrigin,requireAccount,checkoutLimit,async(req,res)=>{
  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
  const details=asBookingDetails(b.services);
  if(name.length<3||!validPhone(phone)||!details||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,details?.duration||30,date))
   return pixErr(res,'Confira seus dados e selecione um horário disponível.',400);
  const crypto=require('crypto'),referenceId=crypto.randomUUID(),token=crypto.randomBytes(32).toString('base64url');
  try{
-  const account=await accountFromRequest(req);
+  const account=req.bhAccount;
   await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
   await sbReq('bh_booking_reservations','',{
    method:'POST',headers:{Prefer:'return=minimal'},
@@ -581,7 +597,7 @@ app.post('/api/booking/pay-on-day',checkoutLimit,async(req,res)=>{
   return pixErr(res,'Não foi possível registrar o agendamento. Tente novamente.',503);
  }
 });
-app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
+app.post('/api/booking/checkout',accountSameOrigin,requireAccount,checkoutLimit,async(req,res)=>{
  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
  const parsed=asBookingDetails(b.services),cpf=String(b.cpfCnpj||'').replace(/\D/g,'');
  if(name.length<3||!validPhone(phone)||!parsed||![11,14].includes(cpf.length)||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,parsed?.duration||30,date))
@@ -591,7 +607,7 @@ app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
  try{
   const account=await accountFromRequest(req);
   await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
-  await savePixOrder({id:orderId,kind:'booking',amount:parsed.amount,status:'CREATING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:parsed.services}});
+  await savePixOrder({id:orderId,account_id:account.id,kind:'booking',amount:parsed.amount,status:'CREATING',customer_name:name,customer_phone:phone,details:{date,time,barber,services:parsed.services}});
   orderCreated=true;
   // Exclusão GiST no Postgres impede conflitos mesmo com pedidos simultâneos.
   await sbReq('bh_booking_reservations','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
