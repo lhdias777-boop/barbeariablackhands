@@ -64,34 +64,102 @@ $('copyPix').addEventListener('click',async()=>{
  catch{message('Selecione e copie o código Pix manualmente.')}
 });
 const active=()=>membership?.status==='ACTIVE'&&Date.parse(membership.paid_until)>Date.now();
-function validVisitsThisMonth(date){
- return visits.filter(v=>v.date?.slice(0,7)===date.slice(0,7)&&v.status!=='CANCELLED').length;
-}
+const benefits=planId=>planId==='vip2'
+ ?['Corte + barba + sobrancelhas','Acabamento','Corte + barba + sobrancelhas','Acabamento']
+ :['Corte','Acabamento','Corte','Acabamento'];
+const weekDuration=week=>membership?.plan==='vip2'&&(week===1||week===3)?90:30;
+const utcDay=day=>Date.parse(day+'T12:00:00Z');
+const weekStart=week=>plusDays(membership.cycle_starts_on,(week-1)*7);
+const weekEnd=week=>plusDays(weekStart(week),6);
+const weekForDate=date=>{
+ if(!date||!membership?.cycle_starts_on)return null;
+ const offset=Math.round((utcDay(date)-utcDay(membership.cycle_starts_on))/86400000);
+ return offset>=0&&offset<28?Math.floor(offset/7)+1:null;
+};
+const bookedForWeek=week=>visits.some(v=>
+ v.cycleStart===membership?.cycle_starts_on&&Number(v.weekNumber)===Number(week)&&v.status!=='CANCELLED');
 function paintVisits(){
  const root=$('vipVisitList');root.replaceChildren();
- if(!visits.length){const p=document.createElement('p');p.className='vip-help';p.textContent='Nenhum corte VIP agendado. Escolha seu primeiro dia acima.';root.append(p);return}
+ if(!visits.length){
+  const p=document.createElement('p');p.className='vip-help';
+  p.textContent='Nenhum atendimento VIP reservado. Escolha sua primeira semana acima.';
+  root.append(p);return;
+ }
  for(const visit of visits){
   const row=document.createElement('div');row.className='vip-visit';
   const left=document.createElement('div'),label=document.createElement('strong'),details=document.createElement('small');
-  label.textContent=formatDay(visit.date)+' · '+visit.time;
+  label.textContent=formatDay(visit.date)+' · '+visit.time+' · '+(visit.weekNumber?'Semana '+visit.weekNumber:'VIP');
   const attendance=visit.attendance==='ATTENDED'?'Atendido':visit.attendance==='NO_SHOW'?'Não compareceu':
    visit.status==='CANCELLED'?'Cancelado':'Agendado';
-  details.textContent=visit.barber+' · '+visit.plan.toUpperCase()+' · '+attendance;
+  details.textContent=(visit.services||[]).join(' + ')+' · '+visit.barber+' · '+attendance;
   left.append(label,document.createElement('br'),details);row.append(left);root.append(row);
  }
 }
+function weekOptions(){
+ const select=$('vipVisitWeek'),old=select.value;
+ select.replaceChildren();
+ const blank=document.createElement('option');blank.value='';blank.textContent='Selecione a semana';select.append(blank);
+ const dates=membership?.cycle_starts_on?true:false;
+ let available=0;
+ if(dates){
+  benefits(membership.plan).forEach((benefit,i)=>{
+   const w=i+1,used=bookedForWeek(w);
+   const option=document.createElement('option');option.value=String(w);
+   option.textContent='Semana '+w+' · '+benefit+(used?' (reservado)':'');
+   option.disabled=used||weekEnd(w)<today();
+   if(!option.disabled)available++;
+   select.append(option);
+  });
+ }
+ if(old&&[...select.options].some(o=>o.value===old&&!o.disabled))select.value=old;
+ else if(available)select.value=[...select.options].find(o=>o.value&&!o.disabled)?.value||'';
+ return available;
+}
+function updateWeekDate(){
+ const week=Number($('vipVisitWeek').value),date=$('vipVisitDate');
+ if(!active()||!week){date.value='';$('vipWeeklyService').textContent='Escolha uma semana disponível.';return}
+ const earliest=weekStart(week),latest=weekEnd(week);
+ const min=today()>earliest?today():earliest;
+ // Data limite vem da assinatura; o servidor verifica o término exato da sessão.
+ const due=String(membership.paid_until).slice(0,10);
+ const max=due<latest?due:latest;
+ date.min=min;date.max=max;
+ const allowed=d=>{
+  if(d<min||d>max)return false;
+  return [1,2,3,4].includes(new Date(d+'T12:00:00Z').getUTCDay());
+ };
+ if(!allowed(date.value)){
+  date.value='';
+  for(let d=min;d<=max;d=plusDays(d,1)){if(allowed(d)){date.value=d;break}}
+ }
+ $('vipWeeklyService').textContent='Semana '+week+' · '+benefits(membership.plan)[week-1]+
+  ' — de '+formatDay(earliest)+' a '+formatDay(latest);
+ if(!date.value)$('vipCalendarMessage').textContent='Não há dias de segunda a quinta disponíveis nesta semana.';
+}
 async function loadSlots(){
- const day=$('vipVisitDate').value,select=$('vipVisitTime');select.replaceChildren();
- const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Selecione o dia primeiro';select.append(placeholder);
- if(!day||!active())return;
- const dayOfWeek=new Date(day+'T12:00:00Z').getUTCDay();
- if(![1,2,3,4].includes(dayOfWeek)){$('vipCalendarMessage').textContent='O VIP funciona somente de segunda a quinta.';return;}
- if(validVisitsThisMonth(day)>=2){$('vipCalendarMessage').textContent='Você já reservou as duas sessões VIP desse mês.';return;}
- const duration=membership.plan==='vip2'?60:30;
+ const day=$('vipVisitDate').value,select=$('vipVisitTime');
+ select.replaceChildren();
+ const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Escolha uma data válida';select.append(placeholder);
+ if(!active())return;
+ const week=Number($('vipVisitWeek').value);
+ if(!week||!day)return;
+ if(weekForDate(day)!==week||bookedForWeek(week)){
+  $('vipCalendarMessage').textContent='Escolha uma semana sem reserva e uma data dentro dela.';return;
+ }
+ if(![1,2,3,4].includes(new Date(day+'T12:00:00Z').getUTCDay())){
+  $('vipCalendarMessage').textContent='Os atendimentos VIP acontecem somente de segunda a quinta.';return;
+ }
  try{
-  const data=await request('/api/booking/availability?barber='+encodeURIComponent(barber)+'&date='+encodeURIComponent(day)+'&duration='+duration);
-  for(const time of data.times||[]){const o=document.createElement('option');o.value=time;o.textContent=time;select.append(o);}
-  $('vipCalendarMessage').textContent=data.times?.length?'Horários livres: escolha um e confirme.':'Sem horários livres nesse dia. Selecione outra data.';
+  const duration=weekDuration(week);
+  const data=await request('/api/booking/availability?barber='+encodeURIComponent(barber)+
+   '&date='+encodeURIComponent(day)+'&duration='+duration);
+  for(const time of data.times||[]){
+   const option=document.createElement('option');option.value=time;option.textContent=time;
+   select.append(option);
+  }
+  $('vipCalendarMessage').textContent=data.times?.length?
+   'Escolha um horário para '+benefits(membership.plan)[week-1]+'.':
+   'Sem horários livres para esse benefício nesta data. Escolha outro dia desta semana.';
  }catch(e){$('vipCalendarMessage').textContent=e.message;}
 }
 async function loadCalendar(){
@@ -99,49 +167,50 @@ async function loadCalendar(){
  try{
   const profile=await window.BHSession.get();
   if(!profile){
-   summary.textContent='Crie sua conta para ter acesso ao calendário VIP.';
-   form.hidden=true;$('vipVisitList').textContent='Faça login para conferir seus cortes.';
+   summary.textContent='Crie sua conta para acessar o calendário VIP.';
+   form.hidden=true;$('vipVisitList').textContent='Faça login para conferir seus atendimentos VIP.';
    $('vipStatus').textContent='Entre na Minha Conta para consultar seu plano.';
    return;
   }
   const data=await request('/api/vip/appointments');
   membership=data.membership;visits=data.appointments||[];barber=data.barber||'WELIGOL';
   if(active()){
-   $('vipStatus').textContent=membership.plan.toUpperCase()+' ATIVO · válido até '+new Date(membership.paid_until).toLocaleDateString('pt-BR');
+   $('vipStatus').textContent=membership.plan.toUpperCase()+' ATIVO · válido até '+
+    new Date(membership.paid_until).toLocaleDateString('pt-BR');
    $('vipCheckout').hidden=true;
-   const month=today().slice(0,7);
-   const used=validVisitsThisMonth(month+'-01');
-   summary.textContent=membership.plan.toUpperCase()+' ATIVO · '+used+'/2 sessões agendadas neste mês';
-   const min=today(),max=plusDays(min,60),expiry=String(membership.paid_until).slice(0,10);
-   $('vipVisitDate').min=min;
-   $('vipVisitDate').max=expiry<max?expiry:max;
-   if(!$('vipVisitDate').value||$('vipVisitDate').value<min||$('vipVisitDate').value>$('vipVisitDate').max)$('vipVisitDate').value=min;
-   form.hidden=false;
+   const used=visits.filter(v=>v.cycleStart===membership.cycle_starts_on&&v.status!=='CANCELLED').length;
+   summary.textContent=membership.plan.toUpperCase()+' · '+used+'/4 atendimentos reservados nesta mensalidade';
+   const available=weekOptions();
+   form.hidden=available===0;
+   if(available){updateWeekDate();await loadSlots();}
+   else $('vipCalendarMessage').textContent='Todas as semanas disponíveis já foram reservadas ou expiraram.';
   }else{
-   $('vipStatus').textContent=membership?'Plano '+membership.plan.toUpperCase()+' inativo ou vencido. Consulte sua renovação.':'Você ainda não tem um plano VIP ativo.';
-   summary.textContent='O calendário é exclusivo para clientes com assinatura VIP ativa.';
-   $('vipCalendarMessage').textContent='Após a confirmação da assinatura, você poderá escolher seus dias de corte.';
+   $('vipStatus').textContent=membership?'Plano '+membership.plan.toUpperCase()+' inativo ou vencido. Consulte a renovação.':'Você ainda não possui plano VIP ativo.';
+   summary.textContent='O calendário fica disponível após a confirmação da mensalidade.';
+   $('vipCalendarMessage').textContent='Após a ativação, escolha um atendimento por semana, de segunda a quinta.';
    form.hidden=true;
   }
   paintVisits();
-  if(active())await loadSlots();
  }catch(e){
   summary.textContent='Não foi possível carregar o calendário VIP.';
   $('vipCalendarMessage').textContent=e.message;form.hidden=true;
  }
 }
+$('vipVisitWeek').addEventListener('change',async()=>{updateWeekDate();await loadSlots()});
 $('vipVisitDate').addEventListener('change',loadSlots);
 $('vipCalendarForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!await access('planos-vip.html#vipCalendar'))return;
- const date=$('vipVisitDate').value,time=$('vipVisitTime').value;
- if(!date||!time){$('vipCalendarMessage').textContent='Selecione um dia e horário disponíveis.';return;}
+ const date=$('vipVisitDate').value,time=$('vipVisitTime').value,week=Number($('vipVisitWeek').value);
+ if(!date||!time||!week||weekForDate(date)!==week||bookedForWeek(week)){
+  $('vipCalendarMessage').textContent='Selecione um benefício semanal, dia e horário disponíveis.';return;
+ }
  const button=$('vipVisitSubmit');button.disabled=true;
- $('vipCalendarMessage').textContent='Confirmando seu corte na agenda Black Hands...';
+ $('vipCalendarMessage').textContent='Reservando seu atendimento VIP...';
  try{
   const result=await request('/api/vip/appointments',{method:'POST',body:JSON.stringify({date,time})});
-  $('vipCalendarMessage').textContent=result.message||'Seu horário VIP está confirmado!';
   await loadCalendar();
-  $('vipCalendarMessage').textContent='Reserva confirmada! '+formatDay(date)+' às '+time+' com '+barber+'. Você verá o horário na Minha Conta.';
+  $('vipCalendarMessage').textContent='Semana '+week+' reservada: '+benefits(membership.plan)[week-1]+
+   ' em '+formatDay(date)+' às '+time+' com '+barber+'. Consulte Minha Conta.';
  }catch(err){$('vipCalendarMessage').textContent=err.message;}
  finally{button.disabled=false;}
 });
