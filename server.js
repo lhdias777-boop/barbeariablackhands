@@ -1,10 +1,11 @@
 'use strict';
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+// Promoções precisam estar no bundle do Worker; não usar leitura do sistema de arquivos em runtime.
+const offersJson = require('./promocoes.json');
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
-const PUBLIC_DIR = path.join(__dirname, 'public');
+const PUBLIC_DIR = typeof __dirname === 'string' ? path.join(__dirname, 'public') : 'public';
 app.disable('x-powered-by');
 app.use(express.json({ limit: '12kb' }));
 app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');next();});
@@ -46,7 +47,15 @@ app.use('/api/assistant', (req,res,next)=>{
 });
 
 function readOffers(){
-  try {const data=JSON.parse(fs.readFileSync(path.join(__dirname,'promocoes.json'),'utf8'));return Array.isArray(data)?data.filter(x=>x.ativo===true).slice(0,20).map(x=>({titulo:String(x.titulo||'').slice(0,100),descricao:String(x.descricao||'').slice(0,350),validade:String(x.validade||'').slice(0,40)})):[];}catch{return [];}
+ try{
+  return Array.isArray(offersJson)
+   ? offersJson.filter(x=>x.ativo===true).slice(0,20).map(x=>({
+      titulo:String(x.titulo||'').slice(0,100),
+      descricao:String(x.descricao||'').slice(0,350),
+      validade:String(x.validade||'').slice(0,40)
+     }))
+   :[];
+ }catch{return [];}
 }
 async function verifyCustomer(token){
   const url=process.env.SUPABASE_URL, key=process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -139,7 +148,10 @@ function accountPassOK(pass){
 }
 function accountSameOrigin(req,res,next){
  const origin=String(req.get('origin')||'');
- if(ACCOUNT_ORIGINS.has(origin))return next();
+ // Permite chamadas do próprio domínio, inclusive endereço workers.dev atribuído ao deploy.
+ const host=String(req.get('host')||'').toLowerCase();
+ const thisOrigin=host&&/^[a-z0-9.-]+(?::[0-9]+)?$/.test(host)?'https://'+host:'';
+ if((thisOrigin&&origin===thisOrigin)||ACCOUNT_ORIGINS.has(origin))return next();
  if(process.env.NODE_ENV!=='production'&&/^http:\/\/localhost(?::[0-9]+)?$/.test(origin))return next();
  return res.status(403).json({error:'Requisição não autorizada. Reabra o site oficial.'});
 }
