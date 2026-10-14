@@ -146,7 +146,91 @@ cartItems.addEventListener('click',e=>{
  }
  save();
 });
-document.getElementById('checkoutForm').addEventListener('submit',async e=>{e.preventDefault();const ids=Object.keys(cart).filter(id=>cart[id]>0&&products.some(p=>p.id===id));if(!ids.length)return;if(!await window.BHSession.get()){closeCart();await window.BHSession.requireLogin({action:'comprar',next:'loja.html?carrinho=1'});return;}const account=await window.BHSession.get();const order={customer:{name:account.fullName,phone:account.phone,email:document.getElementById('customerEmail').value.trim(),cpfCnpj:document.getElementById('customerCpf').value.trim()},fulfillment:document.getElementById('fulfillment').value,items:ids.map(id=>({productId:id,quantity:cart[id]}))};const msg=document.getElementById('checkoutMessage');try{const res=await fetch('/api/store/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)});const data=await res.json();if(!res.ok)throw new Error(data.error||'O checkout ainda não está configurado.');if(data.paymentUrl)location.href=data.paymentUrl;else if(data.qrCodeBase64||data.pixCopyPaste){msg.innerHTML=''; const title=document.createElement('p');title.textContent='Pix gerado! Pedido '+data.orderId+' — aguardando confirmação do pagamento.';msg.append(title); if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt='QR Code Pix';img.style.maxWidth='190px';msg.append(img);} if(data.pixCopyPaste){const code=document.createElement('textarea');code.readOnly=true;code.value=data.pixCopyPaste;code.rows=4;code.style.width='100%';msg.append(code);const btn=document.createElement('button');btn.type='button';btn.textContent='Copiar Pix';btn.onclick=()=>navigator.clipboard.writeText(code.value);msg.append(btn);}}else msg.textContent='Pedido criado; aguarde as instruções de pagamento.';}catch(err){msg.textContent='Carrinho pronto, mas o Pix automático ainda não está conectado ao servidor. Configure o backend/Asaas antes de receber pagamentos. Seus itens continuam salvos no navegador.';console.warn(err)}});renderCart();
+
+let storePixRetry=null;
+async function recoverStorePix(orderId){
+ const r=await fetch('/api/pix/qr/store/'+encodeURIComponent(orderId),{
+  credentials:'same-origin',cache:'no-store'});
+ const json=await r.json().catch(()=>({}));
+ if(!r.ok&&r.status!==202)throw Error(json.error||'Erro ao consultar código Pix.');
+ return json;
+}
+function showStorePix(data,attempt=0){
+ const target=document.getElementById('checkoutMessage');
+ target.replaceChildren();
+ const real=data.paymentMode==='production',pending=!!data.qrPending;
+ const intro=document.createElement('p');
+ intro.textContent=(pending?'Cobrança criada; aguardando QR Code do Asaas.':'PIX '+(real?'REAL':'DE TESTE')+' gerado!')+
+  ' Pedido '+String(data.orderId||'').slice(0,8).toUpperCase()+'.';
+ target.append(intro);
+ if(data.qrCodeBase64){
+  const qr=document.createElement('img');qr.src='data:image/png;base64,'+data.qrCodeBase64;
+  qr.alt=real?'QR Code Pix real do Asaas':'QR Code de teste no Asaas Sandbox';
+  qr.style.maxWidth='210px';qr.style.display='block';qr.style.margin='10px auto';
+  target.append(qr);
+ }
+ if(data.pixCopyPaste){
+  const code=document.createElement('textarea');code.readOnly=true;code.value=data.pixCopyPaste;
+  code.rows=4;code.style.width='100%';target.append(code);
+  const copy=document.createElement('button');copy.type='button';copy.className='bh-cart-continue';
+  copy.textContent='Copiar código Pix';
+  copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(code.value);copy.textContent='Pix copiado ✓'}catch{code.select()}});
+  target.append(copy);
+ }
+ if(!real){
+  const warning=document.createElement('p');warning.textContent='Ambiente de testes. Não pague este código com seu aplicativo bancário.';
+  target.append(warning);
+ }
+ if(pending){
+  const reload=document.createElement('button');reload.type='button';reload.className='bh-cart-continue';
+  reload.textContent='↻ Consultar o mesmo Pix (sem gerar outra cobrança)';target.append(reload);
+  const doRetry=async()=>{
+   if(reload.disabled)return;
+   reload.disabled=true;reload.textContent='Consultando Asaas...';
+   try{
+    const details=await recoverStorePix(data.orderId);
+    if(details.status==='PAID'){target.textContent='Pagamento confirmado. Confira em Minha Conta.';return}
+    if(details.qrPending){
+     reload.textContent='QR Code ainda em preparação';reload.disabled=false;
+     if(attempt<5)storePixRetry=setTimeout(()=>doRetry(),3500);
+    }else showStorePix({...data,...details,qrPending:false});
+   }catch(e){reload.textContent='Tentar novamente: '+e.message;reload.disabled=false;}
+  };
+  reload.addEventListener('click',()=>{if(storePixRetry)clearTimeout(storePixRetry);doRetry()});
+  if(attempt<5)storePixRetry=setTimeout(()=>doRetry(),3500);
+ }
+}
+document.getElementById('checkoutForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const entries=cartEntries();if(!entries.length)return;
+ if(!await window.BHSession.get()){
+  closeCart();await window.BHSession.requireLogin({action:'comprar',next:'loja.html?carrinho=1'});return;
+ }
+ const account=await window.BHSession.get();
+ const order={
+  customer:{name:account.fullName,phone:account.phone,
+   email:document.getElementById('customerEmail').value.trim(),
+   cpfCnpj:document.getElementById('customerCpf').value.trim()},
+  fulfillment:document.getElementById('fulfillment').value,
+  items:entries.map(([productId,quantity])=>({productId,quantity}))
+ };
+ const msg=document.getElementById('checkoutMessage'),button=document.getElementById('cartCheckoutButton');
+ button.disabled=true;msg.textContent='Solicitando o Pix ao Asaas. Aguarde...';
+ if(storePixRetry){clearTimeout(storePixRetry);storePixRetry=null}
+ try{
+  const response=await fetch('/api/store/checkout',{
+   method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'O Asaas não conseguiu gerar a cobrança.');
+  if(!data.orderId)throw Error('O servidor não retornou uma referência válida do pedido.');
+  showStorePix(data);
+ }catch(err){
+  msg.textContent=err.message+
+    ' Seus produtos continuam no carrinho. Não gere outra cobrança se um QR Code anterior estiver pendente.';
+ }finally{button.disabled=!cartEntries().length}
+});
+renderCart();
 
 if(new URLSearchParams(location.search).has('carrinho'))window.BHSession.get().then(account=>{if(account)openCart()});
 
