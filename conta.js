@@ -41,6 +41,7 @@ function setMode(mode){
  $('registerTab').setAttribute('aria-selected',String(isRegister));
  $('loginTab').setAttribute('aria-selected',String(!isRegister));
  $('nameRow').hidden=!isRegister;
+ $('whatsappConsentRow').hidden=!isRegister;
  $('authForm').elements.fullName.required=isRegister;
  $('authPassword').setAttribute('autocomplete',isRegister?'new-password':'current-password');
  $('authHeading').textContent=isRegister?'Crie sua conta':'Entre na sua conta';
@@ -70,6 +71,7 @@ function dashboardAccount(account){
  $('accountAvatar').textContent=first.slice(0,2).toUpperCase();
  $('profileName').value=account.fullName||'';
  $('profilePhone').value=displayPhone(account.phone);
+ $('whatsappOptIn').checked=account.whatsappOptIn===true;
  refreshBookings();
  refreshOrdersVip();
 }
@@ -158,6 +160,7 @@ $('authForm').addEventListener('submit',async e=>{
   const body={phone:String(fields.get('phone')||''),password};
   if(state.mode==='register'){
    body.fullName=String(fields.get('fullName')||'').trim();
+   body.whatsappOptIn=$('whatsappConsent').checked;
 
    if(password.length<10)throw Error('Use uma senha de pelo menos 10 caracteres.');
   }
@@ -191,6 +194,18 @@ $('profileForm').addEventListener('submit',async e=>{
   dashboardAccount(result.account);
   message('profileMsg','Seu nome foi atualizado!','success');
  }catch(err){message('profileMsg',err.message,'error');}
+ finally{button.disabled=false;}
+});
+$('whatsappPreferenceForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const button=e.target.querySelector('[type=submit]');button.disabled=true;
+ try{
+  const result=await api('/api/account/whatsapp-preferences',{
+   method:'POST',body:JSON.stringify({enabled:$('whatsappOptIn').checked})
+  });
+  state.account=result.account;
+  message('whatsappPreferenceMessage',result.message,'success');
+ }catch(e){message('whatsappPreferenceMessage',e.message,'error');}
  finally{button.disabled=false;}
 });
 $('passwordForm').addEventListener('submit',async e=>{
