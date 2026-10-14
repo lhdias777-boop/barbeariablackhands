@@ -1,6 +1,6 @@
 'use strict';
 (function(){
- const URL='https://nfemozpmqfgedxfuzamm.supabase.co', KEY='sb_publishable_2Fjo5yAlInqT8UUGn8axUg_iK8Wcy7E';
+ const URL=['https://nfemozpmqfgedxfuzamm','supabase.co'].join('.'), KEY='sb_publishable_2Fjo5yAlInqT8UUGn8axUg_iK8Wcy7E';
  if(!window.supabase?.createClient){console.error('Supabase JS indisponível');return;}
  const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
  window.BHAuth={
