@@ -40,7 +40,7 @@ function bookingMessage(data){
 }
 function whatsappUrl(data){
  if(!data.whatsappEligible)return '';
- const method=data.paymentMethod==='PAY_ON_DAY'?'Dinheiro no dia':'Pix confirmado (Asaas Sandbox — teste)';
+ const method=data.paymentMethod==='PAY_ON_DAY'?'Dinheiro no dia':(data.paymentMode==='production'?'Pix real confirmado pelo Asaas':'Pix confirmado (Asaas Sandbox — teste)');
  const text=[
   '*BLACK HANDS — AGENDAMENTO REGISTRADO*',
   'Referência: '+data.reference,
