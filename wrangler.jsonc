@@ -14,8 +14,8 @@
     "not_found_handling": "404-page"
   },
   "vars": {
-    "BH_PAYMENTS_MODE": "disabled",
-    "BH_PIX_ENABLED": "false",
+    "BH_PAYMENTS_MODE": "sandbox",
+    "BH_PIX_ENABLED": "true",
     "BH_REAL_PIX_ENABLED": "false",
     "WHATSAPP_ENABLED": "false",
     "NODE_ENV": "production",
