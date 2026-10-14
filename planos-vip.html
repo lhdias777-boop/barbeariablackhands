@@ -1,12 +1,114 @@
-<!DOCTYPE html>
-
-<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><title>Planos VIP | Black Hands</title><link href="styles.css" rel="stylesheet"/><style>
-.vip-wrap{max-width:1050px;margin:90px auto 60px;padding:20px}.vip-header{text-align:center;margin-bottom:32px}.vip-header h1{font-size:clamp(32px,5vw,55px)}.vip-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}.vip-card{border:1px solid #5e3b22;background:#171717;border-radius:18px;padding:25px}.vip-card h2{font-size:30px}.vip-card strong{font-size:32px;color:#f5a34d}.vip-card p{line-height:1.7}.vip-card button,.vip-action{display:inline-block;border:0;background:#ed8b34;color:#121212;font-weight:800;padding:14px 18px;border-radius:9px;cursor:pointer;margin-top:14px}.vip-card button:hover{filter:brightness(1.12)}.vip-status,.vip-checkout{background:#181818;border:1px solid #494949;border-radius:15px;padding:20px;margin-top:24px}.vip-checkout input{display:block;max-width:420px;width:100%;padding:13px;margin:10px 0;background:#252525;color:white;border:1px solid #777;border-radius:8px}.vip-checkout img{max-width:220px;width:100%}.vip-note{font-size:14px;color:#cfcfcf}#vipMessage{white-space:pre-wrap}</style></head><body>
-<header class="topbar"><a class="brand" href="index.html"><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/></a><nav><a href="conta.html">Cadastrar / Entrar</a> <a href="index.html">Início</a> <a href="agendar.html">Agendar</a> <a href="acompanhar.html">Meus agendamentos</a></nav></header>
-<main class="vip-wrap"><div class="vip-header"><p class="eyebrow">BLACK HANDS CLUB</p><h1>Planos mensais VIP</h1><p>Escolha seu plano e acompanhe sua situação pelo perfil.</p></div>
-<div class="vip-cards"><article class="vip-card"><h2>VIP 1</h2><strong>R$ 70,00 / mês</strong><p>2 cortes por mês com acabamento em cada visita.<br/>Atendimento de segunda a quinta-feira.</p><button data-plan="vip1" type="button">ASSINAR AGORA</button></article><article class="vip-card"><h2>VIP 2</h2><strong>R$ 160,00 / mês</strong><p>2 atendimentos por mês com corte, barba, sobrancelhas e acabamento.<br/>Atendimento de segunda a quinta-feira.</p><button data-plan="vip2" type="button">ASSINAR AGORA</button></article></div>
-<section class="vip-status"><h2>Meu plano VIP</h2><p id="vipStatus">Entre na sua conta para consultar o plano atual.</p><button class="vip-action" id="checkVip" type="button">Consultar meu plano</button></section>
-<section class="vip-checkout" hidden="" id="vipCheckout"><h2 id="selectedPlan">Assinar plano</h2><p>O pagamento é confirmado pelo Asaas. O VIP só será ativado no seu perfil após a confirmação recebida no servidor.</p><form id="vipForm"><label>CPF ou CNPJ<input inputmode="numeric" name="cpfCnpj" required=""/></label><button class="vip-action" type="submit">GERAR PIX</button></form><div hidden="" id="vipPix"><p><strong>Pix copia e cola</strong></p><textarea id="pixCode" readonly="" rows="4" style="width:100%"></textarea><button class="vip-action" id="copyPix" type="button">Copiar código Pix</button><p><img alt="QR Code Pix" hidden="" id="pixQr"/></p><p>Após pagar, consulte o status em “Meu plano VIP”.</p></div></section>
-<p id="vipMessage" role="status"></p><p class="vip-note">Cobrança Pix de uma mensalidade. Renovação automática recorrente ainda não está habilitada; será necessário um novo pagamento ao final do período. Para assinar, entre na sua conta Black Hands; o pagamento só será gerado quando o Asaas estiver habilitado no servidor.</p></main><script src="bh-session.js"></script><script src="vip.js"></script><script src="assistant.js"></script><a aria-label="Instagram da Black Hands Barber Shop" class="instagram-float" href="https://instagram.com/barbearia_blackhands?mdxt=djkyb3ptbDI2d3Yy" rel="noopener noreferrer" target="_blank" title="Instagram Black Hands">
-<svg aria-hidden="true" viewbox="0 0 24 24"><rect fill="none" height="18" rx="5" stroke="currentColor" stroke-width="2" width="18" x="3" y="3"></rect><circle cx="12" cy="12" fill="none" r="4" stroke="currentColor" stroke-width="2"></circle><circle cx="17.5" cy="6.5" fill="currentColor" r="1.2"></circle></svg>
-</a></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0d0b0a"><meta name="description" content="Black Hands Club: conheça os planos VIP e agende seus cortes na barbearia.">
+<title>Black Hands Club | Planos VIP</title>
+<link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="assistant.css">
+<style>
+*{box-sizing:border-box}
+body{background:#0b0a09;color:#fff8ef}
+.vip-wrap{max-width:1140px;margin:0 auto;padding:118px 20px 88px}
+.vip-hero{position:relative;overflow:hidden;text-align:center;background:radial-gradient(ellipse at 50% 0%,#57321a 0,#191410 46%,#100f0e 76%);border:1px solid #5d3b24;border-radius:28px;padding:68px 20px 57px;margin-bottom:24px}
+.vip-hero:before{content:"";position:absolute;inset:12px;border:1px solid #68432666;border-radius:19px;pointer-events:none}
+.vip-eyebrow{font-size:11px;letter-spacing:3px;color:#ffb46a;font-weight:800;text-transform:uppercase;margin:0 0 15px}
+.vip-hero h1{font:900 clamp(43px,7vw,76px)/.99 "Barlow Condensed",Impact,sans-serif;letter-spacing:.5px;text-transform:uppercase;margin:0 0 13px}
+.vip-hero h1 span{color:#f1a552}
+.vip-hero p:last-child{color:#cbbfb2;line-height:1.7;font-size:15px;max-width:610px;margin:0 auto}
+.vip-hero-tags{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.vip-hero-tags span{border:1px solid #855b34;color:#ffce9a;padding:9px 13px;border-radius:99px;background:#2c2017;font-size:12px;font-weight:750}
+.vip-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}
+.vip-card{position:relative;background:linear-gradient(150deg,#1f1914,#121211 65%);border:1px solid #715034;border-radius:21px;padding:30px;display:flex;flex-direction:column;min-height:380px;transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.vip-card.vip-featured{border-color:#e4a45b;background:linear-gradient(155deg,#332214,#1a1410 58%,#111)}
+.vip-card:hover{transform:translateY(-3px);border-color:#f2ae65;box-shadow:0 12px 33px #0005}
+.vip-card-kicker{font-size:10px;color:#ffa95a;letter-spacing:2px;font-weight:850}
+.vip-card h2{font:850 clamp(37px,5vw,51px)/1 "Barlow Condensed",Impact,sans-serif;margin:13px 0 9px}
+.vip-price{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;margin:3px 0 16px}
+.vip-price strong{font-size:clamp(28px,4vw,40px);color:#ffbc73;letter-spacing:-1px}
+.vip-price span{font-size:12px;color:#ad9d90}
+.vip-card p{font-size:14px;color:#d5c8bc;line-height:1.7;margin:0 0 20px}
+.vip-benefits{padding:0;margin:0 0 25px;list-style:none;color:#e1d5ca;display:grid;gap:12px;font-size:13px}
+.vip-benefits li::before{content:"✓";font-weight:900;color:#f3a757;margin-right:10px}
+.vip-action{display:inline-flex;align-items:center;justify-content:center;min-height:49px;border:0;border-radius:12px;background:linear-gradient(110deg,#ffc074,#f09036);font-weight:900;color:#211408;padding:13px 18px;text-decoration:none;cursor:pointer;font-size:13px;letter-spacing:.2px}
+.vip-card .vip-action{margin-top:auto;width:100%}
+.vip-action:disabled{opacity:.5;cursor:wait}
+.vip-action.vip-outline{border:1px solid #9e6636;color:#ffc28a;background:#221910}
+.vip-checkout,.vip-status,.vip-calendar{background:linear-gradient(140deg,#201810,#111);border:1px solid #55402d;border-radius:20px;padding:27px;margin-top:23px}
+.vip-status h2,.vip-checkout h2,.vip-calendar h2{font:850 31px/1.12 "Barlow Condensed",Impact,sans-serif;margin:0 0 13px}
+.vip-calendar-head{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+.vip-status p,.vip-checkout p,.vip-calendar p{color:#c5b8ad;font-size:14px;line-height:1.6}
+.vip-status-label{font-size:12px;color:#ffba77;font-weight:850;text-transform:uppercase;letter-spacing:1px}
+.vip-calendar-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:17px 0 23px}
+.vip-calendar-steps div{padding:13px;border-radius:12px;background:#17130f;border:1px solid #5a422d;color:#d7c3b1;font-size:12px;line-height:1.55}
+.vip-calendar-steps strong{display:block;color:#f8af63;font-size:16px;margin-bottom:4px}
+.vip-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:13px}
+.vip-label{display:grid;gap:8px;font-size:12px;color:#d8c8b9;font-weight:750}
+.vip-label input,.vip-label select,#pixCode{width:100%;min-height:48px;padding:12px 13px;border:1px solid #725037;border-radius:11px;background:#100f0e;color:#fff;font:inherit}
+.vip-label input:focus,.vip-label select:focus{outline:2px solid #f0a052}
+.vip-calendar-form .vip-action{margin-top:18px}
+.vip-visit-list{display:grid;gap:9px;margin-top:13px}
+.vip-visit{border:1px solid #483827;border-radius:11px;padding:14px 16px;background:#17130f;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.vip-visit strong{color:#ffbc73}.vip-visit small{color:#ac9d8c}
+.vip-help{font-size:12px!important;color:#b6a79c!important}
+.vip-note{color:#aea49b;font-size:12px;line-height:1.7;margin:17px 0}
+.vip-checkout input,#pixCode{display:block;width:100%;max-width:480px;background:#0e0d0c;border:1px solid #775236;color:#fff;padding:12px;border-radius:10px;margin:10px 0}
+#vipMessage,#vipCalendarMessage{color:#ffc580;font-size:13px;line-height:1.6;white-space:pre-wrap}
+#vipPix img{max-width:215px;width:100%;border-radius:8px}
+.vip-status-row{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+@media(max-width:730px){.vip-wrap{padding:105px 15px 65px}.vip-cards{grid-template-columns:1fr}.vip-card{min-height:auto}.vip-hero{padding:51px 18px 43px;border-radius:20px}.vip-calendar-steps{grid-template-columns:1fr}.vip-form-grid{grid-template-columns:1fr}.vip-checkout,.vip-status,.vip-calendar{padding:19px}}
+@media(prefers-reduced-motion:reduce){.vip-card{transition:none}.vip-card:hover{transform:none}}
+</style>
+</head>
+<body>
+<header class="topbar">
+<a class="brand" href="index.html"><img alt="Black Hands" class="brand-official" src="logo-oficial-black-hands.jpg"><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a>
+<nav><a href="index.html">Início</a><a href="conta.html">Minha conta</a><a href="agendar.html">Agendar</a></nav>
+</header>
+<main class="vip-wrap">
+<section class="vip-hero"><p class="vip-eyebrow">EXCLUSIVO BLACK HANDS CLUB</p><h1>Seu estilo merece <span>ser VIP.</span></h1>
+<p>Escolha o plano ideal, tenha seus benefícios garantidos e marque você mesmo os dias dos seus cortes.</p>
+<div class="vip-hero-tags"><span>✂ 2 sessões por mês</span><span>◷ Segunda a quinta</span><span>♛ Área VIP exclusiva</span></div></section>
+<section class="vip-cards" aria-label="Escolha seu plano VIP">
+<article class="vip-card"><span class="vip-card-kicker">O ESSENCIAL DO SEU ESTILO</span><h2>VIP 1</h2>
+<div class="vip-price"><strong>R$ 70,00</strong><span>/ mês</span></div>
+<p>Seu corte sempre em dia, com a liberdade de escolher quando quer ser atendido.</p>
+<ul class="vip-benefits"><li>2 cortes com acabamento por mês</li><li>Escolha seus horários no calendário VIP</li><li>Atendimento de segunda a quinta</li><li>Acompanhamento na Minha Conta</li></ul>
+<button class="vip-action" data-plan="vip1" type="button">QUERO SER VIP 1 →</button></article>
+<article class="vip-card vip-featured"><span class="vip-card-kicker">EXPERIÊNCIA COMPLETA</span><h2>VIP 2</h2>
+<div class="vip-price"><strong>R$ 160,00</strong><span>/ mês</span></div>
+<p>Mais cuidados e praticidade para manter todos os detalhes do visual.</p>
+<ul class="vip-benefits"><li>2 atendimentos por mês</li><li>Corte, barba, sobrancelhas e acabamento</li><li>Agendamento VIP de segunda a quinta</li><li>Seus horários registrados automaticamente</li></ul>
+<button class="vip-action" data-plan="vip2" type="button">QUERO SER VIP 2 →</button></article>
+</section>
+<section class="vip-status" id="vipMembership">
+<div class="vip-status-row"><div><p class="vip-status-label">MINHA ASSINATURA</p><h2>Seu status VIP</h2><p id="vipStatus">Entre na conta para consultar seus benefícios.</p></div>
+<button class="vip-action vip-outline" id="checkVip" type="button">CONSULTAR MEU PLANO</button></div></section>
+<section class="vip-calendar" id="vipCalendar">
+<div class="vip-calendar-head"><div><p class="vip-status-label">CALENDÁRIO VIP</p><h2>Você escolhe quando cortar.</h2><p>Após a ativação do plano, selecione seus horários. A reserva aparecerá automaticamente para o barbeiro WELIGOL.</p></div><span class="vip-hero-tags"><span>Seg a Qui · 7h–19h</span></span></div>
+<div class="vip-calendar-steps"><div><strong>01</strong>Tenha um plano VIP ativo</div><div><strong>02</strong>Escolha dia e horário livre</div><div><strong>03</strong>Receba sua confirmação e compareça</div></div>
+<p id="vipCalendarSummary" class="vip-status-label">Consultando sua conta VIP...</p>
+<form class="vip-calendar-form" id="vipCalendarForm" hidden>
+<div class="vip-form-grid">
+<label class="vip-label">Escolha o dia do corte<input id="vipVisitDate" type="date" required></label>
+<label class="vip-label">Horários disponíveis<select id="vipVisitTime" required><option value="">Escolha a data primeiro</option></select></label>
+</div><button class="vip-action" id="vipVisitSubmit" type="submit">CONFIRMAR MEU CORTE VIP →</button>
+</form>
+<p id="vipCalendarMessage" role="status"></p>
+<h2 style="font-size:23px;margin-top:25px">Meus cortes VIP</h2>
+<div id="vipVisitList" class="vip-visit-list" aria-live="polite"><p class="vip-help">Entre na sua conta para conferir suas sessões.</p></div>
+<p class="vip-help">Cada plano inclui até duas sessões por mês. O horário precisa estar dentro da validade da assinatura. Não há cobrança extra pela reserva do corte já incluído no VIP.</p>
+</section>
+<section class="vip-checkout" id="vipCheckout" hidden>
+<h2 id="selectedPlan">Assinar plano</h2><p>Você receberá uma cobrança Pix pelo Asaas. O calendário VIP será liberado somente depois da confirmação do pagamento no servidor.</p>
+<form id="vipForm"><label class="vip-label">CPF ou CNPJ para pagamento<input inputmode="numeric" name="cpfCnpj" required autocomplete="off"></label>
+<button type="submit" class="vip-action">GERAR PIX PARA ATIVAÇÃO</button></form>
+<div id="vipPix" hidden><p><strong>Pix copia e cola</strong></p><textarea id="pixCode" readonly rows="4"></textarea>
+<button class="vip-action vip-outline" id="copyPix" type="button">COPIAR CÓDIGO PIX</button><p><img id="pixQr" alt="QR Code Pix" hidden></p>
+<p>Seu VIP só aparece como ativo quando o pagamento for confirmado.</p></div>
+</section>
+<p id="vipMessage" role="status"></p>
+<p class="vip-note">A mensalidade é cobrada separadamente dos agendamentos VIP. A renovação automática ainda não está habilitada. A geração de cobranças depende da habilitação e homologação dos pagamentos na Black Hands.</p>
+</main>
+<script src="bh-session.js"></script><script src="vip.js"></script><script src="assistant.js"></script>
+<a aria-label="Instagram Black Hands" class="instagram-float" href="https://instagram.com/barbearia_blackhands" target="_blank" rel="noopener noreferrer">Instagram</a>
+</body></html>
