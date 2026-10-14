@@ -383,7 +383,7 @@ app.post('/api/vip/checkout',async(req,res)=>{
   const cpfCnpj=String(req.body?.cpfCnpj||'').replace(/\D/g,'');
   if(name.length<3||![11,14].includes(cpfCnpj.length))return res.status(400).json({error:'Informe nome e CPF/CNPJ válido para gerar a cobrança.'});
   const vipPaymentId=require('crypto').randomUUID();
-  await sbReq('bh_vip_payments','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:vipPaymentId,user_id:user.id,plan:planId,status:'CREATING',amount:plan.value})});
+  await sbReq('bh_vip_payments','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({id:vipPaymentId,user_id:user.id,plan:planId,status:'CREATING',amount:plan.value,payment_environment:paymentEnvironment()})});
   const customer=await asaas('/customers',{method:'POST',body:JSON.stringify({name,cpfCnpj,externalReference:user.id})});
   const dueDate=new Date(Date.now()+86400000).toISOString().slice(0,10);
   const payment=await asaas('/payments',{method:'POST',body:JSON.stringify({customer:customer.id,billingType:'PIX',value:plan.value,dueDate,description:'Black Hands '+plan.name+' - mensalidade',externalReference:user.id+':'+planId})});
@@ -400,9 +400,10 @@ app.post('/api/asaas/webhook',async(req,res)=>{
  const paymentId=String(event.payment?.id||'');
  if(!paymentId)return res.sendStatus(400);
  try{
-  const orders=await sbReq('bh_pix_orders','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,kind,status,amount&limit=1');
+  const orders=await sbReq('bh_pix_orders','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,kind,status,amount,payment_environment&limit=1');
   if(orders.length){
    const order=orders[0];
+   if(order.payment_environment!==paymentEnvironment())return res.sendStatus(200);
    const real=await asaas('/payments/'+encodeURIComponent(paymentId));
    if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(order.amount))return res.sendStatus(200);
    if(order.kind==='booking'){
@@ -413,9 +414,9 @@ app.post('/api/asaas/webhook',async(req,res)=>{
    }
    return res.sendStatus(200);
   }
-  const rows=await sbReq('bh_vip_payments','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,user_id,plan,status,amount&limit=1');
+  const rows=await sbReq('bh_vip_payments','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,user_id,plan,status,amount,payment_environment&limit=1');
   const row=rows[0];
-  if(!row)return res.sendStatus(200);
+  if(!row||row.payment_environment!==paymentEnvironment())return res.sendStatus(200);
   // Verificação adicional contra evento adulterado ou valor diferente.
   const real=await asaas('/payments/'+encodeURIComponent(paymentId));
   if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(row.amount))return res.sendStatus(200);
@@ -444,7 +445,9 @@ async function createPixForOrder({name,cpfCnpj,amount,description,externalRefere
  return {payment,pix};
 }
 async function savePixOrder(record){
- await sbReq('bh_pix_orders','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(record)});
+ const environment=paymentEnvironment();
+ if(!['sandbox','production'].includes(environment))throw Error('Pagamento indisponível');
+ await sbReq('bh_pix_orders','',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({...record,payment_environment:environment})});
 }
 // Limite básico de tentativas; em produção usar rate limit distribuído.
 const checkoutBuckets=new Map();
@@ -536,10 +539,10 @@ const SANDBOX_URL=['https://api-sandbox','asaas.com/v3'].join('.');
 async function readBookingWithPayment(item){
  let order=null;
  if(item.pix_order_id){
-  const orders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=id,status,amount,paid_at,asaas_payment_id&limit=1');
+  const orders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=id,status,amount,paid_at,asaas_payment_id,payment_environment&limit=1');
   order=orders[0]||null;
   // Dupla checagem do pagamento no próprio Asaas para o caso do webhook demorar.
-  if(order && paymentEnvironment()!=='disabled'){
+  if(order && paymentEnvironment()!=='disabled'&&order.payment_environment===paymentEnvironment()){
    let confirmed=order.status==='PAID';
    if(!confirmed && order.asaas_payment_id){
     try{
@@ -577,7 +580,7 @@ app.post('/api/booking/status',bookingStatusLimit,async(req,res)=>{
    paymentStatus:method==='PAY_ON_DAY'?'PAY_ON_DAY':order?.status||'UNKNOWN',
    customerName:item.customer_name||'',customerPhone:item.customer_phone||'',
    amount:method==='PAY_ON_DAY'?item.amount||0:order?.amount||item.amount||0,
-   paid,whatsappEligible,paymentMode:paymentEnvironment(),holdUntil:item.hold_until
+   paid,whatsappEligible,paymentMode:order?.payment_environment||paymentEnvironment(),holdUntil:item.hold_until
   });
  }catch(e){console.error('Booking status:',e.message);pixErr(res,'Acompanhamento indisponível no momento.',503);}
 });
