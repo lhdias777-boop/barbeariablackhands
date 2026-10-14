@@ -205,7 +205,7 @@ function spParts(){
  return {date:dateParts.year+'-'+dateParts.month+'-'+dateParts.day,time:dateParts.hour+':'+dateParts.minute};
 }
 function validBookingDate(d){
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d))return false;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return false;
  const t=new Date(d+'T12:00:00Z');
  return !Number.isNaN(t.getTime())&&t.toISOString().slice(0,10)===d && d>=spParts().date && t.getTime()<=Date.now()+90*86400000;
 }
@@ -268,7 +268,7 @@ app.post('/api/booking/status',checkoutLimit,async(req,res)=>{
 });
 app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
  const b=req.body||{},name=cleanText(b.name),phone=cleanText(b.phone),date=cleanText(b.date,10),time=cleanText(b.time,5),barber=cleanText(b.barber,80);
- const parsed=asBookingDetails(b.services),cpf=String(b.cpfCnpj||'').replace(/\\D/g,'');
+ const parsed=asBookingDetails(b.services),cpf=String(b.cpfCnpj||'').replace(/\D/g,'');
  if(name.length<3||!validPhone(phone)||!parsed||![11,14].includes(cpf.length)||!BOOKING_BARBERS.has(barber)||!slotAllowed(time,parsed?.duration||30,date))
   return pixErr(res,'Confira os dados, a data, o horário e os serviços do agendamento.');
  const crypto=require('crypto'),orderId=crypto.randomUUID(),trackingToken=crypto.randomBytes(32).toString('base64url');
