@@ -51,6 +51,9 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
 .dashboard-heading h1{margin:4px 0 8px;font-size:clamp(30px,5vw,46px);line-height:1.1;letter-spacing:-1px}
 .dashboard-heading p{color:#b0aaa4;margin:0;font-size:14px}
 .account-outline{border:1px solid #6d4c32;border-radius:10px;background:#20160f;color:#ffb878;padding:13px 16px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
+.dashboard-top-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.account-home-button{display:inline-flex;align-items:center;justify-content:center;padding:13px 16px;min-height:44px;background:#ef903a;color:#1a1009;text-decoration:none;border-radius:10px;font-size:13px;font-weight:850;white-space:nowrap}
+.account-home-button:hover,.account-home-button:focus-visible{background:#ffc16f;color:#1a1009}
 .dashboard-banner{background:linear-gradient(120deg,#21170f,#151312 70%);border:1px solid #6b482d;border-radius:18px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:24px;margin-bottom:20px}
 .dashboard-banner h2{font-size:23px;margin:0 0 8px}.dashboard-banner p{font-size:13px;color:#b9b1a9;margin:0;line-height:1.6}
 .dashboard-avatar{display:grid;place-items:center;width:68px;height:68px;border-radius:18px;background:#e9913b;color:#201208;font-weight:900;font-size:27px}
@@ -71,13 +74,14 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
 .account-footer{border-top:1px solid #2a211c;padding:29px 20px;text-align:center;color:#857d75;font-size:12px}
 [hidden]{display:none!important}
 @media(max-width:860px){.account-grid{grid-template-columns:1fr;gap:18px}.account-intro{min-height:auto;padding:25px 0 5px}.account-intro h1{font-size:43px;max-width:620px}.account-intro>p{font-size:14px}.account-perks{margin-top:24px}.account-panel{max-width:650px;justify-self:center}.dashboard-layout{grid-template-columns:1fr}}
-@media(max-width:600px){.account-header{height:70px;padding:0 16px}.account-brand{gap:8px}.account-brand img{width:51px;height:51px}.account-brand strong{font-size:13px;letter-spacing:1px}.account-brand small{font-size:8px;letter-spacing:2px}.account-nav{gap:10px}.account-nav a{font-size:11px}.account-nav a:not(.account-nav-cta){display:none}.account-nav a.account-nav-cta{padding:10px 12px}.account-page{padding:25px 16px 50px}.account-intro{padding:7px 2px 5px}.account-intro h1{font-size:37px;line-height:1.08;letter-spacing:-1.4px;margin-bottom:13px}.account-eyebrow{font-size:10px;margin-bottom:12px}.account-intro>p{font-size:13px;line-height:1.65}.account-perks{grid-template-columns:repeat(3,1fr);gap:7px;margin-top:19px}.account-perk{min-height:94px;padding:12px 10px;gap:7px}.account-perk b{font-size:10px}.account-perk svg{width:20px;height:20px}.account-panel{padding:23px 18px;border-radius:17px}.account-panel h2{font-size:23px}.account-panel .account-tabs{margin:18px 0 20px}.dashboard-banner{padding:18px;grid-template-columns:1fr auto}.dashboard-avatar{width:52px;height:52px;font-size:21px}.dashboard-banner h2{font-size:21px}.dashboard-stats{gap:7px}.dashboard-stat{padding:12px}.dashboard-stat b{font-size:18px}.dashboard-stat span{font-size:10px}.dashboard-card{padding:18px}.dashboard-heading h1{font-size:30px}}
+@media(max-width:600px){.account-nav a.account-nav-home{display:inline-flex;padding:10px 5px;color:#ffc16f;font-weight:850}.dashboard-top-actions{width:100%}.account-home-button{min-width:130px}.account-header{height:70px;padding:0 16px}.account-brand{gap:8px}.account-brand img{width:51px;height:51px}.account-brand strong{font-size:13px;letter-spacing:1px}.account-brand small{font-size:8px;letter-spacing:2px}.account-nav{gap:10px}.account-nav a{font-size:11px}.account-nav a:not(.account-nav-cta){display:none}.account-nav a.account-nav-cta{padding:10px 12px}.account-page{padding:25px 16px 50px}.account-intro{padding:7px 2px 5px}.account-intro h1{font-size:37px;line-height:1.08;letter-spacing:-1.4px;margin-bottom:13px}.account-eyebrow{font-size:10px;margin-bottom:12px}.account-intro>p{font-size:13px;line-height:1.65}.account-perks{grid-template-columns:repeat(3,1fr);gap:7px;margin-top:19px}.account-perk{min-height:94px;padding:12px 10px;gap:7px}.account-perk b{font-size:10px}.account-perk svg{width:20px;height:20px}.account-panel{padding:23px 18px;border-radius:17px}.account-panel h2{font-size:23px}.account-panel .account-tabs{margin:18px 0 20px}.dashboard-banner{padding:18px;grid-template-columns:1fr auto}.dashboard-avatar{width:52px;height:52px;font-size:21px}.dashboard-banner h2{font-size:21px}.dashboard-stats{gap:7px}.dashboard-stat{padding:12px}.dashboard-stat b{font-size:18px}.dashboard-stat span{font-size:10px}.dashboard-card{padding:18px}.dashboard-heading h1{font-size:30px}}
+@media(max-width:380px){.account-brand strong{font-size:11px}.account-brand small{display:none}.account-brand img{width:44px;height:44px}.account-header{padding:0 10px}.account-nav{gap:6px}}
 </style>
 </head>
 <body class="account-body">
 <header class="account-header">
  <a class="account-brand" href="index.html"><img src="logo-oficial-black-hands.jpg" alt="Black Hands Barber Shop"><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a>
- <nav class="account-nav" aria-label="Menu"><a href="index.html">Início</a><a href="acompanhar.html">Meus agendamentos</a><a href="agendar.html" class="account-nav-cta">AGENDAR</a></nav>
+ <nav class="account-nav" aria-label="Menu"><a href="index.html" class="account-nav-home">Início</a><a href="acompanhar.html">Meus agendamentos</a><a href="agendar.html" class="account-nav-cta">AGENDAR</a></nav>
 </header>
 <main class="account-page">
  <section class="account-grid" id="accountGuest">
@@ -127,7 +131,7 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
  <section class="account-dashboard" id="accountDashboard" hidden aria-labelledby="dashboardHeading">
   <div class="dashboard-heading">
    <div><p class="account-eyebrow" style="margin:0 0 8px">ÁREA DO CLIENTE</p><h1 id="dashboardHeading">Minha Black Hands</h1><p>Seus agendamentos e dados, organizados em um só lugar.</p></div>
-   <button id="logout" type="button" class="account-outline">Sair da conta</button>
+   <div class="dashboard-top-actions"><a href="index.html" class="account-home-button" aria-label="Voltar ao início do site Black Hands">← Início do site</a><button id="logout" type="button" class="account-outline">Sair da conta</button></div>
   </div>
   <div class="dashboard-banner">
    <div><p class="account-eyebrow" style="margin:0 0 8px">CONTA CONECTADA</p><h2 id="welcome">Bem-vindo!</h2><p id="accountPhoneLabel"></p><p id="accountMemberSince"></p></div>
