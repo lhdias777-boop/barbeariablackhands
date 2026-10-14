@@ -12,6 +12,7 @@ const files = [
   'auth.js',
   'agendar.html',
   'acompanhar.html',
+  'acompanhar.js',
   'servicos.html',
   'loja.html',
   'planos-vip.html',
