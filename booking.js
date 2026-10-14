@@ -170,7 +170,7 @@ function addWhatsappLink(parent,url,token,label){
  return link;
 }
 function addTrackingLink(parent){
- const link=document.createElement('a');link.href='acompanhar.html';
+ const link=document.createElement('a');link.href='conta.html';
  link.className='btn';link.textContent='Acompanhar meu agendamento';
  link.style.display='inline-block';link.style.marginTop='12px';
  parent.append(link);
