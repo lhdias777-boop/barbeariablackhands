@@ -5,13 +5,20 @@
   "description": "Black Hands Barber Shop site with server-backed AI assistant",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:cloudflare": "node scripts/build-public.js",
+    "dev:cloudflare": "npm run build:cloudflare && wrangler dev",
+    "deploy:cloudflare": "npm run build:cloudflare && wrangler deploy",
+    "check:cloudflare": "npm run build:cloudflare && wrangler deploy --dry-run"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "express": "^4.21.2",
     "serverless-http": "^3.2.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.44.0"
   }
 }
