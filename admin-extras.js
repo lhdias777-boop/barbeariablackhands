@@ -91,6 +91,51 @@ async function team(){
   $('staffMessage').textContent='O acesso do barbeiro é separado do painel administrativo.';
  }catch(e){$('staffMessage').textContent=e.message}
 }
+
+function formatNotificationDay(raw){
+ if(!raw)return '—';
+ const date=new Date(raw);
+ return Number.isFinite(date.getTime())?date.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+}
+async function notificationStatus(){
+ const output=$('adminWhatsappState'),table=$('adminWhatsappTable'),stats=$('adminWhatsappStats');
+ if(!output)return;
+ output.textContent='Verificando mensagens automáticas...';
+ try{
+  const d=await request('/api/admin/live/notifications');
+  output.textContent=d.configured?
+   'A integração WhatsApp está marcada como ativada. Confira a entrega de modelos aprovados e o número conectado.' :
+   'Envios reais ainda DESATIVADOS. Primeiro conecte seu número ao WhatsApp Business Platform e configure os modelos aprovados. A fila pode receber eventos sem enviar mensagens.';
+  stats.replaceChildren();
+  const metrics=[
+   ['Contas que autorizaram',d.summary.optedIn],
+   ['Pendentes (até 100)',d.summary.pending],
+   ['Enviadas (até 100)',d.summary.sent],
+   ['Falhas (até 100)',d.summary.failed]
+  ];
+  for(const [label,value] of metrics){
+   const stat=document.createElement('article');stat.className='adm-metric';
+   const small=document.createElement('small');small.textContent=label;
+   const strong=document.createElement('strong');strong.textContent=String(value);
+   stat.append(small,strong);stats.append(stat);
+  }
+  const kind={
+   welcome:'Boas-vindas',booking_received:'Pedido de agendamento',
+   booking_confirmed:'Agendamento confirmado',reminder_24h:'Lembrete de 1 dia',
+   reminder_1h:'Lembrete de 1 hora',store_order:'Pedido Store',
+   store_paid:'Pagamento Store',vip_activated:'Assinatura VIP',
+   vip_booking:'Corte VIP'
+  };
+  render('adminWhatsappTable',['Criada','Mensagem','Prevista','Situação','Tentativas','Observação'],
+   (d.messages||[]).map(m=>[
+    formatNotificationDay(m.created_at),kind[m.kind]||m.kind,
+    formatNotificationDay(m.due_at),
+    {pending:'Aguardando',processing:'Processando',sent:'Aceita pelo provedor',
+     cancelled:'Cancelada',failed:'Falhou'}[m.status]||m.status,
+    m.attempts,m.last_error||'—'
+   ]));
+ }catch(e){output.textContent='Não foi possível consultar as notificações: '+e.message}
+}
 $('financeFilter').addEventListener('click',finance);
 $('financeExpenseForm').addEventListener('submit',async e=>{
  e.preventDefault();
@@ -106,6 +151,7 @@ $('financeExpenseForm').addEventListener('submit',async e=>{
  }catch(err){$('financeMessage').textContent=err.message}
  finally{b.disabled=false;}
 });
+$('adminWhatsappRefresh').addEventListener('click',notificationStatus);
 $('staffGrantForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;
  $('staffMessage').textContent='Liberando acesso...';
@@ -122,5 +168,6 @@ $('adminTabs').addEventListener('click',event=>{
  const button=event.target.closest('button[data-panel]');
  if(button?.dataset.panel==='finance')finance();
  if(button?.dataset.panel==='team')team();
+ if(button?.dataset.panel==='notifications')notificationStatus();
 });
 })();
