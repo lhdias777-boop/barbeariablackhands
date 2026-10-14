@@ -43,13 +43,17 @@
    const detail=card.querySelector('[data-bh-details]');
    const logout=document.getElementById('bhMenuLogout');
    if(profile){
-     if(avatar)avatar.textContent=initials(profile.fullName);
+     if(avatar){avatar.classList.remove('is-brand');avatar.textContent=initials(profile.fullName);}
      if(name)name.textContent='Olá, '+firstName(profile.fullName)+'!';
      if(detail)detail.textContent=maskPhone(profile.phone)+' · Conta conectada';
      card.setAttribute('aria-label','Minha conta: '+firstName(profile.fullName));
      if(logout)logout.hidden=false;
    }else{
-     if(avatar)avatar.textContent='BH';
+     if(avatar){
+      avatar.classList.add('is-brand');
+      const logo=document.createElement('img');logo.src='logo-oficial-black-hands.jpg';logo.alt='';
+      avatar.replaceChildren(logo);
+     }
      if(name)name.textContent='Minha conta';
      if(detail)detail.textContent=availability==='error'?'Sessão indisponível':'Entrar ou criar conta';
      if(logout)logout.hidden=true;
@@ -60,7 +64,7 @@
    popup=document.createElement('div');
    popup.className='bh-auth-overlay';
    popup.hidden=true;
-   popup.innerHTML='<section class="bh-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="bhAuthTitle" aria-describedby="bhAuthText"><button type="button" class="bh-auth-close" aria-label="Fechar aviso" data-bh-close>×</button><div class="bh-auth-mark" aria-hidden="true">BH</div><p class="bh-auth-eyebrow">BLACK HANDS • ÁREA EXCLUSIVA</p><h2 id="bhAuthTitle">Sua experiência começa aqui.</h2><p id="bhAuthText">Para continuar, entre na sua conta ou faça um cadastro rápido com nome, WhatsApp e senha.</p><a class="bh-auth-primary" id="bhAuthLogin" href="conta.html?mode=login">Entrar na minha conta</a><a class="bh-auth-secondary" id="bhAuthRegister" href="conta.html?mode=register">Criar minha conta</a><p class="bh-auth-note">É gratuito. Você poderá acompanhar agendamentos, compras e seu VIP na Minha Black Hands.</p></section>';
+   popup.innerHTML='<section class="bh-auth-dialog" role="dialog" aria-modal="true" aria-labelledby="bhAuthTitle" aria-describedby="bhAuthText"><button type="button" class="bh-auth-close" aria-label="Fechar aviso" data-bh-close>×</button><div class="bh-auth-mark" aria-hidden="true"><img src="logo-oficial-black-hands.jpg" alt=""></div><p class="bh-auth-eyebrow">BLACK HANDS • ÁREA EXCLUSIVA</p><h2 id="bhAuthTitle">Sua experiência começa aqui.</h2><p id="bhAuthText">Para continuar, entre na sua conta ou faça um cadastro rápido com nome, WhatsApp e senha.</p><a class="bh-auth-primary" id="bhAuthLogin" href="conta.html?mode=login">Entrar na minha conta</a><a class="bh-auth-secondary" id="bhAuthRegister" href="conta.html?mode=register">Criar minha conta</a><p class="bh-auth-note">É gratuito. Você poderá acompanhar agendamentos, compras e seu VIP na Minha Black Hands.</p></section>';
    document.body.append(popup);
    popup.addEventListener('click',event=>{if(event.target===popup||event.target.closest('[data-bh-close]'))closePopup()});
    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!popup.hidden)closePopup()});
