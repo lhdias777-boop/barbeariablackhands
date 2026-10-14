@@ -1066,6 +1066,39 @@ app.get('/api/barber/vip',requireStaff,async(req,res)=>{
 });
 // Visibilidade administrativa da fila, sem expor tokens nem números completos.
 // Diagnóstico sem segredos. Nunca retorna chave API, token do webhook ou dados de cobrança.
+// Teste de leitura somente: NÃO cria clientes, PIX nem cobranças.
+app.post('/api/admin/live/pix-connection-test',accountSameOrigin,requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ const base=String(process.env.ASAAS_API_BASE||'');
+ const environment=base===ASAAS_PRODUCTION_BASE?'production':
+   base===ASAAS_SANDBOX_BASE?'sandbox':'unconfigured';
+ if(environment==='unconfigured'||!process.env.ASAAS_API_KEY)
+  return res.status(409).json({error:'Configure primeiro ASAAS_API_BASE e ASAAS_API_KEY na Cloudflare.'});
+ try{
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),9000);
+  let response;
+  try{
+   response=await fetch(base+'/payments?limit=1',{
+    method:'GET',signal:controller.signal,
+    headers:{'access_token':process.env.ASAAS_API_KEY,
+      'User-Agent':'BlackHandsBarber/1.0','Accept':'application/json'}
+   });
+  }finally{clearTimeout(timeout);}
+  if(!response.ok){
+   const code=response.status;
+   return res.status(502).json({error:code===401?'A chave do Asaas foi recusada para este ambiente.':
+    code===403?'Chave sem permissão ou acesso bloqueado pelo Asaas.':
+    code===429?'Limite de consultas do Asaas. Aguarde e tente novamente.':
+    'O Asaas não respondeu com sucesso (HTTP '+code+').'});
+  }
+  return res.json({ok:true,environment,message:'Conexão de leitura com o Asaas confirmada. Nenhuma cobrança foi criada.',
+   liveChargesEnabled:paymentEnvironment()==='production'});
+ }catch(e){
+  console.error('PIX connection test:',String(e.name||'Error').slice(0,50));
+  return res.status(503).json({error:'Não foi possível alcançar o Asaas neste momento. Tente novamente.'});
+ }
+});
 app.get('/api/admin/live/pix-readiness',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  const mode=String(process.env.BH_PAYMENTS_MODE||'disabled');
