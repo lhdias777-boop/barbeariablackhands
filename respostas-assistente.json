@@ -168,9 +168,17 @@
         "localizacao",
         "onde fica",
         "como chegar",
-        "fica onde"
+        "fica onde",
+        "rua",
+        "qual o endereco",
+        "maps",
+        "gps",
+        "como ir",
+        "rota",
+        "padre eustaquio",
+        "rua coronel jose benjamim"
       ],
-      "resposta": "Confira a localização e os contatos na página inicial: [Localização e contato](index.html#contato). Se precisar, peça o endereço pelo WhatsApp: https://wa.me/5531971245200."
+      "resposta": "A Barbearia Black Hands fica na Rua Coronel José Benjamim, 224 — Padre Eustáquio, Belo Horizonte – MG, CEP 30720-430. Veja o mapa e toque em Como chegar na seção [Localização e contato](index.html#contato). Funcionamento: segunda a sexta 7h–19h, sábado 7h–16h, domingo fechado."
     },
     {
       "id": "cancelar",
