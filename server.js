@@ -1064,6 +1064,27 @@ app.get('/api/barber/vip',requireStaff,async(req,res)=>{
     usedThisMonth:used.filter(u=>u.account_id===m.account_id).length}))});
  }catch(e){console.error('VIP barber list:',String(e.message).slice(0,120));res.status(503).json({error:'Não foi possível consultar clientes VIP.'});}
 });
+// Visibilidade administrativa da fila, sem expor tokens nem números completos.
+app.get('/api/admin/live/notifications',requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ try{
+  const [messages,accounts]=await Promise.all([
+   sbReq('bh_whatsapp_notifications','?select=id,kind,status,due_at,created_at,sent_at,attempts,last_error&order=created_at.desc&limit=100'),
+   sbReq('bh_customer_accounts','?whatsapp_opt_in=eq.true&select=id&limit=1000')
+  ]);
+  const summary={
+   optedIn:accounts.length,
+   pending:messages.filter(x=>x.status==='pending').length,
+   sent:messages.filter(x=>x.status==='sent').length,
+   failed:messages.filter(x=>x.status==='failed').length
+  };
+  return res.json({summary,messages,configured:process.env.WHATSAPP_ENABLED==='true',
+   note:'Os totais de mensagens exibidos consideram até os últimos 100 registros. Mensagens reais só são enviadas com Meta WhatsApp Business conectado e modelos aprovados.'});
+ }catch(e){
+  console.error('Admin WhatsApp status:',String(e.message).slice(0,100));
+  return res.status(503).json({error:'Não foi possível consultar as notificações.'});
+ }
+});
 app.get('/api/admin/live/finance',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  const from=String(req.query.from||spParts().date.slice(0,7)+'-01');
