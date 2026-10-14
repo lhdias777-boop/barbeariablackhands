@@ -1,14 +1,8 @@
 (()=>{'use strict';
 let plan=null;
 const $=id=>document.getElementById(id), message=t=>$('vipMessage').textContent=t;
-function token(){
- // Compatibilidade com sessão Supabase JS v2 persistida em localStorage.
- const keys=Object.keys(localStorage).filter(k=>/^sb-.+-auth-token$/.test(k));
- for(const key of keys){try{const value=JSON.parse(localStorage.getItem(key));if(value?.access_token)return value.access_token;}catch{}}
- return null;
-}
 async function request(path,options={}){
- const access=token();if(!access)throw Error('Você precisa entrar na sua conta Supabase para assinar ou consultar seu VIP.');
+ const access=await window.BHAuth?.token();if(!access)throw Error('Entre ou cadastre-se em Minha conta antes de consultar ou assinar o VIP.');
  const response=await fetch(path,{...options,headers:{Authorization:'Bearer '+access,'Content-Type':'application/json',...(options.headers||{})}});
  const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'Erro ao consultar servidor');return data;
 }
