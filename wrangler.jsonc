@@ -6,7 +6,10 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/health"],
+    "run_worker_first": [
+      "/api/*",
+      "/health"
+    ],
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page"
   },
@@ -14,6 +17,7 @@
     "BH_PAYMENTS_MODE": "disabled",
     "BH_PIX_ENABLED": "false",
     "BH_REAL_PIX_ENABLED": "false",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "BH_AUTH_PASSWORD_KDF": "supabase_edge"
   }
 }
