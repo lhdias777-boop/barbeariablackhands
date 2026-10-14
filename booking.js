@@ -61,7 +61,7 @@ function restoreClientData(){try{const saved=JSON.parse(localStorage.getItem("bl
 function saveClientData(){localStorage.setItem("blackhands_client",JSON.stringify({name:nameInput.value.trim(),phone:phoneInput.value.trim()}));}
 
 dateInput.min=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-document.querySelectorAll('input[name="services"]').forEach(el=>el.addEventListener("change",updateTotal));
+document.getElementById('serviceOptions').addEventListener('change',event=>{if(event.target.matches('input[name="services"]'))updateTotal()});
 serviceTrigger.addEventListener("click",()=>setServicePanel(servicePanel.hidden));
 serviceDone.addEventListener("click",()=>setServicePanel(false));
 barber.addEventListener("change",loadTimes);
@@ -85,6 +85,32 @@ const serviceParam=new URLSearchParams(location.search).get("service");
 if(serviceParam){const checkbox=[...document.querySelectorAll('input[name="services"]')].find(el=>el.value.toLowerCase()===serviceParam.toLowerCase());if(checkbox){checkbox.checked=true;updateTotal();}}
 
 
+
+
+async function syncBookingCatalog(){
+ try{
+  const response=await fetch('/api/site/catalog',{cache:'no-store'});
+  if(!response.ok)throw Error('Catálogo indisponível');
+  const data=await response.json();
+  if(!Array.isArray(data.items))throw Error('Catálogo inválido');
+  const active=data.items.filter(x=>x.kind==='service'&&x.active!==false);
+  const previous=new Set([...document.querySelectorAll('input[name="services"]:checked')].map(x=>x.value));
+  const root=document.getElementById('serviceOptions');
+  root.replaceChildren();
+  for(const service of active){
+   const label=document.createElement('label');label.className='booking-service';
+   const input=document.createElement('input');input.type='checkbox';input.name='services';input.value=service.name;input.dataset.price=String(service.price);input.checked=previous.has(service.name);
+   const detail=document.createElement('span'),name=document.createElement('b'),description=document.createElement('small'),price=document.createElement('strong');
+   name.textContent=service.name;description.textContent=service.description||'Serviço Black Hands';
+   price.textContent=money(Number(service.price));
+   const tick=document.createElement('i');tick.setAttribute('aria-hidden','true');tick.textContent='✓';
+   detail.append(name,description,price,tick);label.append(input,detail);root.append(label);
+   SERVICE_MINUTES[service.name]=Number(service.duration_minutes)||30;
+  }
+  updateTotal();
+ }catch(err){console.warn('Tabela de serviços atualizada indisponível:',err.message);}
+}
+syncBookingCatalog();
 
 const TRACKING_KEY='bh_booking_tracking_v1';
 const BARBERSHOP_WHATSAPP='5531971245200';
