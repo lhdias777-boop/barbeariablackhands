@@ -118,6 +118,10 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
      <span class="account-help" id="passwordHint">Use uma senha exclusiva de pelo menos 10 caracteres.</span>
      <button type="button" id="togglePassword">Mostrar senha</button>
     </div>
+    <label id="whatsappConsentRow" class="account-help" style="display:flex;gap:11px;align-items:flex-start;line-height:1.55;cursor:pointer">
+      <input id="whatsappConsent" type="checkbox" style="width:21px;height:21px;flex:none;margin-top:2px;accent-color:#f4a250">
+      <span><strong>Quero receber mensagens da Black Hands no WhatsApp</strong> com boas-vindas, confirmações de pedidos e agendamentos, VIP e lembretes 1 dia e 1 hora antes. Opcional: posso cancelar quando quiser no perfil. Não inclui publicidade.</span>
+    </label>
     <button class="account-primary" id="submitAuth" type="submit">CRIAR MINHA CONTA</button>
     <p id="authMsg" role="status" aria-live="polite" class="account-alert" hidden></p>
    </form>
@@ -188,6 +192,18 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
       <p class="account-help" id="phoneNote">O WhatsApp não foi verificado. Por segurança, a troca do número exige atendimento da equipe.</p>
       <button class="account-primary" type="submit">SALVAR ALTERAÇÕES</button>
       <p id="profileMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+    <section class="dashboard-card" id="whatsappPreferences">
+     <h2>Notificações pelo WhatsApp</h2>
+     <p>Você decide se deseja receber confirmações de agendamentos, compras, VIP e lembretes de cortes pelo número oficial da Black Hands. Os envios dependem da ativação da integração oficial.</p>
+     <form id="whatsappPreferenceForm" class="account-form">
+      <label style="display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:1.55;cursor:pointer">
+       <input id="whatsappOptIn" type="checkbox" style="accent-color:#f4a250;width:23px;height:23px;flex:none">
+       <span>Autorizo mensagens de atendimento pelo WhatsApp cadastrado. Posso desativar a qualquer momento.</span>
+      </label>
+      <button class="account-primary" type="submit">SALVAR PREFERÊNCIA</button>
+      <p class="account-alert" id="whatsappPreferenceMessage" role="status" hidden></p>
      </form>
     </section>
     <section class="dashboard-card">
