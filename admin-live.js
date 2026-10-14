@@ -206,6 +206,19 @@ $('adminLoginForm').addEventListener('submit',async e=>{
  }catch(err){$('adminLoginStatus').textContent=err.message;}
  finally{btn.disabled=false;}
 });
+$('adminChangeForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const value=$('adminNewPass').value,confirmValue=$('adminConfirmPass').value,output=$('adminChangeMessage');
+ if(value!==confirmValue){output.textContent='As senhas não coincidem.';return;}
+ const button=e.target.querySelector('button[type="submit"]');button.disabled=true;output.textContent='Atualizando segurança...';
+ try{
+  const result=await api('/api/admin/live/change-password',{method:'POST',body:JSON.stringify({newPassword:value})});
+  $('adminNewPass').value='';$('adminConfirmPass').value='';
+  output.textContent='';
+  showLogin(result.message||'Senha atualizada. Entre novamente.');
+ }catch(err){output.textContent=err.message;}
+ finally{button.disabled=false;}
+});
 $('adminRefresh').addEventListener('click',refresh);
 $('adminLogout').addEventListener('click',async()=>{
  try{await api('/api/admin/live/logout',{method:'POST',body:'{}'});}catch{}
