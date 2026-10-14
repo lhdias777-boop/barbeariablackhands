@@ -9,7 +9,7 @@ function returnDestination(){
   const url=new URL(value,location.href);
   if(url.origin!==location.origin)return null;
   const page=url.pathname.split('/').pop();
-  if(!['agendar.html','agendar','loja.html','loja','planos-vip.html','planos-vip','acompanhar.html','acompanhar','admin.html','admin'].includes(page))return null;
+  if(!['agendar.html','agendar','loja.html','loja','planos-vip.html','planos-vip','acompanhar.html','acompanhar','admin.html','admin','barbeiro.html','barbeiro'].includes(page))return null;
   return url.pathname+url.search+url.hash;
  }catch{return null}
 }
