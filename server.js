@@ -9,24 +9,32 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '12kb' }));
 app.use((req,res,next)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');next();});
 
-// No Render a API Express recebe as rotas diretamente, sem o guard do Netlify.
-// Pix e webhook só ficam ativos se a flag estiver ligada E a API for Sandbox.
+// Rotas financeiras não podem funcionar sem aprovação explícita do ambiente.
+// A variável de produção é diferente da de testes para evitar troca acidental de chaves.
+const ASAAS_SANDBOX_BASE='https://api-sandbox.asaas.com/v3';
+const ASAAS_PRODUCTION_BASE='https://api.asaas.com/v3';
+function paymentEnvironment(){
+ const mode=process.env.BH_PAYMENTS_MODE||'disabled';
+ const base=process.env.ASAAS_API_BASE;
+ if(process.env.BH_PIX_ENABLED!=='true'||!process.env.ASAAS_API_KEY)return 'disabled';
+ if(mode==='sandbox' && base===ASAAS_SANDBOX_BASE)return 'sandbox';
+ if(mode==='production'&&base===ASAAS_PRODUCTION_BASE&&process.env.BH_REAL_PIX_ENABLED==='true')return 'production';
+ return 'disabled';
+}
 app.use((req,res,next)=>{
- const protectedPix=/^\/api\/(?:booking\/checkout|store\/checkout|vip\/checkout|asaas\/webhook)(?:\/|$)/.test(req.path);
- if(!protectedPix)return next();
+ const financial=/^\/api\/(?:booking\/checkout|store\/checkout|vip\/checkout|asaas\/webhook)(?:\/|$)/.test(req.path);
+ if(!financial)return next();
  res.setHeader('Cache-Control','no-store');
- if(process.env.BH_PIX_ENABLED!=='true')
-  return res.status(503).json({error:'Pix de teste desabilitado até concluir a configuração. Nenhuma cobrança foi gerada.'});
- if(process.env.ASAAS_API_BASE!=='https://api-sandbox.asaas.com/v3')
-  return res.status(503).json({error:'Por segurança, esta versão aceita apenas o Asaas Sandbox.'});
- next();
+ if(paymentEnvironment()==='disabled')
+  return res.status(503).json({error:'Pagamentos indisponíveis até concluir a homologação. Nenhuma cobrança foi gerada.'});
+ if(req.path==='/api/asaas/webhook'&&!process.env.ASAAS_WEBHOOK_TOKEN)
+  return res.status(503).json({error:'Webhook não configurado.'});
+ return next();
 });
 app.get('/api/health',(_req,res)=>{
  res.setHeader('Cache-Control','no-store');
- res.json({
-  ok:true,service:'black-hands-api',hosting:process.env.RENDER?'render':'other',
-  pixTest:{enabled:process.env.BH_PIX_ENABLED==='true',sandboxConfigured:process.env.ASAAS_API_BASE==='https://api-sandbox.asaas.com/v3'}
- });
+ res.json({ok:true,service:'black-hands-api',
+  paymentMode:paymentEnvironment(),paymentReady:paymentEnvironment()!=='disabled'});
 });
 // Small in-memory rate limit. Use a shared store such as Redis for multi-instance production deployments.
 const buckets = new Map();
@@ -323,7 +331,8 @@ async function vipAuth(req){
 }
 async function asaas(endpoint,options={}){
  if(!process.env.ASAAS_API_KEY)throw Error('Asaas não configurado');
- const base=process.env.ASAAS_API_BASE||'https://api.asaas.com/v3';
+ if(paymentEnvironment()==='disabled')throw Error('Asaas não habilitado para este ambiente');
+ const base=process.env.ASAAS_API_BASE;
  const r=await fetch(base+endpoint,{...options,headers:{'access_token':process.env.ASAAS_API_KEY,'Content-Type':'application/json','User-Agent':'BlackHandsBarber/1.0',...(options.headers||{})}});
  const j=await r.json().catch(()=>({}));
  if(!r.ok)throw Error('Asaas '+r.status+': '+JSON.stringify(j.errors||j).slice(0,250));
@@ -502,7 +511,7 @@ async function readBookingWithPayment(item){
   const orders=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(item.pix_order_id)+'&select=id,status,amount,paid_at,asaas_payment_id&limit=1');
   order=orders[0]||null;
   // Dupla checagem do pagamento no próprio Asaas para o caso do webhook demorar.
-  if(order && process.env.BH_PIX_ENABLED==='true'&&process.env.ASAAS_API_BASE===SANDBOX_URL){
+  if(order && paymentEnvironment()!=='disabled'){
    let confirmed=order.status==='PAID';
    if(!confirmed && order.asaas_payment_id){
     try{
@@ -609,7 +618,7 @@ app.post('/api/booking/checkout',checkoutLimit,async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.json({orderId,paymentId:payment.id,trackingToken,amount:parsed.amount,
    pixCopyPaste:pix.payload||'',qrCodeBase64:pix.encodedImage||'',
-   status:'PENDING',note:'Pré-reserva por 30 minutos. Após o pagamento, a equipe ainda precisa confirmar o atendimento. Não pague pelo banco durante os testes Sandbox.'});
+   status:'PENDING',paymentMode:paymentEnvironment(),note:paymentEnvironment()==='production'?'Pré-reserva por 30 minutos. O pagamento será confirmado pela instituição financeira antes da equipe aprovar o horário.':'Pré-reserva de teste por 30 minutos. Não pague pelo banco usando o Sandbox.'});
  }catch(e){
   console.error('Booking Pix:',e.message);
   // Falhas anteriores à cobrança liberam o horário. Se o Asaas gerou cobrança, preserva-se a reserva até vencer.
