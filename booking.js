@@ -61,7 +61,24 @@ function restoreClientData(){try{const saved=JSON.parse(localStorage.getItem("bl
 function saveClientData(){localStorage.setItem("blackhands_client",JSON.stringify({name:nameInput.value.trim(),phone:phoneInput.value.trim()}));}
 
 dateInput.min=new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-document.getElementById('serviceOptions').addEventListener('change',event=>{if(event.target.matches('input[name="services"]'))updateTotal()});
+const EXCLUSIVE_COMBOS=new Set(['Combo Corte + Sobrancelha','Pacote Completo']);
+function enforceExclusiveBooking(changed){
+ const checked=[...document.querySelectorAll('input[name="services"]:checked')];
+ if(changed?.checked){
+  if(EXCLUSIVE_COMBOS.has(changed.value)){
+   checked.forEach(input=>{if(input!==changed)input.checked=false});
+  }else{
+   checked.forEach(input=>{if(EXCLUSIVE_COMBOS.has(input.value))input.checked=false});
+  }
+  return;
+ }
+ const active=checked.find(input=>EXCLUSIVE_COMBOS.has(input.value));
+ if(active)checked.forEach(input=>{if(input!==active)input.checked=false});
+}
+document.getElementById('serviceOptions').addEventListener('change',event=>{
+ if(!event.target.matches('input[name="services"]'))return;
+ enforceExclusiveBooking(event.target);updateTotal();
+});
 serviceTrigger.addEventListener("click",()=>setServicePanel(servicePanel.hidden));
 serviceDone.addEventListener("click",()=>setServicePanel(false));
 barber.addEventListener("change",loadTimes);
@@ -82,7 +99,13 @@ try {const saved=JSON.parse(sessionStorage.getItem('bhSelectedServices')||'[]');
 
 // Permite abrir a página já com um serviço selecionado: agendar.html?service=Cabelo
 const serviceParam=new URLSearchParams(location.search).get("service");
-if(serviceParam){const checkbox=[...document.querySelectorAll('input[name="services"]')].find(el=>el.value.toLowerCase()===serviceParam.toLowerCase());if(checkbox){checkbox.checked=true;updateTotal();}}
+if(serviceParam){const checkbox=[...document.querySelectorAll('input[name="services"]')].find(el=>el.value.toLowerCase()===serviceParam.toLowerCase());if(checkbox){checkbox.checked=true;enforceExclusiveBooking(checkbox);updateTotal();}}
+const comboParam=new URLSearchParams(location.search).get('combo');
+const comboFromUrl=({'combo-corte-sobrancelha':'Combo Corte + Sobrancelha','combo-completo':'Pacote Completo'})[comboParam];
+if(comboFromUrl){
+ const checkbox=[...document.querySelectorAll('input[name="services"]')].find(el=>el.value===comboFromUrl);
+ if(checkbox){checkbox.checked=true;enforceExclusiveBooking(checkbox);updateTotal();}
+}
 
 
 
@@ -93,7 +116,10 @@ async function syncBookingCatalog(){
   if(!response.ok)throw Error('Catálogo indisponível');
   const data=await response.json();
   if(!Array.isArray(data.items))throw Error('Catálogo inválido');
-  const active=data.items.filter(x=>x.kind==='service'&&x.active!==false);
+  const active=data.items.filter(x=>x.kind==='service'&&x.active!==false).sort((a,b)=>{
+   const rank=name=>name==='Combo Corte + Sobrancelha'?1:name==='Pacote Completo'?2:0;
+   return rank(a.name)-rank(b.name);
+  });
   const previous=new Set([...document.querySelectorAll('input[name="services"]:checked')].map(x=>x.value));
   const root=document.getElementById('serviceOptions');
   root.replaceChildren();
@@ -107,6 +133,7 @@ async function syncBookingCatalog(){
    detail.append(name,description,price,tick);label.append(input,detail);root.append(label);
    SERVICE_MINUTES[service.name]=Number(service.duration_minutes)||30;
   }
+  enforceExclusiveBooking();
   updateTotal();
  }catch(err){console.warn('Tabela de serviços atualizada indisponível:',err.message);}
 }
@@ -232,6 +259,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&activePay
 form.addEventListener('submit',async e=>{
  e.preventDefault();
  if(!await window.BHSession.requireLogin({action:'agendar',next:location.href}))return;
+ enforceExclusiveBooking();
  const services=selectedServices();
  if(!services.length){alert('Selecione pelo menos um serviço.');return;}
  if(!barber.value||!dateInput.value||!timeSelect.value||!nameInput.value.trim()||!phoneInput.value.trim())return;
