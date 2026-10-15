@@ -91,22 +91,41 @@ function paint(d){
   wrap.append(cols('small',label),cols('strong',value));$('adminMetrics').append(wrap);
  }
  const bookings=d.bookings||[],orders=d.orders||[],customers=d.customers||[];
+ const orderById=new Map(orders.map(o=>[o.id,o]));
+ const cancellable=new Set(['PENDING','CREATING','ERROR']);
+ const cancelAction=(kind,id)=>{
+  const wrap=document.createElement('div');wrap.className='adm-actions';
+  if(id)wrap.append(action('Cancelar pendência',()=>cancelPending(kind,id)));
+  return wrap;
+ };
  const sorted=[...bookings].filter(b=>b.status==='AWAITING_STAFF'||b.status==='CONFIRMED')
  .sort((a,b)=>String(a.appointment_date+' '+a.appointment_time).localeCompare(b.appointment_date+' '+b.appointment_time));
  replace('adminUpcoming',table(['Data','Cliente','Horário','Status'],sorted.slice(0,12).map(b=>[b.appointment_date,b.customer_name,b.appointment_time,chip(b.status)])));
- replace('adminLastOrders',table(['Tipo','Cliente','Valor','Status'],orders.slice(0,12).map(o=>[o.kind,o.customer_name,money(o.amount),chip(o.status)])));
+ replace('adminLastOrders',table(['Tipo','Cliente','Valor','Status','Ação'],
+  orders.slice(0,12).map(o=>[o.kind==='store'?'Loja':'Agendamento',o.customer_name,
+   money(o.amount),chip(o.status),cancellable.has(o.status)?cancelAction(o.kind,o.id):'—'])));
  replace('adminBookingTable',table(['Data','Hora','Cliente','WhatsApp','Serviços','Barbeiro','Valor','Pagamento','Status','Ação'],
   bookings.map(b=>{
    const btn=document.createElement('div');
-   if(b.status==='AWAITING_STAFF'){
-    btn.append(action('Confirmar',()=>updateBooking(b,'CONFIRMED')),action('Cancelar',()=>updateBooking(b,'CANCELLED')));
-   }else if(b.status==='CONFIRMED'){btn.append(action('Cancelar',()=>updateBooking(b,'CANCELLED')));}
+   const linked=b.pix_order_id?orderById.get(b.pix_order_id):null;
+   if(b.payment_method==='PIX'&&linked&&cancellable.has(linked.status)){
+    btn.append(action('Cancelar pendência',()=>cancelPending('booking',linked.id)));
+   }else if(b.status==='AWAITING_STAFF'){
+    btn.append(action('Confirmar',()=>updateBooking(b,'CONFIRMED')),
+     action('Cancelar agendamento',()=>updateBooking(b,'CANCELLED')));
+   }else if(b.status==='CONFIRMED'){
+    btn.append(action('Cancelar agendamento',()=>updateBooking(b,'CANCELLED')));
+   }else if(b.status==='HOLD'&&!linked){
+    btn.append(action('Cancelar agendamento',()=>updateBooking(b,'CANCELLED')));
+   }
    return [b.appointment_date,b.appointment_time,b.customer_name,maskPhone(b.customer_phone),(b.service_names||[]).join(', '),b.barber,money(b.amount),b.payment_method,chip(b.status),btn];
   })));
  renderCustomers(customers);
  const allPayments=[...orders.map(o=>({...o,category:o.kind==='store'?'Store':'Agendamento',person:o.customer_name})),
- ...(d.vipPayments||[]).map(o=>({...o,category:'VIP '+o.plan,person:short(o.account_id)}))].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
- replace('adminFinanceTable',table(['Data','Origem','Cliente / Conta','Valor','Status','Ambiente'],allPayments.map(o=>[date(o.created_at),o.category,o.person,money(o.amount),chip(o.status),o.payment_environment])));
+ ...(d.vipPayments||[]).map(o=>({...o,kind:'vip',category:'VIP '+o.plan,person:short(o.account_id)}))].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ replace('adminFinanceTable',table(['Data','Origem','Cliente / Conta','Valor','Status','Ambiente','Ação'],
+  allPayments.map(o=>[date(o.created_at),o.category,o.person,money(o.amount),chip(o.status),
+   o.payment_environment,cancellable.has(o.status)?cancelAction(o.kind,o.id):'—'])));
  renderCatalog('product','adminProductsTable');
  renderCatalog('service','adminServicesTable');
  const links=d.vip||[];
@@ -235,6 +254,17 @@ function renderContent(){
   });
   label.append(input,btn);root.append(label);
  }
+}
+async function cancelPending(kind,id){
+ if(!confirm('Cancelar esta cobrança PENDENTE e impedir que seja paga pelo site?\n\nSe for agendamento, o horário será liberado. Pagamentos já recebidos não são cancelados aqui.'))return;
+ setMessage('Cancelando pendência e verificando estado do pagamento...');
+ try{
+  const result=await api('/api/admin/live/cancel-pending/'+encodeURIComponent(kind)+'/'+encodeURIComponent(id),{
+   method:'POST',body:'{}'
+  });
+  await refresh();
+  setMessage(result.message||'Pendência cancelada. O histórico foi preservado.');
+ }catch(e){setMessage('Não foi possível cancelar: '+e.message);alert(e.message);}
 }
 async function updateBooking(b,status){
  if(!confirm((status==='CONFIRMED'?'Confirmar':'Cancelar')+' agendamento de '+b.customer_name+'?'+(status==='CANCELLED'?' Se houver pagamento, o reembolso deve ser tratado separadamente.':'')))return;
