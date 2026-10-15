@@ -57,7 +57,7 @@ async function loadTimes(){
     const last=data.lastPossibleStart;
     const summary='Expediente: '+data.open+' às '+data.close+'. Este atendimento dura '+
       duration+' min'+(last?'. Último início possível: '+last+', para terminar até '+data.close+'.':'')+
-      ' Horários ocupados ou já passados não aparecem.';
+      ' Horários ocupados ficam bloqueados e horários passados não aparecem.';
     bookingHoursHint.textContent=data.close==='Fechado'?'Domingo fechado. Escolha outra data.':summary;
     timeSelect.innerHTML='<option value="">Selecione um horário de início</option>';
     const occupied=new Set(Array.isArray(data.occupiedTimes)?data.occupiedTimes:[]);
