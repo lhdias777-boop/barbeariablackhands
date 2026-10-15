@@ -100,7 +100,7 @@ const avatar=banner.querySelector('#accountAvatar');if(avatar){const avatarLine=
 dashboard.insertBefore(nav,banner.nextSibling);nav.after(panels);
 source.remove();
 const bottom=el('nav','bh-account-bottom');bottom.setAttribute('aria-label','Navegação rápida da Minha Conta');bottom.id='bhAccountBottom';
-dashboard.after(bottom);
+dashboard.after(bottom);bottom.hidden=true;
 function makeNavButton(info,parent){
  const b=el('button','bh-account-tab');b.type='button';b.dataset.accountGo=info.id;
  b.setAttribute('role',parent===nav?'tab':'button');
@@ -199,7 +199,21 @@ function summary(){
  paymentsList.append(detail);
 }
 function accountChanged(account){
- if(!account){bottom.hidden=true;return}
+ if(!account){
+  bottom.hidden=true;
+  data.bookings=[];data.orders=[];data.membership=null;
+  data.bookingsLoaded=false;data.ordersLoaded=false;data.vipLoaded=false;data.accountId=null;
+  badge.textContent='CLIENTE BLACK HANDS';badge.classList.remove('is-vip');
+  notices();nextVisit();summary();
+  return;
+ }
+ // Exibir estado vazio enquanto uma conta diferente carrega dados autenticados.
+ if(data.accountId!==account.id){
+  data.accountId=account.id;
+  data.bookings=[];data.orders=[];data.membership=null;
+  data.bookingsLoaded=false;data.ordersLoaded=false;data.vipLoaded=false;
+  notices();nextVisit();summary();
+ }
  bottom.hidden=false;
  const name=String(account.fullName||'Cliente').trim().split(/\s+/).filter(Boolean);
  const first=Array.from(name[0]||'C')[0]||'C';
