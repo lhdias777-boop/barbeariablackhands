@@ -433,6 +433,8 @@ app.post('/api/vip/appointments',accountSameOrigin,requireAccount,async(req,res)
   if(existing.length)return res.status(409).json({error:'O atendimento da semana '+week+' já está reservado.'});
   const duration=m[0].plan==='vip2'&&[1,3].includes(week)?90:30;
   if(!slotAllowed(time,duration,date))return res.status(409).json({error:'Horário fora do expediente.'});
+  // Libera antigas pré-reservas Pix expiradas antes da inserção VIP.
+  await sbReq('rpc/bh_release_expired_booking_holds','',{method:'POST',body:'{}'});
   const bookings=await bookingReservations(barber,date);
   if(bookedSlots(bookings,time,duration))return res.status(409).json({error:'Horário já ocupado. Escolha outro.'});
   const id=await sbReq('rpc/bh_customer_schedule_vip','',{method:'POST',
@@ -688,11 +690,16 @@ app.get('/api/booking/availability',async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   const day=new Date(date+'T12:00:00Z').getUTCDay();
   const closingMinutes=day===6?960:1140;
+  // Não revelar dados de clientes; expor apenas faixas disponíveis/ocupadas.
+  // Um atendimento de 60/90 min bloqueia todos os horários que se sobrepõem.
+  const candidates=BOOKING_SLOTS.filter(t=>slotAllowed(t,duration,date));
+  const times=candidates.filter(t=>!bookedSlots(rows,t,duration));
+  const occupiedTimes=candidates.filter(t=>bookedSlots(rows,t,duration));
   res.json({barber,date,open:'07:00',
    close:day===6?'16:00':day===0?'Fechado':'19:00',
    durationMinutes:duration,
-   lastPossibleStart:day===0?null:BOOKING_SLOTS.filter(t=>mins(t)+duration<=closingMinutes).at(-1)||null,
-   times:BOOKING_SLOTS.filter(t=>slotAllowed(t,duration,date)&&!bookedSlots(rows,t,duration))});
+   lastPossibleStart:day===0?null:candidates.at(-1)||null,
+   times,occupiedTimes});
  }catch(e){console.error('Booking availability:',e.message);pixErr(res,'Não foi possível consultar os horários. Tente novamente.',503);}
 });
 // Consulta privada com código aleatório. Nunca aceita WhatsApp ou nome como prova de identidade.
