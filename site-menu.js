@@ -1,5 +1,123 @@
 /* Navegação unificada: páginas públicas e áreas com acesso protegido. */
 (()=>{'use strict';
+
+ // Instalação da Black Hands: no Android usa o convite do navegador, quando
+ // disponível; no iPhone mostra os passos oficiais, pois não existe instalação
+ // automática via JavaScript no Safari.
+ let installPrompt=null;
+ let installDialog=null;
+ const isInstalled=()=>window.matchMedia('(display-mode: standalone)').matches||
+   window.matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+ const isApple=()=>/iPhone|iPad|iPod/i.test(navigator.userAgent)||
+   (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const isAndroid=()=>/Android/i.test(navigator.userAgent);
+ window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();installPrompt=e;
+  if(installDialog?.open)renderInstall();
+ });
+ window.addEventListener('appinstalled',()=>{
+  installPrompt=null;
+  if(installDialog?.open)renderInstall();
+ });
+ function renderInstall(){
+  if(!installDialog)return;
+  const summary=installDialog.querySelector('[data-install-summary]');
+  const directions=installDialog.querySelector('[data-install-directions]');
+  const native=installDialog.querySelector('[data-install-native]');
+  directions.replaceChildren();
+  native.hidden=true;
+  if(isInstalled()){
+   summary.textContent='A Black Hands já está adicionada como aplicativo neste dispositivo.';
+   directions.append(installLine('✓','Você pode abrir pelo ícone da Black Hands na tela inicial.'));
+   return;
+  }
+  summary.textContent='Tenha agendamentos, compras e VIP a um toque, com a logo oficial da Black Hands na sua tela inicial.';
+  if(isApple()){
+   directions.append(
+    installLine('1','Abra este site pelo Safari do iPhone.'),
+    installLine('2','Toque em Compartilhar (ícone de quadrado com seta para cima).'),
+    installLine('3','Escolha Adicionar à Tela de Início e depois toque em Adicionar.')
+   );
+  }else if(isAndroid()){
+   if(installPrompt){
+    native.hidden=false;
+    directions.append(installLine('✓','Toque em Instalar agora para abrir a confirmação do Android.'));
+   }else{
+    directions.append(
+     installLine('1','Abra a Black Hands no Google Chrome.'),
+     installLine('2','Toque no menu de três pontos (⋮).'),
+     installLine('3','Escolha Instalar app ou Adicionar à tela inicial e confirme.')
+    );
+   }
+  }else{
+   if(installPrompt){
+    native.hidden=false;
+    directions.append(installLine('✓','Clique em Instalar agora para confirmar no navegador.'));
+   }else{
+    directions.append(
+     installLine('1','Abra a Black Hands no Chrome ou Microsoft Edge.'),
+     installLine('2','Procure Instalar aplicativo na barra de endereços ou no menu do navegador.'),
+     installLine('3','Confirme para abrir a Black Hands em uma janela própria.')
+    );
+   }
+  }
+ }
+ function installLine(number,description){
+  const item=document.createElement('li');
+  const mark=document.createElement('strong');mark.textContent=number;
+  const body=document.createElement('span');body.textContent=description;
+  item.append(mark,body);return item;
+ }
+ function buildInstallDialog(){
+  if(installDialog)return installDialog;
+  const dialog=document.createElement('dialog');dialog.className='bh-install-dialog';
+  dialog.setAttribute('aria-labelledby','bhInstallTitle');
+  dialog.innerHTML='<div class="bh-install-card">'+
+   '<button class="bh-install-close" type="button" aria-label="Fechar instruções">×</button>'+
+   '<img class="bh-install-logo" src="logo-oficial-black-hands.jpg" alt="Logo Black Hands Barber Shop" width="78" height="78">'+
+   '<span class="bh-install-kicker">BLACK HANDS • ACESSO RÁPIDO</span>'+
+   '<h2 id="bhInstallTitle">Black Hands na sua tela inicial.</h2>'+
+   '<p data-install-summary></p>'+
+   '<ol class="bh-install-steps" data-install-directions></ol>'+
+   '<button class="bh-install-native" data-install-native type="button" hidden>↓ Instalar agora</button>'+
+   '<button class="bh-install-done" type="button">Entendi</button>'+
+   '<small>É gratuito. Seu login, agendamentos e pedidos continuam no mesmo site.</small>'+
+   '</div>';
+  document.body.append(dialog);
+  dialog.querySelector('.bh-install-close').addEventListener('click',()=>dialog.close());
+  dialog.querySelector('.bh-install-done').addEventListener('click',()=>dialog.close());
+  dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
+  dialog.querySelector('[data-install-native]').addEventListener('click',async()=>{
+   if(!installPrompt){renderInstall();return}
+   const event=installPrompt;installPrompt=null;
+   try{await event.prompt();await event.userChoice}
+   catch{ /* O usuário poderá seguir os passos manuais. */ }
+   renderInstall();
+  });
+  installDialog=dialog;
+  return dialog;
+ }
+ function openInstall(e){
+  if(e)e.preventDefault();
+  const dialog=buildInstallDialog();
+  renderInstall();
+  if(!dialog.open)dialog.showModal();
+ }
+ // A home tem menu próprio. Reaproveitamos o mesmo guia sem criar outro menu.
+ const homeNav=document.getElementById('mainNav');
+ const homeToggle=document.getElementById('mobileMenuToggle');
+ if(homeNav&&homeToggle){
+  const link=document.createElement('a');
+  link.href='#instalar-app';link.className='bh-site-install-link';
+  link.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v13m0 0 5-5m-5 5-5-5M4 17v4h16v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Instalar aplicativo</span>';
+  link.addEventListener('click',e=>{
+   e.preventDefault();
+   if(homeNav.classList.contains('is-open'))homeToggle.click();
+   openInstall();
+  });
+  homeNav.append(link);
+  return;
+ }
  if(document.getElementById('bhSiteMenuToggle'))return;
  const body=document.body;
  const header=document.querySelector('body > header');
@@ -31,11 +149,12 @@
   ['Planos VIP','planos-vip.html','crown'],
   ['Black Hands Store','loja.html','shopping-bag'],
   ['Avaliações','index.html#avaliacoes','star'],
-  ['Localização e contato','index.html#contato','map-pin']
+  ['Localização e contato','index.html#contato','map-pin'],
+  ['Instalar aplicativo','#instalar-app','download']
  ];
  const symbols={
   'house':'⌂','scissors':'✂','calendar-days':'▦','crown':'♛',
-  'shopping-bag':'▣','star':'☆','map-pin':'⌖'
+  'shopping-bag':'▣','star':'☆','map-pin':'⌖','download':'↓'
  };
  for(const [label,href,key] of items){
   const link=document.createElement('a');link.href=href;
@@ -44,6 +163,7 @@
   const current=location.pathname.split('/').pop()||'index.html';
   if(href===current)link.setAttribute('aria-current','page');
   if(key==='calendar-days')link.classList.add('bh-site-menu-book');
+  if(key==='download'){link.classList.add('bh-site-menu-install');link.addEventListener('click',e=>{e.preventDefault();closeMenu();openInstall();});}
   nav.append(link);
  }
  const footer=document.createElement('div');footer.className='bh-site-menu-foot';
