@@ -72,12 +72,14 @@ function dashboardAccount(account){
  $('profileName').value=account.fullName||'';
  $('profilePhone').value=displayPhone(account.phone);
  $('whatsappOptIn').checked=account.whatsappOptIn===true;
+ window.BHAccountApp?.accountChanged(account);
  refreshBookings();
  refreshOrdersVip();
 }
 function guest(){
  state.account=null;
  $('accountGuest').hidden=false;$('accountDashboard').hidden=true;
+ window.BHAccountApp?.accountChanged(null);
 }
 async function refreshBookings(){
  const node=$('accountBookings');
@@ -89,6 +91,7 @@ async function refreshBookings(){
   $('accountBookingCount').textContent=String(list.length);
   $('accountPendingCount').textContent=String(list.filter(x=>['AWAITING_STAFF','HOLD','PAID_NEEDS_REVIEW'].includes(x.status)).length);
   $('accountConfirmedCount').textContent=String(list.filter(x=>x.status==='CONFIRMED').length);
+  window.dispatchEvent(new CustomEvent('bh:account-bookings',{detail:{bookings:list}}));
   node.replaceChildren();
   if(!list.length){
    const blank=document.createElement('div');blank.className='dashboard-placeholder';
@@ -115,6 +118,7 @@ async function refreshOrdersVip(){
  if(!ordersNode||!vipNode)return;
  try{
   const {orders}=await api('/api/account/orders');
+  window.dispatchEvent(new CustomEvent('bh:account-orders',{detail:{orders:orders||[]}}));
   ordersNode.replaceChildren();
   if(!orders?.length){
    const item=document.createElement('div');item.className='dashboard-placeholder';item.textContent='Você ainda não fez compras nesta conta.';ordersNode.append(item);
@@ -127,6 +131,7 @@ async function refreshOrdersVip(){
  }catch(e){ordersNode.textContent=e.message;}
  try{
   const {membership}=await api('/api/vip/me');
+  window.dispatchEvent(new CustomEvent('bh:account-vip',{detail:{membership:membership||null}}));
   if(!membership){vipNode.textContent='Você ainda não possui um plano VIP ativo.';return;}
   const active=membership.status==='ACTIVE'&&new Date(membership.paid_until)>new Date();
   vipNode.textContent=membership.plan.toUpperCase()+' · '+(active?'Ativo':'Inativo ou vencido')+' · Até '+new Date(membership.paid_until).toLocaleDateString('pt-BR');
