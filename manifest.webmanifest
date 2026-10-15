@@ -1,0 +1,27 @@
+{
+  "name": "Black Hands Barber Shop",
+  "short_name": "Black Hands",
+  "description": "Agende seu corte, conheça a Black Hands Store e consulte seus planos VIP.",
+  "lang": "pt-BR",
+  "id": "/",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090909",
+  "theme_color": "#090909",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-oficial-black-hands.jpg",
+      "sizes": "720x720",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-oficial-black-hands.jpg",
+      "sizes": "720x720",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ]
+}
