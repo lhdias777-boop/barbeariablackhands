@@ -83,8 +83,8 @@ function paint(d){
  for(const [label,value] of [
   ['Clientes',String(d.stats.customers)],
   ['Agendamentos',String(d.stats.bookings)],
-  ['Recebido',money(d.stats.paymentsReceived)],
-  ['Cobranças pendentes',String(d.stats.paymentsPending)],
+  ['Aguardando aprovação',String((d.bookings||[]).filter(b=>b.status==='AWAITING_STAFF').length)],
+  ['Produtos disponíveis',String((d.catalog||[]).filter(p=>p.kind==='product'&&p.active).length)],
   ['Planos VIP ativos',String(d.stats.vipActive)]
  ]){
   const wrap=document.createElement('article');wrap.className='adm-metric';
@@ -101,9 +101,9 @@ function paint(d){
  const sorted=[...bookings].filter(b=>b.status==='AWAITING_STAFF'||b.status==='CONFIRMED')
  .sort((a,b)=>String(a.appointment_date+' '+a.appointment_time).localeCompare(b.appointment_date+' '+b.appointment_time));
  replace('adminUpcoming',table(['Data','Cliente','Horário','Status'],sorted.slice(0,12).map(b=>[b.appointment_date,b.customer_name,b.appointment_time,chip(b.status)])));
- replace('adminLastOrders',table(['Tipo','Cliente','Valor','Status','Ação'],
-  orders.slice(0,12).map(o=>[o.kind==='store'?'Loja':'Agendamento',o.customer_name,
-   money(o.amount),chip(o.status),cancellable.has(o.status)?cancelAction(o.kind,o.id):'—'])));
+ replace('adminBookingAlerts',table(['Data','Cliente','Hora','Barbeiro','Status'],
+  bookings.filter(b=>['AWAITING_STAFF','HOLD','PAID_NEEDS_REVIEW'].includes(b.status)).slice(0,12)
+   .map(b=>[b.appointment_date,b.customer_name,b.appointment_time,b.barber,chip(b.status)])));
  replace('adminBookingTable',table(['Data','Hora','Cliente','WhatsApp','Serviços','Barbeiro','Valor','Pagamento','Status','Ação'],
   bookings.map(b=>{
    const btn=document.createElement('div');
@@ -121,11 +121,6 @@ function paint(d){
    return [b.appointment_date,b.appointment_time,b.customer_name,maskPhone(b.customer_phone),(b.service_names||[]).join(', '),b.barber,money(b.amount),b.payment_method,chip(b.status),btn];
   })));
  renderCustomers(customers);
- const allPayments=[...orders.map(o=>({...o,category:o.kind==='store'?'Store':'Agendamento',person:o.customer_name})),
- ...(d.vipPayments||[]).map(o=>({...o,kind:'vip',category:'VIP '+o.plan,person:short(o.account_id)}))].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
- replace('adminFinanceTable',table(['Data','Origem','Cliente / Conta','Valor','Status','Ambiente','Ação'],
-  allPayments.map(o=>[date(o.created_at),o.category,o.person,money(o.amount),chip(o.status),
-   o.payment_environment,cancellable.has(o.status)?cancelAction(o.kind,o.id):'—'])));
  renderCatalog('product','adminProductsTable');
  renderCatalog('service','adminServicesTable');
  const links=d.vip||[];
