@@ -1301,8 +1301,11 @@ app.get('/api/admin/live/finance',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  const from=String(req.query.from||spParts().date.slice(0,7)+'-01');
  const to=String(req.query.to||spParts().date);
- const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&
-  new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+ const valid=x=>{
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(x))return false;
+  const parsed=Date.parse(x+'T12:00:00Z');
+  return Number.isFinite(parsed)&&new Date(parsed).toISOString().slice(0,10)===x;
+ };
  if(!valid(from)||!valid(to)||from>to||(Date.parse(to)-Date.parse(from))/86400000>366)
   return res.status(400).json({error:'Selecione um período válido de até 12 meses.'});
  const nextDate=new Date(Date.parse(to+'T00:00:00Z')+86400000).toISOString().slice(0,10);
@@ -1367,7 +1370,9 @@ app.get('/api/admin/live/finance',requireAdmin,async(req,res)=>{
    ...rows.expenses.map(e=>({id:e.id,date:e.expense_date+'T12:00:00-03:00',type:'Despesa',
     customer:e.category,description:e.description,amount:-Number(e.amount),
     status:'REGISTRADA',environment:'manual',confirmed:true}))
-  ].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  ].filter(x=>Number.isFinite(Date.parse(x.date))&&
+     Date.parse(x.date)>=Date.parse(fromTs)&&Date.parse(x.date)<Date.parse(endTs))
+   .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   res.json({from,to,income,expensesTotal,balance:Math.round((income-expensesTotal)*100)/100,
    revenue,expensesByCategory,pendingCount:pending.length,pendingAmount:sum(pending),
    sandboxCount,expenses:rows.expenses,movements,
