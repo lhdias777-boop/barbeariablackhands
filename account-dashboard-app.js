@@ -118,7 +118,10 @@ function select(tab,scroll=false,updateUrl=false){
  for(const b of nav.querySelectorAll('[role=tab]')){b.setAttribute('aria-selected',String(b.dataset.accountGo===tab));b.tabIndex=b.dataset.accountGo===tab?0:-1;}
  for(const b of bottom.querySelectorAll('[data-account-go]'))b.setAttribute('aria-current',b.dataset.accountGo===tab?'page':'false');
  if(updateUrl){const hash=tab==='overview'?'':('#'+tab);history.replaceState(null,'',location.pathname+location.search+hash)}
- if(scroll)nav.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});
+ if(scroll){
+  const destination=window.matchMedia('(max-width:600px)').matches?banner:nav;
+  destination.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth',block:'start'});
+ }
 }
 dashboard.addEventListener('click',e=>{const b=e.target.closest('[data-account-go]');if(b){select(b.dataset.accountGo,true,true)}});
 bottom.addEventListener('click',e=>{const b=e.target.closest('[data-account-go]');if(b)select(b.dataset.accountGo,true,true)});
