@@ -324,10 +324,12 @@ app.post('/api/account/change-password',accountSameOrigin,async(req,res)=>{
 app.get('/api/account/orders',requireAccount,async(req,res)=>{
  accountNoCache(res);
  try{
-  const orders=await sbReq('bh_pix_orders','?account_id=eq.'+encodeURIComponent(req.bhAccount.id)+'&kind=eq.store&select=id,status,amount,details,created_at&order=created_at.desc&limit=30');
+  const orders=await sbReq('bh_pix_orders','?account_id=eq.'+encodeURIComponent(req.bhAccount.id)+'&kind=eq.store&select=id,status,amount,details,created_at,asaas_payment_id,payment_environment&order=created_at.desc&limit=30');
   return res.json({orders:orders.map(order=>({
-   reference:String(order.id).slice(0,8).toUpperCase(),
-   status:order.status,amount:order.amount,createdAt:order.created_at,
+   id:order.id,reference:String(order.id).slice(0,8).toUpperCase(),
+   status:order.status,hasPixCharge:Boolean(order.asaas_payment_id),
+   paymentEnvironment:order.payment_environment,
+   amount:order.amount,createdAt:order.created_at,
    itemCount:Array.isArray(order.details?.items)?order.details.items.reduce((n,item)=>n+Number(item.quantity||0),0):0
   }))});
  }catch(e){console.error('Account store orders:',String(e.message).slice(0,120));return res.status(503).json({error:'Não foi possível consultar suas compras no momento.'});}
@@ -337,14 +339,17 @@ app.get('/api/account/bookings',async(req,res)=>{
  try{
   const user=await accountFromRequest(req);
   if(!user)return res.status(401).json({error:'Entre na sua conta.'});
-  const bookings=await sbReq('bh_booking_reservations','?account_id=eq.'+user.id+'&select=id,pix_order_id,appointment_date,appointment_time,barber,service_names,status,payment_method,amount,created_at&order=created_at.desc&limit=50');
+  const bookings=await sbReq('bh_booking_reservations','?account_id=eq.'+user.id+'&select=id,pix_order_id,appointment_date,appointment_time,barber,service_names,status,hold_until,payment_method,amount,created_at&order=created_at.desc&limit=50');
   const ids=bookings.map(b=>b.pix_order_id).filter(Boolean);
-  const orders=ids.length?await sbReq('bh_pix_orders','?id=in.('+ids.map(id=>encodeURIComponent(id)).join(',')+')&select=id,status'):[];
-  const statuses=new Map(orders.map(o=>[o.id,o.status]));
+  const orders=ids.length?await sbReq('bh_pix_orders','?id=in.('+ids.map(id=>encodeURIComponent(id)).join(',')+')&select=id,status,asaas_payment_id,payment_environment'):[];
+  const statuses=new Map(orders.map(o=>[o.id,o]));
   return res.json({bookings:bookings.map(b=>({
    id:b.id,reference:String(b.id).slice(0,8).toUpperCase(),date:b.appointment_date,time:String(b.appointment_time).slice(0,5),
    barber:b.barber,services:b.service_names,status:b.status,paymentMethod:b.payment_method,amount:b.amount,
-   paymentStatus:b.payment_method==='PAY_ON_DAY'?'PAY_ON_DAY':statuses.get(b.pix_order_id)||'PENDING'
+   pixOrderId:b.pix_order_id||null,holdUntil:b.hold_until||null,
+   hasPixCharge:Boolean(statuses.get(b.pix_order_id)?.asaas_payment_id),
+   paymentEnvironment:statuses.get(b.pix_order_id)?.payment_environment||null,
+   paymentStatus:b.payment_method==='PAY_ON_DAY'?'PAY_ON_DAY':statuses.get(b.pix_order_id)?.status||'PENDING'
   }))});
  }catch(e){console.error('Account bookings:',e.message);return res.status(503).json({error:'Não foi possível consultar seus agendamentos.'});}
 });
@@ -479,6 +484,7 @@ app.post('/api/asaas/webhook',async(req,res)=>{
   if(orders.length){
    const order=orders[0];
    if(order.payment_environment!==paymentEnvironment())return res.sendStatus(200);
+   if(order.status==='CANCELLED'){console.error('Recebimento associado a pedido cancelado; avaliar manualmente no Asaas:',order.id);return res.sendStatus(200);}
    const real=await asaas('/payments/'+encodeURIComponent(paymentId));
    if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(order.amount))return res.sendStatus(200);
    if(order.kind==='booking'){
@@ -493,6 +499,7 @@ app.post('/api/asaas/webhook',async(req,res)=>{
   if(newVip.length){
    const v=newVip[0];
    if(v.payment_environment!==paymentEnvironment())return res.sendStatus(200);
+   if(v.status==='CANCELLED'){console.error('Pagamento VIP cancelado requer avaliação manual:',v.id);return res.sendStatus(200);}
    const real=await asaas('/payments/'+encodeURIComponent(paymentId));
    if(!['CONFIRMED','RECEIVED'].includes(real.status)||Number(real.value)!==Number(v.amount))return res.sendStatus(200);
    if(v.status==='PAID')return res.sendStatus(200);
@@ -650,6 +657,7 @@ app.get('/api/pix/qr/:kind/:id',requireAccount,async(req,res)=>{
    return res.status(404).json({error:'Pedido não encontrado nesta conta.'});
   if(payment.payment_environment!==paymentEnvironment())
    return res.status(409).json({error:'Este pedido foi criado em outro ambiente de pagamentos.'});
+  if(payment.status==='CANCELLED')return res.status(409).json({error:'Essa cobrança foi cancelada e não pode mais ser paga.'});
   if(payment.status==='PAID')return res.json({status:'PAID',message:'Pagamento confirmado pelo Asaas.'});
   if(!['PENDING','CREATING'].includes(payment.status)||!payment.asaas_payment_id)
    return res.status(409).json({error:'Não existe uma cobrança Pix válida para este pedido.'});
@@ -908,10 +916,10 @@ app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
  try{
   const q=[
    ['customers','bh_customer_accounts','?select=id,full_name,phone,created_at&order=created_at.desc&limit=250'],
-   ['bookings','bh_booking_reservations','?select=id,barber,appointment_date,appointment_time,service_names,status,payment_method,customer_name,customer_phone,amount,account_id,created_at&order=created_at.desc&limit=250'],
-   ['orders','bh_pix_orders','?select=id,kind,amount,status,created_at,customer_name,customer_phone,payment_environment,details&order=created_at.desc&limit=250'],
+   ['bookings','bh_booking_reservations','?select=id,pix_order_id,barber,appointment_date,appointment_time,service_names,status,payment_method,customer_name,customer_phone,amount,account_id,created_at&order=created_at.desc&limit=250'],
+   ['orders','bh_pix_orders','?select=id,kind,amount,status,created_at,customer_name,customer_phone,payment_environment,asaas_payment_id,details&order=created_at.desc&limit=250'],
    ['vip','bh_customer_vip_memberships','?select=account_id,plan,status,paid_until,created_at&order=created_at.desc&limit=250'],
-   ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,status,amount,created_at,payment_environment&order=created_at.desc&limit=250'],
+   ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,status,amount,created_at,payment_environment,asaas_payment_id&order=created_at.desc&limit=250'],
    ['cash','bh_cash_receipts','?select=booking_id,amount,collected_at&order=collected_at.desc&limit=250'],
    ['catalog','bh_management_catalog','?select=id,kind,name,description,price,duration_minutes,active,updated_at,image_url&order=kind.asc,name.asc'],
    ['content','bh_management_content','?select=key,value,updated_at&order=key.asc']
@@ -923,7 +931,7 @@ app.get('/api/admin/live/dashboard',requireAdmin,async(req,res)=>{
    paymentsReceived:data.orders.filter(x=>x.status==='PAID'&&x.payment_environment==='production').reduce((n,x)=>n+Number(x.amount||0),0)+
     data.vipPayments.filter(x=>x.status==='PAID'&&x.payment_environment==='production').reduce((n,x)=>n+Number(x.amount||0),0)+
     data.cash.reduce((n,x)=>n+Number(x.amount||0),0),
-   paymentsPending:data.orders.filter(x=>x.status==='PENDING').length+data.vipPayments.filter(x=>x.status==='PENDING').length,
+   paymentsPending:data.orders.filter(x=>['PENDING','CREATING','ERROR'].includes(x.status)).length+data.vipPayments.filter(x=>['PENDING','CREATING','ERROR'].includes(x.status)).length,
    vipActive:data.vip.filter(x=>x.status==='ACTIVE'&&Date.parse(x.paid_until)>Date.now()).length
   };
   res.json(data);
