@@ -945,7 +945,8 @@ app.patch('/api/admin/live/bookings/:id',accountSameOrigin,requireAdmin,async(re
   const rows=await sbReq('bh_booking_reservations','?id=eq.'+encodeURIComponent(id)+'&select=id,status,payment_method,pix_order_id&limit=1');
   if(!rows.length)return res.status(404).json({error:'Agendamento não encontrado.'});
   const b=rows[0];
-  if(!['AWAITING_STAFF','CONFIRMED'].includes(b.status))return res.status(409).json({error:'Não é possível alterar o status atual.'});
+  if(!['AWAITING_STAFF','CONFIRMED'].includes(b.status)&&!(target==='CANCELLED'&&b.status==='HOLD'&&!b.pix_order_id))
+   return res.status(409).json({error:'Não é possível alterar o status atual. Para Pix pendente, use Cancelar pendência.'});
   if(target==='CONFIRMED'&&b.payment_method==='PIX'){
    const paid=await sbReq('bh_pix_orders','?id=eq.'+encodeURIComponent(b.pix_order_id)+'&select=status&limit=1');
    if(paid[0]?.status!=='PAID')return res.status(409).json({error:'Pix ainda não confirmado pelo Asaas.'});
