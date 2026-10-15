@@ -359,6 +359,99 @@ function showBookingPix(parent,data){
  };
  draw(data);
 }
+// Modal próprio Black Hands para documento Pix (sem prompt nativo).
+// Só solicita os dados quando o cliente escolhe Pix e nunca persiste o documento no browser.
+function formatPixDocument(value){
+ const numbers=String(value||'').replace(/\D/g,'').slice(0,14);
+ if(numbers.length>11)return numbers.replace(/^(\d{2})(\d)/,'$1.$2')
+  .replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3')
+  .replace(/\.(\d{3})(\d)/,'.$1/$2')
+  .replace(/(\d{4})(\d)/,'$1-$2');
+ return numbers.replace(/^(\d{3})(\d)/,'$1.$2')
+  .replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3')
+  .replace(/\.(\d{3})(\d)/,'.$1-$2');
+}
+function validPixDocument(numbers){
+ if(!/^\d{11}$|^\d{14}$/.test(numbers)||/^(\d)\1+$/.test(numbers))return false;
+ if(numbers.length===11){
+  let sum=0;
+  for(let i=0;i<9;i++)sum+=Number(numbers[i])*(10-i);
+  let digit=(sum*10)%11;if(digit===10)digit=0;
+  if(digit!==Number(numbers[9]))return false;
+  sum=0;for(let i=0;i<10;i++)sum+=Number(numbers[i])*(11-i);
+  digit=(sum*10)%11;if(digit===10)digit=0;
+  return digit===Number(numbers[10]);
+ }
+ const weights=[6,5,4,3,2,9,8,7,6,5,4,3,2];
+ const checksum=(length)=>{
+  let sum=0;
+  for(let i=0;i<length;i++)sum+=Number(numbers[i])*weights[i+13-length];
+  const rest=sum%11;return rest<2?0:11-rest;
+ };
+ return checksum(12)===Number(numbers[12])&&checksum(13)===Number(numbers[13]);
+}
+function askBookingPixDocument(booking){
+ const dialog=document.getElementById('bookingTaxDialog');
+ const input=document.getElementById('bookingTaxDocument');
+ const formDocument=document.getElementById('bookingTaxForm');
+ const error=document.getElementById('bookingTaxError');
+ const amount=document.getElementById('bookingTaxAmount');
+ const when=document.getElementById('bookingTaxWhen');
+ const cancel=document.getElementById('bookingTaxCancel');
+ const close=document.getElementById('bookingTaxClose');
+ if(!dialog||!input||!formDocument||!error||!amount||!when)
+  return Promise.reject(new Error('A janela de pagamento não está disponível. Atualize a página e tente novamente.'));
+ const cost=booking.services.reduce((n,x)=>n+Number(x.price||0),0);
+ amount.textContent=money(cost);
+ const date=booking.date.split('-');
+ when.textContent=(date.length===3?date.reverse().join('/'):'Data selecionada')+
+  ' · '+booking.time+'\n'+booking.barber;
+ when.style.whiteSpace='pre-line';
+ input.value='';error.textContent='';input.removeAttribute('aria-invalid');
+ return new Promise(resolve=>{
+  let completed=false;
+  const complete=value=>{
+   if(completed)return;
+   completed=true;
+   formDocument.removeEventListener('submit',onSubmit);
+   input.removeEventListener('input',onInput);
+   cancel.removeEventListener('click',onCancel);
+   close.removeEventListener('click',onCancel);
+   dialog.removeEventListener('cancel',onEscape);
+   dialog.removeEventListener('click',onBackdrop);
+   if(dialog.open)dialog.close();
+   input.value='';error.textContent='';
+   resolve(value);
+  };
+  const onSubmit=e=>{
+   e.preventDefault();
+   const digits=input.value.replace(/\D/g,'');
+   if(!validPixDocument(digits)){
+    error.textContent='Confira o CPF ou CNPJ informado. O número precisa ser válido para gerar o PIX.';
+    input.setAttribute('aria-invalid','true');input.focus();return;
+   }
+   complete(digits);
+  };
+  const onInput=()=>{
+   input.value=formatPixDocument(input.value);
+   error.textContent='';input.removeAttribute('aria-invalid');
+  };
+  const onCancel=()=>complete(null);
+  const onEscape=e=>{e.preventDefault();complete(null)};
+  const onBackdrop=e=>{
+   const rect=dialog.getBoundingClientRect();
+   if(e.target===dialog&&(e.clientX<rect.left||e.clientX>rect.right||
+    e.clientY<rect.top||e.clientY>rect.bottom))complete(null);
+  };
+  formDocument.addEventListener('submit',onSubmit);
+  input.addEventListener('input',onInput);
+  cancel.addEventListener('click',onCancel);
+  close.addEventListener('click',onCancel);
+  dialog.addEventListener('cancel',onEscape);
+  dialog.addEventListener('click',onBackdrop);
+  try{dialog.showModal();input.focus()}catch{complete(null)}
+ });
+}
 form.addEventListener('submit',async e=>{
  e.preventDefault();
  if(!await window.BHSession.requireLogin({action:'agendar',next:location.href}))return;
@@ -379,7 +472,7 @@ form.addEventListener('submit',async e=>{
     result.textContent='Já existe uma cobrança pendente para esta pré-reserva. Consulte o Pix exibido abaixo ou abra Minha Conta, sem gerar uma nova cobrança.';
     return;
    }
-   const cpfCnpj=prompt('Informe o CPF/CNPJ para gerar a cobrança Pix (somente números):');
+   const cpfCnpj=await askBookingPixDocument(booking);
    if(!cpfCnpj)return;
    result.hidden=false;result.textContent='Solicitando cobrança Pix ao Asaas...';
    const response=await fetch('/api/booking/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...booking,cpfCnpj})});
