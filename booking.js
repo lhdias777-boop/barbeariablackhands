@@ -60,20 +60,48 @@ async function loadTimes(){
       ' Horários ocupados ou já passados não aparecem.';
     bookingHoursHint.textContent=data.close==='Fechado'?'Domingo fechado. Escolha outra data.':summary;
     timeSelect.innerHTML='<option value="">Selecione um horário de início</option>';
-    for(const time of data.times){
+    const occupied=new Set(Array.isArray(data.occupiedTimes)?data.occupiedTimes:[]);
+    const slots=[...new Set([...data.times,...occupied])].sort();
+    for(const time of slots){
       const option=document.createElement('option');option.value=time;
-      option.textContent=time+' → '+endOfVisit(time,duration);
+      const busy=occupied.has(time);
+      option.disabled=busy;
+      option.textContent=time+' → '+endOfVisit(time,duration)+(busy?' · OCUPADO':'');
       timeSelect.append(option);
     }
     if(data.times.includes(previous))timeSelect.value=previous;
-    if(!data.times.length)timeSelect.innerHTML='<option value="">Sem horários disponíveis nesta data</option>';
+    if(!data.times.length)timeSelect.innerHTML='<option value="">Todos os horários estão ocupados nesta data</option>';
     timeSelect.disabled=!data.times.length;
+    const count=occupied.size;
+    if(data.times.length&&count)bookingHoursHint.textContent+=' '+count+' horário(s) ocupado(s) estão bloqueados.';
+    if(previous&&occupied.has(previous)){
+      timeSelect.value='';
+      bookingHoursHint.textContent='O horário que você havia selecionado acabou de ser reservado. Escolha outro horário disponível.';
+    }
   }catch(err){
     if(revision!==availabilityRevision)return;
     timeSelect.innerHTML='<option value="">Não foi possível consultar horários</option>';
     timeSelect.disabled=true;
     bookingHoursHint.textContent='Não foi possível consultar horários agora. Tente novamente.';
   }
+}
+// Reconfirma disponibilidade antes de enviar a reserva. A exclusão no banco
+// permanece a proteção definitiva contra duas pessoas agendarem simultaneamente.
+async function verifyChosenTime(booking){
+ const params=new URLSearchParams({
+  barber:booking.barber,date:booking.date,
+  duration:String(bookingDuration())
+ });
+ const res=await fetch('/api/booking/availability?'+params,{
+  cache:'no-store',credentials:'same-origin'
+ });
+ const payload=await res.json().catch(()=>({}));
+ if(!res.ok||!Array.isArray(payload.times))
+  throw Error(payload.error||'Não conseguimos confirmar os horários agora. Tente novamente.');
+ if(!payload.times.includes(booking.time)){
+  await loadTimes();
+  throw Error('Este horário não está mais disponível. Atualizamos a agenda: escolha outro horário.');
+ }
 }
 function restoreClientData(){try{const saved=JSON.parse(localStorage.getItem("blackhands_client")||"null");if(saved?.name)nameInput.value=saved.name;if(saved?.phone)phoneInput.value=saved.phone;}catch{}}
 function saveClientData(){localStorage.setItem("blackhands_client",JSON.stringify({name:nameInput.value.trim(),phone:phoneInput.value.trim()}));}
@@ -101,6 +129,16 @@ serviceTrigger.addEventListener("click",()=>setServicePanel(servicePanel.hidden)
 serviceDone.addEventListener("click",()=>setServicePanel(false));
 barber.addEventListener("change",loadTimes);
 dateInput.addEventListener("change",loadTimes);
+// Se outra pessoa reservar enquanto esta página estiver aberta, a lista se atualiza.
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&barber.value&&dateInput.value)loadTimes();
+});
+window.addEventListener('focus',()=>{
+ if(barber.value&&dateInput.value)loadTimes();
+});
+setInterval(()=>{
+ if(!document.hidden&&barber.value&&dateInput.value)loadTimes();
+},30000);
 restoreClientData();
 // Se houver sessão Minha Conta, preferir os dados do perfil cadastrado.
 (async()=>{try{
@@ -333,6 +371,7 @@ form.addEventListener('submit',async e=>{
  const button=form.querySelector('button[type="submit"]');button.disabled=true;
  endPaymentPoll();
  try{
+  await verifyChosenTime(booking);
   let data,stored;
   if(payment==='online'){
    if(pendingBookingPixId){
