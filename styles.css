@@ -266,3 +266,61 @@ body.bh-shared-menu .bh-site-menu-panel .bh-site-menu-links{
  body.bh-shared-menu .bhb-head-actions a{padding:9px 8px;font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){.bh-site-menu-panel .bh-site-menu-links a{transition:none}}
+
+
+/* Instalação da Black Hands — chamada no menu e instruções nativas */
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install{
+ margin-top:9px;background:linear-gradient(110deg,#3d2b1d,#281d14);
+ color:#ffd3a0!important;border:1px solid #b47b43;font-weight:900;
+}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install .bh-site-menu-icon{
+ color:#ffc079;font-size:26px;font-weight:900
+}
+.main-nav a.bh-site-install-link{
+ color:#ffc48a;border:1px solid #935c31;background:linear-gradient(120deg,#402817,#1e160f);
+ border-radius:11px;font-weight:850
+}
+.main-nav a.bh-site-install-link:hover{background:#634026}
+.bh-install-dialog{
+ box-sizing:border-box;position:fixed;inset:0;margin:auto;
+ width:min(94vw,440px);max-width:440px;max-height:min(91dvh,780px);overflow:auto;
+ padding:0;border:1px solid #ae713d;border-radius:22px;
+ background:linear-gradient(150deg,#312013,#18120f 51%,#0f0e0d);
+ color:#fff5e9;box-shadow:0 26px 90px #000d;
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif
+}
+.bh-install-dialog::backdrop{background:rgba(0,0,0,.83);backdrop-filter:blur(7px)}
+.bh-install-dialog *{box-sizing:border-box}
+.bh-install-card{padding:31px 25px 23px;text-align:center;position:relative}
+.bh-install-close{
+ position:absolute;top:15px;right:16px;border:1px solid #79543a;border-radius:10px;
+ background:#291b13;color:#ffcb93;font-size:27px;width:38px;height:38px;
+ cursor:pointer;line-height:1
+}
+.bh-install-logo{width:78px;height:78px;display:block;object-fit:cover;margin:1px auto 17px;
+ background:black;border:1px solid #93603b;border-radius:18px;box-shadow:0 5px 28px #0009}
+.bh-install-kicker{display:block;color:#ffb76c;letter-spacing:2px;font-size:10px;font-weight:900}
+.bh-install-card h2{font:900 clamp(25px,5vw,31px)/1.17 system-ui,sans-serif;letter-spacing:-.7px;
+ margin:13px auto 12px;max-width:330px}
+.bh-install-card p{color:#cbb6a3;font-size:13px;line-height:1.65;margin:0 auto 20px;max-width:340px}
+.bh-install-steps{list-style:none;display:grid;gap:10px;margin:0 0 20px;padding:0;text-align:left}
+.bh-install-steps li{display:flex;gap:12px;align-items:flex-start;line-height:1.5;
+ background:#241c17;border:1px solid #593c28;border-radius:12px;padding:12px 13px;
+ color:#efe2d5;font-size:13px}
+.bh-install-steps li strong{
+ display:grid;place-items:center;flex:none;width:27px;height:27px;
+ border-radius:9px;background:#4b301e;color:#ffbf79;font-size:14px}
+.bh-install-steps li span{padding-top:3px}
+.bh-install-native,.bh-install-done{display:block;width:100%;min-height:49px;
+ padding:13px 16px;border-radius:11px;font-size:13px;font-weight:900;cursor:pointer}
+.bh-install-native{color:#1a1008;background:linear-gradient(110deg,#ffca82,#f29b43);border:0;margin-bottom:10px}
+.bh-install-native[hidden]{display:none!important}
+.bh-install-done{color:#ffcd98;background:#221912;border:1px solid #9d6338}
+.bh-install-card>small{display:block;color:#b09b8a;font-size:11px;line-height:1.5;margin-top:15px}
+.bh-install-dialog button:focus-visible{outline:2px solid #ffd39b;outline-offset:3px}
+@media(max-width:560px){
+ .bh-install-card{padding:28px 19px 20px}
+ .bh-install-card h2{font-size:25px}
+ .bh-install-steps li{font-size:12px}
+}
+
