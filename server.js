@@ -1250,6 +1250,66 @@ app.post('/api/admin/live/pix-connection-test',accountSameOrigin,requireAdmin,as
   return res.status(503).json({error:'Não foi possível alcançar o Asaas neste momento. Tente novamente.'});
  }
 });
+// Leitura administrativa e SEM cobrança: confirma que o Asaas conhece o webhook
+// do site. Não valida a igualdade do token, apenas sua presença no Worker;
+// o token nunca é retornado pelo Asaas após a criação.
+app.post('/api/admin/live/pix-webhook-check',accountSameOrigin,requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ const base=String(process.env.ASAAS_API_BASE||'');
+ const environment=base===ASAAS_PRODUCTION_BASE?'production':
+   base===ASAAS_SANDBOX_BASE?'sandbox':'unconfigured';
+ if(environment==='unconfigured'||!process.env.ASAAS_API_KEY)
+  return res.status(409).json({error:'Configure a URL da API e a chave de produção do Asaas na Cloudflare para verificar o webhook.'});
+ const expected='https://barbeariablackhands.blackhands.workers.dev/api/asaas/webhook';
+ const normalize=value=>{
+  try{
+   const u=new URL(String(value||''));
+   if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)return '';
+   return u.origin.toLowerCase()+u.pathname.replace(/\/+$/,'');
+  }catch{return ''}
+ };
+ try{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),9000);
+  let response;
+  try{
+   response=await fetch(base+'/webhooks?limit=100',{
+    method:'GET',signal:controller.signal,
+    headers:{'access_token':process.env.ASAAS_API_KEY,
+     'User-Agent':'BlackHandsBarber/1.0','Accept':'application/json'}
+   });
+  }finally{clearTimeout(timer)}
+  if(!response.ok)return res.status(502).json({error:response.status===401?'A chave do Asaas foi recusada.':
+   response.status===403?'Sua chave não pode consultar webhooks. Confira permissões no Asaas.':
+   'Não foi possível consultar os webhooks do Asaas (HTTP '+response.status+').'});
+  const result=await response.json();
+  const webhooks=Array.isArray(result)?result:Array.isArray(result?.data)?result.data:[];
+  const matched=webhooks.filter(w=>normalize(w?.url)===normalize(expected));
+  const valid=matched.find(w=>{
+   const events=Array.isArray(w.events)?w.events:[];
+   return w.enabled===true&&w.interrupted!==true&&
+    ['PAYMENT_CONFIRMED','PAYMENT_RECEIVED'].every(event=>events.includes(event));
+  });
+  const selected=valid||matched[0]||null;
+  const required=['PAYMENT_CONFIRMED','PAYMENT_RECEIVED'];
+  const events=Array.isArray(selected?.events)?selected.events:[];
+  const eventsReady=required.every(e=>events.includes(e));
+  const authSecretPresent=Boolean(process.env.ASAAS_WEBHOOK_TOKEN);
+  const ready=Boolean(valid&&authSecretPresent);
+  res.json({
+   ok:true,environment,expectedUrl:expected,registered:Boolean(selected),
+   enabled:selected?.enabled===true,uninterrupted:selected?selected.interrupted!==true:false,
+   eventsReady,configuredEvents:required.filter(e=>events.includes(e)),
+   workerTokenConfigured:authSecretPresent,webhookSetupReady:ready,
+   liveChargesEnabled:paymentEnvironment()==='production',
+   note:ready?
+    'Webhook cadastrado no Asaas e token presente no Worker. Falta comprovar que o token é o mesmo e que o evento chega e confirma o pedido; nenhum pagamento foi criado.':
+    'Confira a URL exata, se está ativo, os eventos PAYMENT_CONFIRMED e PAYMENT_RECEIVED e se existe token na Cloudflare. Nenhum pagamento foi criado.'
+  });
+ }catch(e){
+  console.error('Asaas webhook configuration check:',String(e.name||'Error').slice(0,48));
+  return res.status(503).json({error:'Não foi possível verificar os webhooks do Asaas agora. Tente novamente.'});
+ }
+});
 app.get('/api/admin/live/pix-readiness',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  const mode=String(process.env.BH_PAYMENTS_MODE||'disabled');
