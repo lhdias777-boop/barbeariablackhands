@@ -508,7 +508,7 @@ app.post('/api/asaas/webhook',async(req,res)=>{
    const until=new Date();until.setMonth(until.getMonth()+1);
    await sbReq('bh_customer_vip_memberships','?on_conflict=account_id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({account_id:v.account_id,plan:v.plan,status:'ACTIVE',paid_until:until.toISOString(),
     cycle_starts_on:new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'})})});
-   await sbReq('bh_customer_vip_payments','?id=eq.'+encodeURIComponent(v.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID'})});
+   await sbReq('bh_customer_vip_payments','?id=eq.'+encodeURIComponent(v.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'PAID',paid_at:new Date().toISOString()})});
    return res.sendStatus(200);
   }
   const rows=await sbReq('bh_vip_payments','?asaas_payment_id=eq.'+encodeURIComponent(paymentId)+'&select=id,user_id,plan,status,amount,payment_environment&limit=1');
@@ -1301,42 +1301,83 @@ app.get('/api/admin/live/finance',requireAdmin,async(req,res)=>{
  accountNoCache(res);
  const from=String(req.query.from||spParts().date.slice(0,7)+'-01');
  const to=String(req.query.to||spParts().date);
- const valid=x=>{
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(x))return false;
-  const time=new Date(x+'T12:00:00Z');
-  return Number.isFinite(time.getTime())&&time.toISOString().slice(0,10)===x;
- };
- if(!valid(from)||!valid(to)||from>to||(Date.parse(to)-Date.parse(from))/86400000>92)
-  return res.status(400).json({error:'Escolha um período válido de até 93 dias.'});
+ const valid=x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&
+  new Date(x+'T12:00:00Z').toISOString().slice(0,10)===x;
+ if(!valid(from)||!valid(to)||from>to||(Date.parse(to)-Date.parse(from))/86400000>366)
+  return res.status(400).json({error:'Selecione um período válido de até 12 meses.'});
  const nextDate=new Date(Date.parse(to+'T00:00:00Z')+86400000).toISOString().slice(0,10);
- const rangeStart=from+'T00:00:00-03:00',rangeEnd=nextDate+'T00:00:00-03:00';
- const dateRange=col=>'&'+col+'=gte.'+encodeURIComponent(rangeStart)+'&'+col+'=lt.'+encodeURIComponent(rangeEnd);
+ const fromTs=from+'T00:00:00-03:00',endTs=nextDate+'T00:00:00-03:00';
+ const range=col=>'&'+col+'=gte.'+encodeURIComponent(fromTs)+'&'+col+'=lt.'+encodeURIComponent(endTs);
+ const sum=arr=>Math.round(arr.reduce((n,x)=>n+Number(x.amount||0),0)*100)/100;
  try{
-  const queries=[
-   ['ordersCreated','bh_pix_orders','?select=id,kind,amount,status,created_at,paid_at,payment_environment,details,customer_name,customer_phone&order=created_at.desc&limit=1000'+dateRange('created_at')],
-   ['ordersPaid','bh_pix_orders','?select=id,kind,amount,status,created_at,paid_at,payment_environment,details,customer_name,customer_phone&order=paid_at.desc&limit=1000'+dateRange('paid_at')],
-   ['vipPayments','bh_customer_vip_payments','?select=id,account_id,plan,amount,status,created_at,payment_environment&order=created_at.desc&limit=1000'+dateRange('created_at')],
-   ['cash','bh_cash_receipts','?select=booking_id,amount,collected_at&order=collected_at.desc&limit=1000'+dateRange('collected_at')],
-   ['expenses','bh_financial_expenses','?select=id,category,description,amount,expense_date,created_at&order=expense_date.desc&limit=1000&expense_date=gte.'+from+'&expense_date=lte.'+to],
-   ['bookings','bh_booking_reservations','?select=id,customer_name,barber,service_names,amount,status,payment_method,appointment_date&order=appointment_date.desc&limit=1000&appointment_date=gte.'+from+'&appointment_date=lte.'+to]
+  const fetchers=[
+   ['ordersCreated','bh_pix_orders','?select=id,kind,amount,status,created_at,paid_at,payment_environment,customer_name,details&order=created_at.desc&limit=2000'+range('created_at')],
+   ['ordersPaid','bh_pix_orders','?select=id,kind,amount,status,created_at,paid_at,payment_environment,customer_name,details&order=paid_at.desc&limit=2000'+range('paid_at')],
+   ['vipCreated','bh_customer_vip_payments','?select=id,account_id,plan,amount,status,created_at,paid_at,payment_environment&order=created_at.desc&limit=2000'+range('created_at')],
+   ['vipPaid','bh_customer_vip_payments','?select=id,account_id,plan,amount,status,created_at,paid_at,payment_environment&order=paid_at.desc&limit=2000'+range('paid_at')],
+   ['cash','bh_cash_receipts','?select=booking_id,amount,collected_at&order=collected_at.desc&limit=2000'+range('collected_at')],
+   ['expenses','bh_financial_expenses','?select=id,category,description,amount,expense_date,created_at&order=expense_date.desc&limit=2000&expense_date=gte.'+from+'&expense_date=lte.'+to],
   ];
-  const entries=await Promise.all(queries.map(async ([k,t,q])=>[k,await sbReq(t,q)]));
-  const data=Object.fromEntries(entries);
-  const allOrders=new Map([...data.ordersCreated,...data.ordersPaid].map(x=>[x.id,x]));
-  const orders=[...allOrders.values()].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
-  const sum=arr=>Math.round(arr.reduce((n,x)=>n+Number(x.amount||0),0)*100)/100;
-  const paid=orders.filter(o=>o.status==='PAID'&&o.payment_environment==='production'&&o.paid_at?.slice(0,10)>=from&&o.paid_at?.slice(0,10)<=to);
-  const vipReal=data.vipPayments.filter(x=>x.status==='PAID'&&x.payment_environment==='production');
-  const cashReceived=data.cash,expenses=data.expenses;
-  const pixPaid=paid.filter(x=>x.kind==='booking'),storePaid=paid.filter(x=>x.kind==='store');
-  const revenue={appointments:sum(pixPaid),store:sum(storePaid),vip:sum(vipReal),cash:sum(cashReceived)};
-  const income=Math.round(Object.values(revenue).reduce((a,b)=>a+b,0)*100)/100;
-  const costs=sum(expenses);
-  const pending=orders.filter(o=>o.status==='PENDING').concat(data.vipPayments.filter(p=>p.status==='PENDING'));
-  res.json({from,to,revenue,expensesTotal:costs,income,balance:Math.round((income-costs)*100)/100,pendingAmount:sum(pending),
-   pendingCount:pending.length,orders,vipPayments:data.vipPayments,cash:cashReceived,expenses,bookings:data.bookings,
-   notes:'Receita Pix inclui apenas recebimentos de produção confirmados. Valores de sandbox não entram como recebidos. Dinheiro entra após registro manual; VIP por confirmação do servidor.'});
- }catch(e){console.error('Finance dashboard:',String(e.message).slice(0,130));res.status(503).json({error:'Não foi possível gerar o financeiro deste período.'});}
+  const entries=await Promise.all(fetchers.map(async ([key,table,query])=>[key,await sbReq(table,query)]));
+  const rows=Object.fromEntries(entries);
+  const orders=[...new Map([...rows.ordersCreated,...rows.ordersPaid].map(x=>[x.id,x])).values()];
+  const vipPayments=[...new Map([...rows.vipCreated,...rows.vipPaid].map(x=>[x.id,x])).values()];
+  const bookIds=[...new Set(rows.cash.map(x=>x.booking_id).filter(Boolean))];
+  // Dinheiro é receita real somente quando vinculado a um agendamento "pagar no dia".
+  const bookings=bookIds.length?await sbReq('bh_booking_reservations',
+   '?id=in.('+bookIds.map(encodeURIComponent).join(',')+
+   ')&select=id,customer_name,barber,payment_method,appointment_date,service_names&limit=2000'):[];
+  const byBooking=new Map(bookings.map(x=>[x.id,x]));
+  const cash=rows.cash.filter(x=>byBooking.get(x.booking_id)?.payment_method==='PAY_ON_DAY');
+  const paid=orders.filter(x=>x.status==='PAID'&&x.payment_environment==='production'&&
+   x.paid_at&&Date.parse(x.paid_at)>=Date.parse(fromTs)&&Date.parse(x.paid_at)<Date.parse(endTs));
+  const paidVip=vipPayments.filter(x=>x.status==='PAID'&&x.payment_environment==='production'&&
+   x.paid_at&&Date.parse(x.paid_at)>=Date.parse(fromTs)&&Date.parse(x.paid_at)<Date.parse(endTs));
+  const revenue={
+   appointments:sum(paid.filter(x=>x.kind==='booking')),
+   store:sum(paid.filter(x=>x.kind==='store')),
+   vip:sum(paidVip),
+   cash:sum(cash)
+  };
+  const income=sum(Object.values(revenue).map(amount=>({amount})));
+  const expensesTotal=sum(rows.expenses);
+  const expensesByCategory=Object.entries(rows.expenses.reduce((p,x)=>{
+   p[x.category]=(p[x.category]||0)+Number(x.amount||0);return p;
+  },{})).map(([category,amount])=>({category,amount:Math.round(amount*100)/100}))
+   .sort((a,b)=>b.amount-a.amount);
+  const pendingOrders=orders.filter(o=>['PENDING','CREATING','ERROR'].includes(o.status)&&o.payment_environment==='production');
+  const pendingVip=vipPayments.filter(o=>['PENDING','CREATING','ERROR'].includes(o.status)&&o.payment_environment==='production');
+  const pending=[...pendingOrders,...pendingVip];
+  const sandboxCount=orders.filter(x=>x.payment_environment==='sandbox').length+
+   vipPayments.filter(x=>x.payment_environment==='sandbox').length;
+  const movements=[
+   ...orders.map(o=>({id:o.id,date:o.status==='PAID'&&o.paid_at?o.paid_at:o.created_at,
+    type:o.kind==='store'?'Store':'Agendamento',customer:o.customer_name,
+    description:(o.kind==='store'?'Compra':'Serviço')+' #'+String(o.id).slice(0,8).toUpperCase(),
+    amount:Number(o.amount),status:o.status,environment:o.payment_environment,
+    confirmed:o.status==='PAID'&&o.payment_environment==='production'&&Boolean(o.paid_at)})),
+   ...vipPayments.map(v=>({id:v.id,date:v.status==='PAID'&&v.paid_at?v.paid_at:v.created_at,
+    type:'VIP',customer:'Conta #'+String(v.account_id||'').slice(0,8).toUpperCase(),
+    description:'Mensalidade '+String(v.plan||'').toUpperCase(),
+    amount:Number(v.amount),status:v.status,environment:v.payment_environment,
+    confirmed:v.status==='PAID'&&v.payment_environment==='production'&&Boolean(v.paid_at)})),
+   ...cash.map(c=>({id:c.booking_id,date:c.collected_at,type:'Dinheiro',
+    customer:byBooking.get(c.booking_id)?.customer_name||'Cliente',description:'Pagamento no dia',
+    amount:Number(c.amount),status:'RECEBIDO',environment:'presencial',confirmed:true})),
+   ...rows.expenses.map(e=>({id:e.id,date:e.expense_date+'T12:00:00-03:00',type:'Despesa',
+    customer:e.category,description:e.description,amount:-Number(e.amount),
+    status:'REGISTRADA',environment:'manual',confirmed:true}))
+  ].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  res.json({from,to,income,expensesTotal,balance:Math.round((income-expensesTotal)*100)/100,
+   revenue,expensesByCategory,pendingCount:pending.length,pendingAmount:sum(pending),
+   sandboxCount,expenses:rows.expenses,movements,
+   counts:{paidAppointments:paid.filter(x=>x.kind==='booking').length,paidStore:paid.filter(x=>x.kind==='store').length,
+    paidVip:paidVip.length,cash:cash.length},
+   notes:'Somente PIX de produção com confirmação pelo Asaas e dinheiro registrado pela equipe entram como receita. Pedidos Sandbox são exibidos separadamente; despesas são manuais.'});
+ }catch(e){
+  console.error('Finance dashboard:',String(e.message).slice(0,130));
+  res.status(503).json({error:'Não foi possível gerar o financeiro do período selecionado.'});
+ }
 });
 app.post('/api/admin/live/expenses',accountSameOrigin,requireAdmin,async(req,res)=>{
  const b=req.body||{},category=String(b.category||''),description=String(b.description||'').trim(),
