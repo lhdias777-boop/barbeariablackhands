@@ -83,8 +83,43 @@ body.bh-store-cart-open{overflow:hidden}
 }
 @media(max-width:350px){.bh-floating-cart-label{display:none}.checkout-fields{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.bh-floating-cart,.cart-panel,.cart-content{transition:none!important}.bh-floating-cart.bh-cart-added{animation:none!important}}
+
+/* Vitrine: foto limpa, informações sempre abaixo; ferramentas de busca e ordenação */
+.bh-store-toolbar{display:flex;align-items:stretch;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:12px 0 10px}
+.bh-store-search{display:flex;align-items:center;gap:10px;min-width:240px;flex:1 1 310px;max-width:590px;min-height:51px;padding:0 16px;border:1px solid #715039;border-radius:13px;background:#191512;color:#f0a55d;transition:border-color .2s}
+.bh-store-search:focus-within{border-color:#ffb56b;box-shadow:0 0 0 3px #f6984a1c}
+.bh-store-search input{width:100%;border:0;background:transparent;color:#f7eee6;font:600 14px/1.3 system-ui,-apple-system,sans-serif;outline:none;padding:14px 0}
+.bh-store-search input::placeholder{color:#aa9b8a}
+.bh-store-sort{display:flex;align-items:center;gap:11px;font:650 12px system-ui,-apple-system,sans-serif;color:#d1bdab}
+.bh-store-sort select{max-width:255px;width:100%;min-height:51px;border:1px solid #715039;border-radius:13px;padding:11px 14px;background:#211911;color:#fff5e9;font:700 13px system-ui,-apple-system,sans-serif;cursor:pointer}
+.bh-store-sort select:focus-visible{outline:2px solid #ffbd7c;outline-offset:3px}
+.bh-store-results{color:#bea996;font:600 12px/1.5 system-ui,sans-serif;margin:11px 0 20px;min-height:18px}
+.store-grid{gap:18px;align-items:stretch}
+.store-card{border-color:#3b3028;border-radius:16px;background:linear-gradient(155deg,#1d1916,#101010);overflow:hidden}
+.store-card .product-art{padding:0;width:100%;height:auto;aspect-ratio:1/1;display:grid;place-items:center;background:#eee;overflow:hidden;border-bottom:1px solid #423022}
+.store-card .product-art img{width:100%;height:100%;display:block;object-fit:contain;border-radius:0!important}
+.store-card .details{padding:17px;gap:11px}
+.store-card h2{font:850 clamp(17px,2.3vw,22px)/1.25 system-ui,-apple-system,sans-serif;text-transform:none;min-height:45px;color:#fff6ec}
+.store-card .details p{font:500 13px/1.5 system-ui,-apple-system,sans-serif;min-height:40px;color:#b9aaa0}
+.store-card .details strong{font:900 21px/1 system-ui,-apple-system,sans-serif;color:#ffb16a}
+.store-card .details button{border-radius:10px;min-height:45px;letter-spacing:.2px}
+.bh-store-no-results{grid-column:1/-1;text-align:center;padding:35px 18px;border:1px dashed #74513a;border-radius:14px;color:#ddcbb8;background:#211812}
+@media(max-width:720px){.bh-store-toolbar{gap:11px}.bh-store-search{flex-basis:100%;max-width:none}.bh-store-sort{width:100%;justify-content:space-between}.bh-store-sort select{max-width:245px}.store-card h2{font-size:17px;min-height:42px}.store-grid{gap:11px}}
+@media(max-width:420px){.bh-store-sort{align-items:stretch;flex-direction:column;gap:7px}.bh-store-sort select{max-width:none}.store-card .details{padding:11px}.store-card .details button{font-size:10px;padding:9px 4px}}
 </style>
-<link href="assistant.css" rel="stylesheet"/></head><body><header class="topbar"><a class="brand" href="index.html"><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a><nav><a href="index.html">Início</a><a href="servicos.html">Serviços e preços</a><a href="loja.html">Black Hands Store</a><a href="agendar.html">Agendar</a></nav></header><main class="store-page"><div class="store-head"><div><p class="eyebrow">CUIDADO • ESTILO • BLACK HANDS</p><h1>Black Hands <span style="color:#f47b20">Store</span></h1><p>Escolha seus produtos, adicione ao carrinho e confira o pedido antes de finalizar.</p></div></div><div class="store-grid" id="products"></div><p class="checkout-note">Os produtos e preços são editáveis no catálogo do código nesta versão inicial. O checkout Pix real só deve ser ativado após configurar o backend, credenciais do provedor e confirmação por webhook.</p></main><button class="bh-floating-cart" id="openCart" type="button" aria-haspopup="dialog" aria-controls="cartPanel" aria-expanded="false" aria-label="Abrir carrinho de compras">
+<link href="assistant.css" rel="stylesheet"/></head><body><header class="topbar"><a class="brand" href="index.html"><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a><nav><a href="index.html">Início</a><a href="servicos.html">Serviços e preços</a><a href="loja.html">Black Hands Store</a><a href="agendar.html">Agendar</a></nav></header><main class="store-page"><div class="store-head"><div><p class="eyebrow">CUIDADO • ESTILO • BLACK HANDS</p><h1>Black Hands <span style="color:#f47b20">Store</span></h1><p>Escolha seus produtos, adicione ao carrinho e confira o pedido antes de finalizar.</p></div></div><section class="bh-store-toolbar" aria-label="Pesquisar e ordenar produtos">
+  <label class="bh-store-search" for="storeSearch"><svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input type="search" id="storeSearch" placeholder="Pesquisar produtos..." autocomplete="off" aria-label="Pesquisar produtos"></label>
+  <label class="bh-store-sort" for="storeSort"><span>Ordenar por</span><select id="storeSort">
+    <option value="original">Ordem da vitrine</option>
+    <option value="name-asc">Nome: A a Z</option>
+    <option value="name-desc">Nome: Z a A</option>
+    <option value="price-asc">Preço: menor para maior</option>
+    <option value="price-desc">Preço: maior para menor</option>
+  </select></label>
+</section>
+<p class="bh-store-results" id="storeResults" role="status" aria-live="polite"></p>
+<div class="store-grid" id="products"></div>
+<p class="checkout-note">Valores sujeitos à disponibilidade. Confira os itens e o total antes de finalizar. A compra só é confirmada após o pagamento ser identificado.</p></main><button class="bh-floating-cart" id="openCart" type="button" aria-haspopup="dialog" aria-controls="cartPanel" aria-expanded="false" aria-label="Abrir carrinho de compras">
 <svg aria-hidden="true" viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.25 11.4a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 2-1.6L21 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
 <span class="bh-floating-cart-label">Meu carrinho</span>
 <span class="cart-count" id="cartCount" aria-live="polite" aria-atomic="true">0</span>
