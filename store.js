@@ -1,14 +1,30 @@
-const products=[
-{id:'gel-cola',name:'Gel Cola',description:'Finalização e fixação.',price:25,tag:'GEL COLA'},
-{id:'gel-boy',name:'Gel Boy',description:'Produto para estilização.',price:35,tag:'GEL BOY'},
-{id:'gel-cola-black',name:'Gel Cola Black',description:'Fixação para o dia a dia.',price:25,tag:'BLACK GEL'},
-{id:'pasta-black',name:'Pasta Black',description:'Modelagem e acabamento.',price:25,tag:'PASTA BLACK'},
-{id:'pomada-caramelo',name:'Pomada Caramelo',description:'Ajuda a modelar o penteado.',price:25,tag:'POMADA'},
-{id:'pomada-liquida-matte',name:'Pomada Líquida Efeito Matte',description:'Acabamento de efeito matte.',price:25,tag:'MATTE'},
-{id:'pomada-po',name:'Pomada em Pó',description:'Volume e textura.',price:50,tag:'PÓ'},
-{id:'shampoo-maxidil',name:'Shampoo Maxidil',description:'Higiene e cuidado capilar.',price:35,tag:'SHAMPOO'},
-{id:'balm-maxidil',name:'Balm Maxidil',description:'Cuidado para a barba.',price:35,tag:'BALM'}
+// Ordem original das 15 fotos enviadas para a vitrine.
+const featuredOrder=[
+ 'pomada-liquida-matte','pomada-po','gel-cola','gel-cola-black','pasta-black',
+ 'esponja-nudred','hidratacao','escovinha-raiz','shampoo-maxidil','oleo-barba',
+ 'gel-boy','minoxidil','balm-maxidil','gel-cola-megafix','pomada-caramelo'
 ];
+const fallbackProducts=[
+ ['Pomada líquida "efeito mate"',25,'Controle total sobre seu penteado, com efeito mate.'],
+ ['Pomada em pó',50,'Melhor fixação dos fios, ideal para dar volume.'],
+ ['Gel cola',25,'Fixação brilhante e efeito molhado.'],
+ ['Gel cola black',25,'Fixação brilhante e efeito black.'],
+ ['Pasta black',25,'Finalizadora efeito black.'],
+ ['Esponja nudred',20,'Para modelar.'],
+ ['Hidratação',10,'Recuperação capilar.'],
+ ['Escovinha de mão "raiz"',3,'Produto indispensável na vida de um homem.'],
+ ['Shampoo maxidil',35,'Limpa suavemente, auxiliando no crescimento dos fios.'],
+ ['Óleo de barba',35,'Hidratação e nutrição para cabelo, barba e bigode.'],
+ ['Gel boy',35,'Ação prolongada.'],
+ ['Minoxidil',35,'Produto para cuidados capilares.'],
+ ['Balm de barba',45,'Hidratação e nutrição dos fios e da pele.'],
+ ['Gel "cola"',15,'Ótima fixação.'],
+ ['Pomada caramelo',25,'Efeito molhado.']
+];
+const products=featuredOrder.map((id,i)=>({
+ id,name:fallbackProducts[i][0],price:fallbackProducts[i][1],description:fallbackProducts[i][2],
+ tag:fallbackProducts[i][0].toUpperCase(),image_url:'/store-products.svg#p'+i
+}));
 const money=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});let cart=JSON.parse(localStorage.getItem('bhStoreCart')||'{}');
 const productsEl=document.getElementById('products'), cartPanel=document.getElementById('cartPanel');
 
@@ -30,8 +46,43 @@ function revealStoreProducts(){
  });
 }
 
-productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.tag}</div><div class="details"><h2>${p.name}</h2><p>${p.description}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
-revealStoreProducts();
+const searchInput=document.getElementById('storeSearch');
+const sortInput=document.getElementById('storeSort');
+const resultCount=document.getElementById('storeResults');
+const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cleanSearch=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+const imageAllowed=url=>/^https:\/\/[^\s"'<>]+$/i.test(url)||/^\/store-products\.svg#p(?:[0-9]|1[0-4])$/.test(url);
+function renderStoreProducts(){
+ const term=cleanSearch(searchInput.value),order=sortInput.value;
+ let shown=products.filter(p=>!term||cleanSearch(p.name+' '+p.description).includes(term));
+ const index=id=>{const pos=featuredOrder.indexOf(id);return pos>=0?pos:featuredOrder.length+products.findIndex(p=>p.id===id)};
+ const collator=new Intl.Collator('pt-BR',{sensitivity:'base',numeric:true});
+ shown=shown.slice().sort((a,b)=>{
+  if(order==='name-asc')return collator.compare(a.name,b.name);
+  if(order==='name-desc')return collator.compare(b.name,a.name);
+  if(order==='price-asc')return a.price-b.price||collator.compare(a.name,b.name);
+  if(order==='price-desc')return b.price-a.price||collator.compare(a.name,b.name);
+  return index(a.id)-index(b.id);
+ });
+ resultCount.textContent=shown.length+' '+(shown.length===1?'produto encontrado':'produtos encontrados');
+ if(!shown.length){
+  productsEl.innerHTML='<div class="bh-store-no-results">Nenhum produto encontrado. Tente outro nome ou termo.</div>';
+  return;
+ }
+ productsEl.innerHTML=shown.map(p=>{
+  const img=p.image_url&&imageAllowed(p.image_url)
+   ?'<img src="'+safe(p.image_url)+'" alt="Foto de '+safe(p.name)+'" loading="lazy" decoding="async">'
+   :'<span role="img" aria-label="Sem foto disponível">'+safe(p.tag||'BLACK HANDS')+'</span>';
+  return '<article class="store-card"><div class="product-art">'+img+
+   '</div><div class="details"><h2>'+safe(p.name)+'</h2><p>'+safe(p.description)+
+   '</p><strong>'+money(p.price)+'</strong><button type="button" data-add="'+safe(p.id)+
+   '">ADICIONAR AO CARRINHO</button></div></article>';
+ }).join('');
+ revealStoreProducts();
+}
+searchInput.addEventListener('input',renderStoreProducts);
+sortInput.addEventListener('change',renderStoreProducts);
+renderStoreProducts();
 
 const cartToggle=document.getElementById('openCart');
 const cartClose=document.getElementById('closeCart');
@@ -72,7 +123,7 @@ function renderCart(){
   const p=products.find(x=>x.id===id);
   const row=cartNode('article','bh-cart-item');
   const art=cartNode('div','bh-cart-item-art');
-  if(p.image_url&&/^https:\/\//i.test(p.image_url)){
+  if(p.image_url&&imageAllowed(p.image_url)){
    const img=document.createElement('img');img.src=p.image_url;img.alt='';
    img.loading='lazy';art.append(img);
   }else art.textContent=p.tag||p.name.slice(0,16);
@@ -255,14 +306,12 @@ async function syncStoreCatalog(){
   if(!response.ok)throw Error('Catálogo indisponível');
   const data=await response.json();
   const latest=(data.items||[]).filter(p=>p.kind==='product'&&p.active!==false);
-  if(!latest.length){products.splice(0,products.length);productsEl.replaceChildren();renderCart();return;}
+  if(!latest.length){products.splice(0,products.length);renderStoreProducts();renderCart();return;}
   products.splice(0,products.length,...latest.map(p=>({
    id:p.id,name:p.name,description:p.description||'',price:Number(p.price),
    tag:String(p.name||'PRODUTO').slice(0,22).toUpperCase(),image_url:p.image_url||null
   })));
-  const safe=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.image_url?'<img src="'+safe(p.image_url)+'" alt="Foto de '+safe(p.name)+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">':safe(p.tag)}</div><div class="details"><h2>${safe(p.name)}</h2><p>${safe(p.description)}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
-  revealStoreProducts();
+  renderStoreProducts();
   for(const id of Object.keys(cart))if(!products.some(p=>p.id===id))delete cart[id];
   localStorage.setItem('bhStoreCart',JSON.stringify(cart));
   renderCart();
