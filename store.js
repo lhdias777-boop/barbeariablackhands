@@ -82,6 +82,17 @@ function renderStoreProducts(){
 }
 searchInput.addEventListener('input',renderStoreProducts);
 sortInput.addEventListener('change',renderStoreProducts);
+// Enquanto uma foto nova não estiver publicada, evita ícones de imagem quebrada.
+productsEl.addEventListener('error',event=>{
+ const img=event.target;
+ if(!(img instanceof HTMLImageElement))return;
+ const art=img.closest('.product-art');
+ if(!art)return;
+ const text=document.createElement('span');
+ text.className='bh-photo-awaiting';
+ text.textContent='Foto em atualização';
+ art.replaceChildren(text);
+},true);
 renderStoreProducts();
 
 const cartToggle=document.getElementById('openCart');
@@ -125,7 +136,7 @@ function renderCart(){
   const art=cartNode('div','bh-cart-item-art');
   if(p.image_url&&imageAllowed(p.image_url)){
    const img=document.createElement('img');img.src=p.image_url;img.alt='';
-   img.loading='lazy';art.append(img);
+   img.loading='lazy';img.onerror=()=>{art.textContent=p.tag||p.name.slice(0,16)};art.append(img);
   }else art.textContent=p.tag||p.name.slice(0,16);
   const information=cartNode('div','bh-cart-item-copy');
   const heading=cartNode('h3','',p.name);
