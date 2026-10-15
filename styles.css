@@ -324,3 +324,14 @@ body.bh-shared-menu .bh-site-menu-panel .bh-site-menu-links{
  .bh-install-steps li{font-size:12px}
 }
 
+
+
+/* Atalho de instalação destacado no menu Black Hands */
+.bh-install-menu-copy{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;line-height:1.25;text-align:left}
+.bh-install-menu-copy strong{font-size:14px;font-weight:900;color:inherit;letter-spacing:.1px}
+.bh-install-menu-copy small{display:block;font-size:11px;font-weight:600;color:#d7b391;letter-spacing:0;white-space:normal}
+.main-nav a.bh-site-install-link{align-items:center;min-height:59px;padding:10px 14px;gap:13px}
+.main-nav a.bh-site-install-link svg{flex:none;width:23px;height:23px;stroke:#ffba6c}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install{min-height:66px;padding:12px 15px;gap:14px}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install .bh-install-menu-copy strong{font-size:15px;color:#fff1dc}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install .bh-install-menu-copy small{color:#e5b789}
