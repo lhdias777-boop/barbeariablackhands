@@ -14,6 +14,41 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Black Hands">
+<style>
+/* Janela de identificação Pix — feita para mobile e desktop Black Hands */
+.bh-tax-modal{box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(468px,calc(100vw - 24px));max-height:min(94dvh,760px);overflow:auto;padding:0;border:1px solid #a96c36;border-radius:24px;background:linear-gradient(160deg,#2d2017 0%,#191411 44%,#101010 100%);box-shadow:0 28px 96px #000d;color:#f6eee7;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+.bh-tax-modal::backdrop{background:rgba(0,0,0,.77);backdrop-filter:blur(7px)}
+.bh-tax-modal[open]{animation:bh-tax-appear .23s ease-out}
+.bh-tax-inner{padding:28px 27px 24px;position:relative}
+.bh-tax-close{position:absolute;right:17px;top:17px;width:38px;height:38px;border:1px solid #5e4838;border-radius:11px;color:#f4c392;background:#32241b;font-size:27px;line-height:1;cursor:pointer}
+.bh-tax-logo{width:67px;height:67px;object-fit:cover;border:1px solid #58341c;border-radius:17px;box-shadow:0 7px 22px #0008;margin-bottom:18px}
+.bh-tax-overline{margin:0 0 9px;color:#f6a95e;font-weight:850;font-size:10px;letter-spacing:2px}
+.bh-tax-inner h2{margin:0 0 9px;color:#fff8ef;font-weight:900;font-size:clamp(24px,4vw,30px);line-height:1.16;letter-spacing:-.7px}
+.bh-tax-subtitle{color:#c8b6a8;font-size:13px;line-height:1.55;margin:0 0 20px}
+.bh-tax-summary{display:flex;justify-content:space-between;gap:16px;align-items:center;background:#100f0e;border:1px solid #583e2b;padding:14px 16px;border-radius:13px;margin-bottom:20px}
+.bh-tax-summary span{display:block;color:#ad9b8a;font-size:11px;font-weight:650;margin-bottom:4px}
+.bh-tax-summary strong{color:#f9ad66;font-size:20px;font-weight:900}
+.bh-tax-summary small{font-size:11px;color:#e7d0b9;text-align:right;line-height:1.5}
+.bh-tax-field-label{display:block;font-weight:850;font-size:13px;color:#f4e6d8;margin-bottom:10px}
+.bh-tax-input-wrap{display:flex;align-items:center;gap:11px;padding:0 15px;border:1px solid #76573c;border-radius:12px;background:#0c0c0b;color:#df9b5d;transition:border-color .2s,box-shadow .2s}
+.bh-tax-input-wrap:focus-within{border-color:#f5a453;box-shadow:0 0 0 3px #f5a45325}
+.bh-tax-input-wrap svg{flex:none;width:21px;height:21px}
+.bh-tax-input-wrap input{width:100%;min-width:0;min-height:53px;padding:12px 0;border:0;outline:0;background:transparent;color:#fff9f2;font-size:17px;font-weight:750;letter-spacing:.45px}
+.bh-tax-input-wrap input::placeholder{color:#88776b;font-size:13px;letter-spacing:0;font-weight:500}
+.bh-tax-error{color:#ffab9c;font-size:12px;line-height:1.45;margin:8px 0 0}
+.bh-tax-error:empty{display:none}
+.bh-tax-privacy{display:flex;align-items:flex-start;gap:8px;margin:15px 0 23px;color:#bba796;font-size:11px;line-height:1.55}
+.bh-tax-privacy svg{color:#f3ad66;width:16px;height:16px;flex:none;margin-top:1px}
+.bh-tax-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:10px}
+.bh-tax-actions button{border-radius:11px;min-height:49px;padding:12px 14px;font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.25px}
+.bh-tax-cancel{background:transparent;border:1px solid #74533a;color:#f4cda8}
+.bh-tax-go{background:linear-gradient(105deg,#ffb86d,#ef8c32);border:1px solid #f9ad65;color:#241408;box-shadow:0 7px 24px #ae55231f}
+.bh-tax-go:hover{filter:brightness(1.1)}
+.bh-tax-actions button:focus-visible,.bh-tax-close:focus-visible{outline:2px solid #ffe2b5;outline-offset:3px}
+@media(max-width:520px){.bh-tax-inner{padding:25px 19px 19px}.bh-tax-modal{border-radius:20px}.bh-tax-actions{grid-template-columns:1fr 1.45fr}.bh-tax-actions button{font-size:11px;padding:12px 8px}.bh-tax-summary strong{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.bh-tax-modal[open]{animation:none}}
+@keyframes bh-tax-appear{from{opacity:.3;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+</style>
 </head>
 <body data-bh-login-required data-bh-action="agendar">
 <header class="topbar">
@@ -84,6 +119,33 @@
 <div class="result" hidden="" id="bookingResult"></div>
 </section>
 </main>
+<dialog class="bh-tax-modal" id="bookingTaxDialog" aria-labelledby="bookingTaxTitle" aria-describedby="bookingTaxDescription">
+<div class="bh-tax-inner">
+<button type="button" id="bookingTaxClose" class="bh-tax-close" aria-label="Fechar janela">×</button>
+<img class="bh-tax-logo" src="logo-oficial-black-hands.jpg" alt="Black Hands Barber Shop" width="67" height="67">
+<p class="bh-tax-overline">BLACK HANDS · PAGAMENTO PIX</p>
+<h2 id="bookingTaxTitle">Só falta um detalhe!</h2>
+<p class="bh-tax-subtitle" id="bookingTaxDescription">Informe o documento do titular para gerar seu PIX com segurança. O código aparecerá logo após a confirmação.</p>
+<div class="bh-tax-summary">
+<div><span>VALOR DO AGENDAMENTO</span><strong id="bookingTaxAmount">R$ 0,00</strong></div>
+<small id="bookingTaxWhen">Confira o horário selecionado</small>
+</div>
+<form id="bookingTaxForm" novalidate>
+<label class="bh-tax-field-label" for="bookingTaxDocument">CPF ou CNPJ do titular</label>
+<div class="bh-tax-input-wrap">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h5M8 16h7"/></svg>
+<input type="text" id="bookingTaxDocument" placeholder="000.000.000-00" autocomplete="off" inputmode="numeric" maxlength="18" aria-describedby="bookingTaxPrivacy bookingTaxError" required>
+</div>
+<p class="bh-tax-error" id="bookingTaxError" role="alert"></p>
+<p class="bh-tax-privacy" id="bookingTaxPrivacy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Seus dados são enviados para a emissão da cobrança pelo Asaas. O documento não é salvo neste navegador.</span></p>
+<div class="bh-tax-actions">
+<button type="button" class="bh-tax-cancel" id="bookingTaxCancel">Cancelar</button>
+<button type="submit" class="bh-tax-go">GERAR MEU PIX →</button>
+</div>
+</form>
+</div>
+</dialog>
+
 <footer><div><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/></div><div class="footer-links"><a href="servicos.html">Serviços</a><a href="planos-vip.html">Club</a><a href="loja.html">Loja</a></div><p>© 2026 Black Hands Barber Shop. Todos os direitos reservados.</p></footer>
 <script src="bh-session.js"></script><script src="booking.js"></script>
 <script defer="True" src="assistant.js"></script><a aria-label="Instagram da Black Hands Barber Shop" class="instagram-float" href="https://instagram.com/barbearia_blackhands?mdxt=djkyb3ptbDI2d3Yy" rel="noopener noreferrer" target="_blank" title="Instagram Black Hands">
