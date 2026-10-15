@@ -9,6 +9,7 @@ const files = [
   'index.html',
   'conta.html',
   'conta.js',
+  'account-pix.js',
   'account-dashboard-app.js',
   'bh-session.js',
   'site-menu.js',
