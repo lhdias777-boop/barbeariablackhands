@@ -1,0 +1,30 @@
+# Black Hands Barber Shop — ambiente de homologação gratuito no Render.
+# NÃO colocar chaves ou tokens neste arquivo.
+# O Netlify continua na branch integracao-pix-producao.
+services:
+  - type: web
+    name: blackhands-barber-teste
+    runtime: node
+    plan: free
+    region: oregon
+    repo: https://github.com/lhdias777-boop/barbeariablackhands
+    branch: migracao-render
+    autoDeployTrigger: commit
+    buildCommand: npm install --omit=dev && node scripts/build-public.js
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BH_PIX_ENABLED
+        value: "false"
+      - key: ASAAS_API_BASE
+        value: https://api-sandbox.asaas.com/v3
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_WEBHOOK_TOKEN
+        sync: false

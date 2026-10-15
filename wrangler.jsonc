@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "barbeariablackhands",
+  "main": "cloudflare/worker.js",
+  "compatibility_date": "2026-10-14",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/api/*",
+      "/health"
+    ],
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "vars": {
+    "BH_PAYMENTS_MODE": "sandbox",
+    "BH_PIX_ENABLED": "true",
+    "BH_REAL_PIX_ENABLED": "false",
+    "WHATSAPP_ENABLED": "false",
+    "NODE_ENV": "production",
+    "BH_AUTH_PASSWORD_KDF": "supabase_edge",
+    "SUPABASE_URL": "https://nfemozpmqfgedxfuzamm.supabase.co"
+  },
+  "triggers": {"crons": ["*/5 * * * *"]},
+  "keep_vars": true
+}

@@ -1,21 +1,331 @@
-const products=[
-{id:'gel-cola',name:'Gel Cola',description:'Finalização e fixação.',price:25,tag:'GEL COLA'},
-{id:'gel-boy',name:'Gel Boy',description:'Produto para estilização.',price:35,tag:'GEL BOY'},
-{id:'gel-cola-black',name:'Gel Cola Black',description:'Fixação para o dia a dia.',price:25,tag:'BLACK GEL'},
-{id:'pasta-black',name:'Pasta Black',description:'Modelagem e acabamento.',price:25,tag:'PASTA BLACK'},
-{id:'pomada-caramelo',name:'Pomada Caramelo',description:'Ajuda a modelar o penteado.',price:25,tag:'POMADA'},
-{id:'pomada-liquida-matte',name:'Pomada Líquida Efeito Matte',description:'Acabamento de efeito matte.',price:25,tag:'MATTE'},
-{id:'pomada-po',name:'Pomada em Pó',description:'Volume e textura.',price:50,tag:'PÓ'},
-{id:'shampoo-maxidil',name:'Shampoo Maxidil',description:'Higiene e cuidado capilar.',price:35,tag:'SHAMPOO'},
-{id:'balm-maxidil',name:'Balm Maxidil',description:'Cuidado para a barba.',price:35,tag:'BALM'}
+// Ordem original das 15 fotos enviadas para a vitrine.
+const featuredOrder=[
+ 'pomada-liquida-matte','pomada-po','gel-cola','gel-cola-black','pasta-black',
+ 'esponja-nudred','hidratacao','escovinha-raiz','shampoo-maxidil','oleo-barba',
+ 'gel-boy','minoxidil','balm-maxidil','gel-cola-megafix','pomada-caramelo'
 ];
+const fallbackProducts=[
+ ['Pomada líquida "efeito mate"',25,'Controle total sobre seu penteado, com efeito mate.'],
+ ['Pomada em pó',50,'Melhor fixação dos fios, ideal para dar volume.'],
+ ['Gel cola',25,'Fixação brilhante e efeito molhado.'],
+ ['Gel cola black',25,'Fixação brilhante e efeito black.'],
+ ['Pasta black',25,'Finalizadora efeito black.'],
+ ['Esponja nudred',20,'Para modelar.'],
+ ['Hidratação',10,'Recuperação capilar.'],
+ ['Escovinha de mão "raiz"',3,'Produto indispensável na vida de um homem.'],
+ ['Shampoo maxidil',35,'Limpa suavemente, auxiliando no crescimento dos fios.'],
+ ['Óleo de barba',35,'Hidratação e nutrição para cabelo, barba e bigode.'],
+ ['Gel boy',35,'Ação prolongada.'],
+ ['Minoxidil',35,'Produto para cuidados capilares.'],
+ ['Balm de barba',45,'Hidratação e nutrição dos fios e da pele.'],
+ ['Gel "cola"',15,'Ótima fixação.'],
+ ['Pomada caramelo',25,'Efeito molhado.']
+];
+const products=featuredOrder.map((id,i)=>({
+ id,name:fallbackProducts[i][0],price:fallbackProducts[i][1],description:fallbackProducts[i][2],
+ tag:fallbackProducts[i][0].toUpperCase(),image_url:'/store-products.svg#p'+i
+}));
 const money=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});let cart=JSON.parse(localStorage.getItem('bhStoreCart')||'{}');
 const productsEl=document.getElementById('products'), cartPanel=document.getElementById('cartPanel');
-productsEl.innerHTML=products.map(p=>`<article class="store-card"><div class="product-art">${p.tag}</div><div class="details"><h2>${p.name}</h2><p>${p.description}</p><strong>${money(p.price)}</strong><button type="button" data-add="${p.id}">ADICIONAR AO CARRINHO</button></div></article>`).join('');
-function save(){localStorage.setItem('bhStoreCart',JSON.stringify(cart));renderCart()}
-function count(){return Object.values(cart).reduce((s,n)=>s+n,0)}
-function renderCart(){document.getElementById('cartCount').textContent=count();const ids=Object.keys(cart).filter(id=>cart[id]>0);const el=document.getElementById('cartItems');if(!ids.length){el.innerHTML='<p class="empty">Seu carrinho está vazio. Adicione produtos para continuar.</p>'}else{el.innerHTML=ids.map(id=>{const p=products.find(x=>x.id===id);return `<div class="cart-row"><div><strong>${p.name}</strong><div style="color:#f47b20;margin-top:6px">${money(p.price)} cada</div></div><div class="qty"><button type="button" data-change="${id}" data-delta="-1" aria-label="Diminuir">−</button><span>${cart[id]}</span><button type="button" data-change="${id}" data-delta="1" aria-label="Aumentar">+</button></div></div>`}).join('')};const total=ids.reduce((s,id)=>s+products.find(p=>p.id===id).price*cart[id],0);document.getElementById('cartTotal').textContent=money(total);document.querySelector('#checkoutForm button').disabled=!ids.length;document.querySelector('#checkoutForm button').style.opacity=ids.length?'1':'.5'}
-productsEl.addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(!b)return;cart[b.dataset.add]=(cart[b.dataset.add]||0)+1;save();b.textContent='ADICIONADO ✓';setTimeout(()=>b.textContent='ADICIONAR AO CARRINHO',1000)});
-document.getElementById('cartItems').addEventListener('click',e=>{const b=e.target.closest('[data-change]');if(!b)return;const id=b.dataset.change;cart[id]=(cart[id]||0)+Number(b.dataset.delta);if(cart[id]<=0)delete cart[id];save()});
-document.getElementById('openCart').addEventListener('click',()=>cartPanel.classList.add('open'));document.getElementById('closeCart').addEventListener('click',()=>cartPanel.classList.remove('open'));cartPanel.addEventListener('click',e=>{if(e.target===cartPanel)cartPanel.classList.remove('open')});
-document.getElementById('checkoutForm').addEventListener('submit',async e=>{e.preventDefault();const ids=Object.keys(cart).filter(id=>cart[id]>0);if(!ids.length)return;const order={customer:{name:document.getElementById('customerName').value.trim(),phone:document.getElementById('customerPhone').value.trim(),email:document.getElementById('customerEmail').value.trim(),cpfCnpj:document.getElementById('customerCpf').value.trim()},fulfillment:document.getElementById('fulfillment').value,items:ids.map(id=>({productId:id,quantity:cart[id]}))};const msg=document.getElementById('checkoutMessage');try{const res=await fetch('/api/store/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)});const data=await res.json();if(!res.ok)throw new Error(data.error||'O checkout ainda não está configurado.');if(data.paymentUrl)location.href=data.paymentUrl;else if(data.qrCodeBase64||data.pixCopyPaste){msg.innerHTML=''; const title=document.createElement('p');title.textContent='Pix gerado! Pedido '+data.orderId+' — aguardando confirmação do pagamento.';msg.append(title); if(data.qrCodeBase64){const img=document.createElement('img');img.src='data:image/png;base64,'+data.qrCodeBase64;img.alt='QR Code Pix';img.style.maxWidth='190px';msg.append(img);} if(data.pixCopyPaste){const code=document.createElement('textarea');code.readOnly=true;code.value=data.pixCopyPaste;code.rows=4;code.style.width='100%';msg.append(code);const btn=document.createElement('button');btn.type='button';btn.textContent='Copiar Pix';btn.onclick=()=>navigator.clipboard.writeText(code.value);msg.append(btn);}}else msg.textContent='Pedido criado; aguarde as instruções de pagamento.';}catch(err){msg.textContent='Carrinho pronto, mas o Pix automático ainda não está conectado ao servidor. Configure o backend/Asaas antes de receber pagamentos. Seus itens continuam salvos no navegador.';console.warn(err)}});renderCart();
+
+/* Anima somente os produtos visiveis, inclusive apos atualizar o catalogo. */
+const storeRevealObserver=typeof IntersectionObserver==='function'
+ ?new IntersectionObserver((entries,observer)=>{
+  entries.forEach(entry=>{
+   if(!entry.isIntersecting)return;
+   entry.target.classList.add('bh-store-reveal');
+   observer.unobserve(entry.target);
+  });
+ },{threshold:0.12,rootMargin:'0px 0px -15px 0px'}):null;
+function revealStoreProducts(){
+ if(storeRevealObserver)storeRevealObserver.disconnect();
+ const cards=productsEl.querySelectorAll('.store-card');
+ cards.forEach((card,index)=>{
+  card.style.setProperty('--bh-store-delay',String((index%4)*55)+'ms');
+  if(storeRevealObserver)storeRevealObserver.observe(card);
+ });
+}
+
+const searchInput=document.getElementById('storeSearch');
+const sortInput=document.getElementById('storeSort');
+const resultCount=document.getElementById('storeResults');
+const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cleanSearch=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+const imageAllowed=url=>/^https:\/\/[^\s"'<>]+$/i.test(url)||/^\/store-products\.svg#p(?:[0-9]|1[0-4])$/.test(url);
+function renderStoreProducts(){
+ const term=cleanSearch(searchInput.value),order=sortInput.value;
+ let shown=products.filter(p=>!term||cleanSearch(p.name+' '+p.description).includes(term));
+ const index=id=>{const pos=featuredOrder.indexOf(id);return pos>=0?pos:featuredOrder.length+products.findIndex(p=>p.id===id)};
+ const collator=new Intl.Collator('pt-BR',{sensitivity:'base',numeric:true});
+ shown=shown.slice().sort((a,b)=>{
+  if(order==='name-asc')return collator.compare(a.name,b.name);
+  if(order==='name-desc')return collator.compare(b.name,a.name);
+  if(order==='price-asc')return a.price-b.price||collator.compare(a.name,b.name);
+  if(order==='price-desc')return b.price-a.price||collator.compare(a.name,b.name);
+  return index(a.id)-index(b.id);
+ });
+ resultCount.textContent=shown.length+' '+(shown.length===1?'produto encontrado':'produtos encontrados');
+ if(!shown.length){
+  productsEl.innerHTML='<div class="bh-store-no-results">Nenhum produto encontrado. Tente outro nome ou termo.</div>';
+  return;
+ }
+ productsEl.innerHTML=shown.map(p=>{
+  const img=p.image_url&&imageAllowed(p.image_url)
+   ?'<img src="'+safe(p.image_url)+'" alt="Foto de '+safe(p.name)+'" loading="lazy" decoding="async">'
+   :'<span role="img" aria-label="Sem foto disponível">'+safe(p.tag||'BLACK HANDS')+'</span>';
+  return '<article class="store-card"><div class="product-art">'+img+
+   '</div><div class="details"><h2>'+safe(p.name)+'</h2><p>'+safe(p.description)+
+   '</p><strong>'+money(p.price)+'</strong><button type="button" data-add="'+safe(p.id)+
+   '">ADICIONAR AO CARRINHO</button></div></article>';
+ }).join('');
+ revealStoreProducts();
+}
+searchInput.addEventListener('input',renderStoreProducts);
+sortInput.addEventListener('change',renderStoreProducts);
+// Enquanto uma foto nova não estiver publicada, evita ícones de imagem quebrada.
+productsEl.addEventListener('error',event=>{
+ const img=event.target;
+ if(!(img instanceof HTMLImageElement))return;
+ const art=img.closest('.product-art');
+ if(!art)return;
+ const text=document.createElement('span');
+ text.className='bh-photo-awaiting';
+ text.textContent='Foto em atualização';
+ art.replaceChildren(text);
+},true);
+renderStoreProducts();
+
+const cartToggle=document.getElementById('openCart');
+const cartClose=document.getElementById('closeCart');
+const cartItems=document.getElementById('cartItems');
+const cartDrawer=cartPanel.querySelector('.cart-content');
+let previousFocus=null;
+const cartNode=(tag,cls,text)=>{
+ const el=document.createElement(tag);
+ if(cls)el.className=cls;
+ if(text!==undefined)el.textContent=String(text);
+ return el;
+};
+function cartEntries(){return Object.entries(cart).filter(([id,q])=>Number.isInteger(q)&&q>0&&products.some(p=>p.id===id))}
+function count(){return cartEntries().reduce((sum,[,qty])=>sum+qty,0)}
+function save(){
+ try{localStorage.setItem('bhStoreCart',JSON.stringify(cart))}catch(e){console.warn('Carrinho não pôde ser salvo:',e.message)}
+ renderCart();
+}
+function renderCart(){
+ const entries=cartEntries(),qty=count(),total=entries.reduce((sum,[id,n])=>{
+  const product=products.find(p=>p.id===id);
+  return sum+Number(product?.price||0)*n;
+ },0);
+ document.getElementById('cartCount').textContent=qty>99?'99+':String(qty);
+ document.getElementById('cartHeaderCount').textContent='('+qty+')';
+ document.getElementById('cartQtySummary').textContent=qty+' '+(qty===1?'item':'itens');
+ document.getElementById('cartTotal').textContent=money(total);
+ document.querySelector('#checkoutForm button[type="submit"]').disabled=!entries.length;
+ cartItems.replaceChildren();
+ if(!entries.length){
+  const empty=cartNode('div','bh-cart-empty');
+  const graphic=cartNode('span','bh-cart-empty-icon','🛒');graphic.setAttribute('aria-hidden','true');
+  empty.append(graphic,cartNode('strong','','Seu carrinho está vazio'),
+   cartNode('p','','Escolha seus produtos e adicione ao carrinho para continuar.'));
+  cartItems.append(empty);return;
+ }
+ for(const [id,n] of entries){
+  const p=products.find(x=>x.id===id);
+  const row=cartNode('article','bh-cart-item');
+  const art=cartNode('div','bh-cart-item-art');
+  if(p.image_url&&imageAllowed(p.image_url)){
+   const img=document.createElement('img');img.src=p.image_url;img.alt='';
+   img.loading='lazy';img.onerror=()=>{art.textContent=p.tag||p.name.slice(0,16)};art.append(img);
+  }else art.textContent=p.tag||p.name.slice(0,16);
+  const information=cartNode('div','bh-cart-item-copy');
+  const heading=cartNode('h3','',p.name);
+  const description=cartNode('p','',(p.description||'Produto Black Hands').slice(0,90));
+  const cost=cartNode('strong','',money(p.price*n));
+  const controls=cartNode('div','bh-cart-item-ctrl');
+  const countControl=cartNode('div','qty');
+  for(const [delta,symbol,word] of [[-1,'−','Diminuir'],[0,String(n),''],[1,'+','Aumentar']]){
+   if(delta===0){countControl.append(cartNode('span','',symbol));continue}
+   const btn=cartNode('button','',symbol);
+   btn.type='button';btn.dataset.change=id;btn.dataset.delta=String(delta);
+   btn.disabled=delta===1&&n>=20;
+   btn.setAttribute('aria-label',word+' quantidade de '+p.name);
+   countControl.append(btn);
+  }
+  const remove=cartNode('button','bh-cart-remove','Remover');
+  remove.type='button';remove.dataset.remove=id;
+  remove.setAttribute('aria-label','Remover '+p.name+' do carrinho');
+  controls.append(countControl,remove);
+  information.append(heading,description,cost,controls);row.append(art,information);cartItems.append(row);
+ }
+}
+function openCart(){
+ previousFocus=document.activeElement;
+ cartPanel.classList.add('open');cartPanel.setAttribute('aria-hidden','false');
+ cartToggle.setAttribute('aria-expanded','true');
+ document.body.classList.add('bh-store-cart-open');
+ cartDrawer.focus();
+}
+function closeCart(){
+ if(!cartPanel.classList.contains('open'))return;
+ cartPanel.classList.remove('open');cartPanel.setAttribute('aria-hidden','true');
+ cartToggle.setAttribute('aria-expanded','false');
+ document.body.classList.remove('bh-store-cart-open');
+ previousFocus?.focus?.();previousFocus=null;
+}
+cartToggle.addEventListener('click',openCart);
+cartClose.addEventListener('click',closeCart);
+document.getElementById('continueShopping').addEventListener('click',closeCart);
+cartPanel.addEventListener('mousedown',e=>{if(e.target===cartPanel)closeCart()});
+document.addEventListener('keydown',e=>{
+ if(!cartPanel.classList.contains('open'))return;
+ if(e.key==='Escape'){e.preventDefault();closeCart();return}
+ if(e.key!=='Tab')return;
+ const controls=[...cartDrawer.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]')];
+ if(!controls.length)return;
+ if(e.shiftKey&&document.activeElement===controls[0]){e.preventDefault();controls[controls.length-1].focus()}
+ else if(!e.shiftKey&&document.activeElement===controls[controls.length-1]){e.preventDefault();controls[0].focus()}
+});
+productsEl.addEventListener('click',e=>{
+ const b=e.target.closest('[data-add]');if(!b)return;
+ const id=b.dataset.add;
+ if(!products.some(p=>p.id===id))return;
+ cart[id]=Math.min(20,(Number(cart[id])||0)+1);
+ save();
+ cartToggle.classList.remove('bh-cart-added');void cartToggle.offsetWidth;cartToggle.classList.add('bh-cart-added');
+ b.textContent='ADICIONADO ✓';
+ setTimeout(()=>{if(b.isConnected)b.textContent='ADICIONAR AO CARRINHO';cartToggle.classList.remove('bh-cart-added')},900);
+});
+cartItems.addEventListener('click',e=>{
+ const btn=e.target.closest('[data-change],[data-remove]');
+ if(!btn)return;
+ const id=btn.dataset.change||btn.dataset.remove;
+ if(!(id in cart))return;
+ if(btn.hasAttribute('data-remove'))delete cart[id];
+ else{
+  cart[id]=Math.max(0,Math.min(20,cart[id]+Number(btn.dataset.delta)));
+  if(cart[id]===0)delete cart[id];
+ }
+ save();
+});
+
+let storePixRetry=null,pendingStoreOrderId=null;
+async function recoverStorePix(orderId){
+ const r=await fetch('/api/pix/qr/store/'+encodeURIComponent(orderId),{
+  credentials:'same-origin',cache:'no-store'});
+ const json=await r.json().catch(()=>({}));
+ if(!r.ok&&r.status!==202)throw Error(json.error||'Erro ao consultar código Pix.');
+ return json;
+}
+function showStorePix(data,attempt=0){
+ const target=document.getElementById('checkoutMessage');
+ target.replaceChildren();
+ if(data.status==='PAID'){
+  pendingStoreOrderId=null;
+  target.textContent='Pagamento confirmado pelo Asaas. Consulte Minha Conta para acompanhar seu pedido.';
+  return;
+ }
+ if(data.orderId)pendingStoreOrderId=data.orderId;
+ const real=data.paymentMode==='production',pending=!!data.qrPending;
+ const intro=document.createElement('p');
+ intro.textContent=(pending?'Cobrança criada; aguardando QR Code do Asaas.':'PIX '+(real?'REAL':'DE TESTE')+' gerado!')+
+  ' Pedido '+String(data.orderId||'').slice(0,8).toUpperCase()+'.';
+ target.append(intro);
+ if(data.qrCodeBase64){
+  const qr=document.createElement('img');qr.src='data:image/png;base64,'+data.qrCodeBase64;
+  qr.alt=real?'QR Code Pix real do Asaas':'QR Code de teste no Asaas Sandbox';
+  qr.style.maxWidth='210px';qr.style.display='block';qr.style.margin='10px auto';
+  target.append(qr);
+ }
+ if(data.pixCopyPaste){
+  const code=document.createElement('textarea');code.readOnly=true;code.value=data.pixCopyPaste;
+  code.rows=4;code.style.width='100%';target.append(code);
+  const copy=document.createElement('button');copy.type='button';copy.className='bh-cart-continue';
+  copy.textContent='Copiar código Pix';
+  copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(code.value);copy.textContent='Pix copiado ✓'}catch{code.select()}});
+  target.append(copy);
+ }
+ if(!real){
+  const warning=document.createElement('p');warning.textContent='Ambiente de testes. Não pague este código com seu aplicativo bancário.';
+  target.append(warning);
+ }
+ if(pending){
+  const reload=document.createElement('button');reload.type='button';reload.className='bh-cart-continue';
+  reload.textContent='↻ Consultar o mesmo Pix (sem gerar outra cobrança)';target.append(reload);
+  let retryCount=attempt;
+  const doRetry=async()=>{
+   if(reload.disabled)return;
+   reload.disabled=true;reload.textContent='Consultando Asaas...';
+   try{
+    const details=await recoverStorePix(data.orderId);
+    if(details.status==='PAID'){pendingStoreOrderId=null;target.textContent='Pagamento confirmado. Confira em Minha Conta.';return}
+    if(details.qrPending){
+     reload.textContent='QR Code ainda em preparação';reload.disabled=false;
+     if(++retryCount<6)storePixRetry=setTimeout(()=>doRetry(),3500);
+    }else showStorePix({...data,...details,qrPending:false});
+   }catch(e){reload.textContent='Tentar novamente: '+e.message;reload.disabled=false;}
+  };
+  reload.addEventListener('click',()=>{if(storePixRetry)clearTimeout(storePixRetry);doRetry()});
+  if(attempt<5)storePixRetry=setTimeout(()=>doRetry(),3500);
+ }
+}
+document.getElementById('checkoutForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const entries=cartEntries();if(!entries.length)return;
+ if(!await window.BHSession.get()){
+  closeCart();await window.BHSession.requireLogin({action:'comprar',next:'loja.html?carrinho=1'});return;
+ }
+ const account=await window.BHSession.get();
+ const order={
+  customer:{name:account.fullName,phone:account.phone,
+   email:document.getElementById('customerEmail').value.trim(),
+   cpfCnpj:document.getElementById('customerCpf').value.trim()},
+  fulfillment:document.getElementById('fulfillment').value,
+  items:entries.map(([productId,quantity])=>({productId,quantity}))
+ };
+ const msg=document.getElementById('checkoutMessage'),button=document.getElementById('cartCheckoutButton');
+ button.disabled=true;msg.textContent='Solicitando o Pix ao Asaas. Aguarde...';
+ if(storePixRetry){clearTimeout(storePixRetry);storePixRetry=null}
+ try{
+  if(pendingStoreOrderId){
+   const details=await recoverStorePix(pendingStoreOrderId);
+   showStorePix({...details,orderId:pendingStoreOrderId,
+    paymentMode:msg.dataset.paymentMode||'sandbox'});
+   return;
+  }
+  const response=await fetch('/api/store/checkout',{
+   method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(order)
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'O Asaas não conseguiu gerar a cobrança.');
+  if(!data.orderId)throw Error('O servidor não retornou uma referência válida do pedido.');
+  msg.dataset.paymentMode=data.paymentMode;
+  showStorePix(data);
+ }catch(err){
+  msg.textContent=err.message+
+    ' Seus produtos continuam no carrinho. Não gere outra cobrança se um QR Code anterior estiver pendente.';
+ }finally{button.disabled=!cartEntries().length}
+});
+renderCart();
+
+if(new URLSearchParams(location.search).has('carrinho'))window.BHSession.get().then(account=>{if(account)openCart()});
+
+
+async function syncStoreCatalog(){
+ try{
+  const response=await fetch('/api/site/catalog',{cache:'no-store'});
+  if(!response.ok)throw Error('Catálogo indisponível');
+  const data=await response.json();
+  const latest=(data.items||[]).filter(p=>p.kind==='product'&&p.active!==false);
+  if(!latest.length){products.splice(0,products.length);renderStoreProducts();renderCart();return;}
+  products.splice(0,products.length,...latest.map(p=>({
+   id:p.id,name:p.name,description:p.description||'',price:Number(p.price),
+   tag:String(p.name||'PRODUTO').slice(0,22).toUpperCase(),image_url:p.image_url||null
+  })));
+  renderStoreProducts();
+  for(const id of Object.keys(cart))if(!products.some(p=>p.id===id))delete cart[id];
+  localStorage.setItem('bhStoreCart',JSON.stringify(cart));
+  renderCart();
+ }catch(e){console.warn('Catálogo atualizado indisponível:',e.message);}
+}
+syncStoreCatalog();

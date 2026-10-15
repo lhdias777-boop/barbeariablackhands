@@ -6,8 +6,8 @@
     <button class="bh-ai-launcher" id="bh-ai-launcher" type="button" aria-label="Abrir assistente Black Hands" aria-expanded="false"><img class="bh-ai-launcher-logo" src="logo-oficial-black-hands.jpg" alt="" /><span class="bh-ai-pulse"></span></button>
     <section class="bh-ai-panel" id="bh-ai-panel" aria-label="Assistente virtual" aria-hidden="true">
       <header class="bh-ai-head"><div class="bh-ai-avatar"><img src="logo-oficial-black-hands.jpg" alt="Logo Black Hands" /></div><div class="bh-ai-heading"><strong>Assistente Black Hands</strong><small><span class="bh-ai-status"></span> Assistente virtual</small></div><button id="bh-ai-close" class="bh-ai-close" type="button" aria-label="Fechar assistente">×</button></header>
-      <div class="bh-ai-messages" id="bh-ai-messages" aria-live="polite"><div class="bh-ai-msg bot">Olá! 👋 Sou a assistente virtual da Black Hands. Posso ajudar com pedidos, agendamentos, promoções, combos, produtos e planos VIP. Para consultar seus dados, entre na sua conta. O que você precisa?</div></div>
-      <div class="bh-ai-quick" id="bh-ai-quick"><button type="button" data-prompt="Como agendar um horario">📅 Como agendar?</button><button type="button" data-prompt="Quais sao os servicos e precos">✂️ Serviços e preços</button><button type="button" data-prompt="Como acompanhar meu pedido">📦 Acompanhar pedido</button><button type="button" data-prompt="Como acompanhar meu agendamento">🗓️ Meu agendamento</button><button type="button" data-prompt="Quais sao os planos vip">👑 Planos VIP</button><button type="button" data-prompt="Quais promocoes e combos">🏷️ Promoções e combos</button><button type="button" data-prompt="Quais produtos tem na loja">🛍️ Loja</button><button type="button" data-prompt="Qual o horario de funcionamento">🕒 Horários</button><button type="button" data-prompt="Onde fica a barbearia">📍 Localização</button><button type="button" data-prompt="Quero falar no whatsapp">💬 Falar no WhatsApp</button></div>
+      <div class="bh-ai-messages" id="bh-ai-messages" aria-live="polite"><div class="bh-ai-msg bot">Olá! 👋 Sou o Assistente Black Hands. Posso ajudar com serviços, produtos, horários, agendamentos e planos VIP. Você pode tirar dúvidas aqui mesmo; para agendar, comprar ou assinar, use sua conta Black Hands.</div></div>
+      <div class="bh-ai-quick" id="bh-ai-quick"><button type="button" data-prompt="Como criar minha conta">👤 Criar conta</button><button type="button" data-prompt="Como agendar um horario">📅 Como agendar?</button><button type="button" data-prompt="Quais sao os servicos e precos">✂️ Serviços e preços</button><button type="button" data-prompt="Como acompanhar meu pedido">📦 Acompanhar pedido</button><button type="button" data-prompt="Como acompanhar meu agendamento">🗓️ Meu agendamento</button><button type="button" data-prompt="Quais sao os planos vip">👑 Planos VIP</button><button type="button" data-prompt="Quais promocoes e combos">🏷️ Promoções e combos</button><button type="button" data-prompt="Quais produtos tem na loja">🛍️ Loja</button><button type="button" data-prompt="Qual o horario de funcionamento">🕒 Horários</button><button type="button" data-prompt="Onde fica a barbearia">📍 Localização</button><button type="button" data-prompt="Quero falar no whatsapp">💬 Falar no WhatsApp</button></div>
       <form class="bh-ai-form" id="bh-ai-form"><label class="bh-ai-sr" for="bh-ai-input">Sua mensagem</label><textarea id="bh-ai-input" rows="1" maxlength="1200" placeholder="Escreva sua mensagem…" required></textarea><button type="submit" id="bh-ai-send" aria-label="Enviar mensagem">➤</button></form>
       <div class="bh-ai-foot">Não compartilhe dados de cartão ou senhas.</div>
     </section>
@@ -17,10 +17,31 @@
   document.body.appendChild(root);
   const panel = root.querySelector('#bh-ai-panel'), launcher = root.querySelector('#bh-ai-launcher'), input = root.querySelector('#bh-ai-input'), form = root.querySelector('#bh-ai-form'), messages = root.querySelector('#bh-ai-messages'), send = root.querySelector('#bh-ai-send');
   let history = [], busy = false;
-  const open = (value) => { panel.classList.toggle('is-open', value); panel.setAttribute('aria-hidden', String(!value)); launcher.setAttribute('aria-expanded', String(value)); if(value) setTimeout(()=>input.focus(),120); };
+  let greetingChecked=false;
+  async function greetAccount(){
+    if(greetingChecked)return;
+    greetingChecked=true;
+    try{
+      const profile=window.BHSession?.get ? await window.BHSession.get() :
+       (await fetch('/api/account/me',{credentials:'same-origin',cache:'no-store'}).then(r=>r.ok?r.json():null))?.account;
+      if(profile){
+        addMessage('Olá, '+String(profile.fullName||'Cliente').split(' ')[0]+'! Sua conta está conectada. Para ver agendamentos, pedidos e seu VIP, abra [Minha Conta](conta.html).');
+      }else{
+        addMessage('Antes de agendar, comprar ou assinar, você precisa entrar na Black Hands. Se ainda não tem cadastro, é rápido e gratuito: [CRIAR MINHA CONTA](conta.html?mode=register). Se já tem, use [ENTRAR](conta.html?mode=login).');
+      }
+    }catch{
+      addMessage('Para agendar, comprar ou assinar, faça login. Se ainda não tiver conta, acesse [Criar minha conta](conta.html?mode=register).');
+    }
+  }
+  const open = (value) => {
+    panel.classList.toggle('is-open',value);
+    panel.setAttribute('aria-hidden',String(!value));
+    launcher.setAttribute('aria-expanded',String(value));
+    if(value){greetAccount();setTimeout(()=>input.focus(),120);}
+  };
   launcher.addEventListener('click',()=>open(!panel.classList.contains('is-open')));
   root.querySelector('#bh-ai-close').addEventListener('click',()=>open(false));
-  function addMessage(text, who='bot') { const el=document.createElement('div'); el.className=`bh-ai-msg ${who}`; if(who==='bot'){ const re=/\[([^\]]{1,80})\]\((index\.html(?:#[a-zA-Z0-9_-]+)?|servicos\.html|loja\.html|agendar\.html|acompanhar\.html|planos-vip\.html)\)/g; let last=0,m; while((m=re.exec(text))){el.appendChild(document.createTextNode(text.slice(last,m.index)));const a=document.createElement('a');a.href=m[2];a.textContent=m[1];a.className='bh-ai-link';el.appendChild(a);last=re.lastIndex;}el.appendChild(document.createTextNode(text.slice(last)));} else {el.textContent=text;} messages.appendChild(el); messages.scrollTop=messages.scrollHeight; return el; }
+  function addMessage(text, who='bot') { const el=document.createElement('div'); el.className=`bh-ai-msg ${who}`; if(who==='bot'){ const re=/\[([^\]]{1,80})\]\((index\.html(?:#[a-zA-Z0-9_-]+)?|conta\.html(?:\?mode=(?:register|login))?(?:#[a-zA-Z0-9_-]+)?|servicos\.html(?:#[a-zA-Z0-9_-]+)?|loja\.html|agendar\.html|acompanhar\.html|planos-vip\.html(?:#[a-zA-Z0-9_-]+)?)\)/g; let last=0,m; while((m=re.exec(text))){el.appendChild(document.createTextNode(text.slice(last,m.index)));const a=document.createElement('a');a.href=m[2];a.textContent=m[1];a.className='bh-ai-link';el.appendChild(a);last=re.lastIndex;}el.appendChild(document.createTextNode(text.slice(last)));} else {el.textContent=text;} messages.appendChild(el); messages.scrollTop=messages.scrollHeight; return el; }
   function addLinks(text) {
     const links = /\[(Início|Serviços e preços|Black Hands Store|Agendar horário|Planos VIP|Suporte)\]\((index\.html(?:#[\w-]+)?|servicos\.html|loja\.html)\)/gi;
     return text.replace(links, '$1 — $2');
@@ -48,6 +69,28 @@
     }
     return best?.resposta || config.nao_entendi;
   }
+  function accountReply(text){
+    const normalized=normalize(text);
+    if(/criar.*conta|cadastro|cadastrar|fazer.*conta|registrar.*conta/.test(normalized)){
+      return 'Para criar sua conta Black Hands, informe nome, WhatsApp e senha nesta página: [Criar minha conta](conta.html?mode=register). É rápido e gratuito!';
+    }
+    if(/entrar.*conta|fazer login|esqueci.*senha|acessar.*conta/.test(normalized)){
+      return 'Entre em [Minha Conta](conta.html?mode=login) para consultar seus agendamentos, compras e VIP.';
+    }
+    return null;
+  }
+  async function locationReply(text){
+    const query=normalize(text);
+    if(!/(onde fica|localizacao|endereco|qual rua|como chegar|como ir|mapa|maps|gps|padre eustaquio)/.test(query))return null;
+    try{
+      const response=await fetch('/api/site/content',{cache:'no-store'});
+      if(!response.ok)return null;
+      const data=await response.json();
+      const address=data?.content?.location_address;
+      if(typeof address!=='string'||address.trim().length<10)return null;
+      return 'Estamos em '+address.trim().slice(0,240)+'. Veja o mapa e clique em COMO CHEGAR na seção [Localização e contato](index.html#contato). Segunda a sexta: 7h às 19h; sábado: 7h às 16h; domingo: fechado.';
+    }catch{return null;}
+  }
   async function submitMessage(text) {
     if (!text || busy) return;
     busy=true; send.disabled=true; root.querySelectorAll('.bh-ai-quick button').forEach(b=>b.disabled=true);
@@ -56,7 +99,7 @@
     try {
       const config=answerConfig || await configPromise;
       if(!config)throw Error('Não consegui carregar as respostas. Verifique se o arquivo respostas-assistente.json foi publicado junto ao site.');
-      const answer=String(findReply(text,config)||config.nao_entendi).slice(0,5000);
+      const answer=String(accountReply(text)||(await locationReply(text))||findReply(text,config)||config.nao_entendi).slice(0,5000);
       typing.remove();addMessage(answer,'bot');
     } catch(err) {typing.remove();addMessage(err.message,'bot');}
     finally {busy=false;send.disabled=false;root.querySelectorAll('.bh-ai-quick button').forEach(b=>b.disabled=false);input.focus();}

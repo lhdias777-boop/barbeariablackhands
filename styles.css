@@ -143,3 +143,195 @@
 
 /* Identidade oficial Black Hands */
 .brand-official,.brand-logo{height:58px!important;width:auto!important;max-width:145px;object-fit:contain;display:block;border-radius:3px}.topbar .brand{display:flex;align-items:center;gap:8px}.brand-mark{display:none}
+
+/* Black Hands • identidade da conta no menu e acesso exclusivo */
+.topbar-premium .main-nav>a.bh-account-menu{display:flex;align-items:center;gap:12px;padding:17px 14px 20px;border-radius:14px;background:linear-gradient(130deg,#302017,#171312 75%);border:1px solid #a06a39;margin-bottom:8px;color:#fff;white-space:normal}
+.bh-account-avatar{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:15px;background:linear-gradient(140deg,#ffbc65,#ed8327);box-shadow:0 5px 17px #ed832733;color:#1a1007;font-weight:900;font-size:17px;letter-spacing:1px}
+.bh-account-details{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}
+.bh-account-details strong{font-size:15px;font-weight:850;overflow-wrap:anywhere;line-height:1.2}
+.bh-account-details small{font-size:11px;font-weight:550;color:#c5b4a2;overflow-wrap:anywhere}
+.bh-account-chevron{font-size:25px;color:#f5a54e}
+.topbar-premium .main-nav>a.bh-account-menu:hover{background:#33241a;border-color:#ffbd62}
+.topbar-premium .main-nav button.bh-menu-logout{width:100%;min-height:43px;background:#171312;border:1px solid #523929;color:#eeaa69;border-radius:9px;text-align:left;padding:10px 14px;font-weight:750;font-size:12px;cursor:pointer;margin:0 0 7px}
+.topbar-premium .main-nav button.bh-menu-logout[hidden]{display:none}
+.bh-auth-open{overflow:hidden}
+.bh-auth-overlay:not([hidden]){position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.79);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;padding:18px}
+.bh-auth-dialog{position:relative;width:min(440px,100%);max-height:calc(100vh - 40px);overflow:auto;border:1px solid #9b6030;border-radius:23px;background:linear-gradient(145deg,#221912,#111113 70%);padding:34px 27px 26px;box-shadow:0 26px 110px #000c;text-align:center;color:#f9f3ec;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.bh-auth-mark{width:63px;height:63px;display:grid;place-items:center;margin:0 auto 19px;border-radius:19px;background:linear-gradient(140deg,#ffbe71,#ea852c);color:#1c1007;font-weight:950;letter-spacing:1px;font-size:23px}
+.bh-auth-close{position:absolute;top:12px;right:14px;display:grid;place-items:center;width:40px;height:40px;border:1px solid #594333;background:#241b17;border-radius:12px;color:#eee;font-size:25px;cursor:pointer}
+.bh-auth-eyebrow{margin:0 0 9px;color:#f4a85c;font-size:10px;letter-spacing:2px;font-weight:850}
+.bh-auth-dialog h2{margin:0 0 10px;color:white;font-size:clamp(24px,5vw,32px);line-height:1.15;font-weight:900}
+.bh-auth-dialog p#bhAuthText{color:#c7beb5;font-size:14px;line-height:1.6;margin:0 0 21px}
+.bh-auth-dialog a.bh-auth-primary,.bh-auth-dialog a.bh-auth-secondary{display:flex;align-items:center;justify-content:center;min-height:52px;width:100%;border-radius:12px;font-weight:850;font-size:14px;text-decoration:none;margin-top:10px}
+.bh-auth-dialog a.bh-auth-primary{background:linear-gradient(105deg,#ffc069,#ef8c2a);color:#1d120b}
+.bh-auth-dialog a.bh-auth-secondary{background:#292019;color:#fcb66f;border:1px solid #a36d3e}
+.bh-auth-dialog .bh-auth-note{font-size:11px;color:#a99d92;line-height:1.6;margin:18px 0 0}
+@media(max-width:600px){.bh-auth-dialog{padding:30px 20px 24px}.bh-account-avatar{width:44px;height:44px}.topbar-premium .main-nav>a.bh-account-menu{padding:13px}}
+
+/* Localização oficial Black Hands */
+.bh-contact-location{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:20px;background:linear-gradient(135deg,#21170f,#111111);border:1px solid #7e4e29;border-radius:20px;padding:19px;margin:22px 0 22px;align-items:stretch}
+.bh-contact-location-copy{padding:18px 12px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.bh-contact-location-copy h3{font-size:clamp(26px,3.4vw,39px);margin:4px 0 15px;line-height:1.15;color:#fff}
+.bh-contact-location-copy address{font-style:normal;font-weight:800;color:#ffc27a;line-height:1.65;font-size:clamp(14px,1.5vw,17px);max-width:470px}
+.bh-contact-location-copy p:not(.eyebrow){color:#c4b5a7;line-height:1.7;font-size:13px}
+.bh-contact-route{margin-top:12px;white-space:normal;text-align:center}
+.bh-contact-location iframe{width:100%;min-height:285px;height:100%;border:0;border-radius:13px;background:#1b1917}
+@media(max-width:780px){.bh-contact-location{grid-template-columns:1fr;padding:12px;gap:12px}.bh-contact-location-copy{padding:17px 12px}.bh-contact-location iframe{height:275px;min-height:275px}}
+
+
+/* Navegação global Black Hands, sem esconder ações como Carrinho/Agendar */
+body.bh-shared-menu > header > nav,
+body.bh-shared-menu > header > .account-nav {display:none!important}
+body.bh-shared-menu.bh-site-menu-open{overflow:hidden}
+body.bh-shared-menu .bh-site-menu-toggle{
+ appearance:none;flex:none;display:inline-flex;align-items:center;justify-content:center;
+ gap:9px;min-width:49px;min-height:45px;padding:10px 14px;margin-left:auto;
+ border-radius:12px;border:1px solid #a36837;
+ color:#ffc481;background:linear-gradient(155deg,#211810,#100e0c);
+ font:800 13px/1 system-ui,-apple-system,sans-serif;cursor:pointer;
+ box-shadow:inset 0 1px #ffffff12
+}
+body.bh-shared-menu .bh-site-menu-toggle:hover,
+body.bh-shared-menu .bh-site-menu-toggle[aria-expanded=true]{background:#392318;border-color:#f4a25a}
+.bh-site-menu-bars{display:grid;gap:4px;width:21px}
+.bh-site-menu-bars i{display:block;width:21px;height:2px;border-radius:3px;background:#ffb86d}
+.bh-site-menu-bars i:nth-child(2){width:16px}
+.bh-site-menu-mask{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1700;backdrop-filter:blur(5px)}
+.bh-site-menu-mask[hidden],.bh-site-menu-panel[hidden]{display:none!important}
+.bh-site-menu-panel{
+ position:fixed;z-index:1701;top:0;right:0;bottom:0;overflow-y:auto;
+ width:min(400px,100vw);max-height:100dvh;
+ padding:22px 20px 26px;
+ background:linear-gradient(153deg,#25180e 0%,#11100f 31%,#0c0b0a 100%);
+ border-left:1px solid #86502c;box-shadow:-18px 0 65px #000b;
+ color:#f8eee4;font-family:system-ui,-apple-system,"Segoe UI",sans-serif
+}
+.bh-site-menu-panel *{box-sizing:border-box}
+.bh-site-menu-head{display:flex;align-items:center;gap:12px;padding:4px 0 22px;border-bottom:1px solid #573923}
+.bh-site-menu-head img{flex:none;width:59px;height:59px;object-fit:contain;border-radius:14px;background:#090909}
+.bh-site-menu-head strong{display:block;font-weight:900;letter-spacing:1.7px;font-size:16px}
+.bh-site-menu-head small{display:block;color:#bda78f;font-weight:750;letter-spacing:2px;font-size:9px;margin-top:5px}
+.bh-site-menu-close{appearance:none;display:grid;place-items:center;flex:none;margin-left:auto;width:41px;height:41px;border-radius:11px;border:1px solid #815535;color:#f9c086;background:#231a14;font-size:27px;cursor:pointer}
+.bh-site-menu-account{display:flex;align-items:center;gap:12px;margin:23px 0 14px;padding:12px;border-radius:15px;border:1px solid #966136;background:linear-gradient(110deg,#352316,#1b1510);text-decoration:none;color:#ffdfb8}
+.bh-site-menu-account img{flex:none;width:44px;height:44px;object-fit:contain;border-radius:11px;background:#050505}
+.bh-site-menu-account .bh-site-menu-user-avatar{flex:none;display:grid;place-items:center;width:44px;height:44px;overflow:hidden;border-radius:12px;background:#080808;border:1px solid #845433;color:#ffcb8b;font-size:17px;font-weight:900;letter-spacing:.4px}
+.bh-site-menu-account .bh-site-menu-user-avatar img{display:block;width:100%;height:100%;object-fit:contain;border-radius:inherit;background:#080808}
+.bh-site-menu-account .bh-site-menu-user-avatar.is-logged-in{background:linear-gradient(140deg,#4b2e19,#21160e);border-color:#bd7b3b;box-shadow:0 0 0 1px #aa652b44}
+
+.bh-site-menu-account strong{font-size:15px;font-weight:850;display:block}
+.bh-site-menu-account small{font-size:12px;line-height:1.4;display:block;margin-top:4px;color:#c4ad99}
+.bh-site-menu-chevron{font-size:28px;line-height:1;margin-left:auto}
+body.bh-shared-menu .bh-site-menu-panel .bh-site-menu-links{
+ display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:4px!important;
+ width:100%!important;position:static!important;background:transparent!important;
+ border:none!important;padding:0!important;max-height:none!important;overflow:visible!important;
+ margin:0!important;box-shadow:none!important
+}
+.bh-site-menu-panel .bh-site-menu-links a{
+ display:flex;align-items:center;gap:15px;border-radius:11px;border:1px solid transparent;
+ min-height:49px;padding:12px 13px;color:#efe6dd!important;text-decoration:none;
+ font-size:14px!important;font-weight:690;transition:background .2s,border-color .2s
+}
+.bh-site-menu-panel .bh-site-menu-links a:hover,
+.bh-site-menu-panel .bh-site-menu-links a[aria-current=page]{
+ color:#ffc389!important;background:#271c13;border-color:#624129
+}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-book{
+ background:#f0a052!important;color:#1d1108!important;font-weight:900;border-color:#f0a052;margin:8px 0
+}
+.bh-site-menu-icon{display:grid;place-items:center;flex:none;width:27px;height:27px;font-size:22px;color:#e5a160}
+.bh-site-menu-links .bh-site-menu-book .bh-site-menu-icon{color:#2c1a0e}
+.bh-site-menu-foot{font-size:10px;letter-spacing:1.6px;color:#9f8774;border-top:1px solid #4b3322;margin-top:18px;padding-top:24px;text-align:center}
+.bh-site-menu-panel a:focus-visible,.bh-site-menu-panel button:focus-visible,
+.bh-site-menu-toggle:focus-visible{outline:2px solid #ffbf72;outline-offset:3px}
+.bh-account-avatar.is-brand img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}
+.bh-auth-mark:has(img){overflow:hidden;padding:4px}
+.bh-auth-mark img{display:block;width:100%;height:100%;object-fit:contain;border-radius:10px}
+@media(max-width:680px){
+ body.bh-shared-menu .bh-site-menu-text{display:none}
+ body.bh-shared-menu .bh-site-menu-toggle{min-width:45px;width:45px;height:45px;padding:8px;margin-left:8px}
+ body.bh-shared-menu .brand{min-width:0}
+ body.bh-shared-menu .brand strong{font-size:16px}
+ body.bh-shared-menu .brand small{font-size:7px;letter-spacing:2px}
+ body.bh-shared-menu .brand-official{max-width:45px;max-height:45px}
+ body.bh-shared-menu .account-brand{min-width:0}
+ body.bh-shared-menu .account-brand img{width:45px;height:45px}
+ body.bh-shared-menu .account-brand strong{font-size:13px;letter-spacing:1px}
+ body.bh-shared-menu .account-brand small{font-size:8px;letter-spacing:1.5px}
+ body.bh-shared-menu .topbar{padding:0 13px}
+ body.bh-shared-menu .topbar>.btn-small{padding:9px;font-size:11px}
+ body.bh-shared-menu .topbar .cart-open{font-size:11px;padding:10px 9px;min-width:0}
+ body.bh-shared-menu .booking-header-actions .service-action{display:none}
+ body.bh-shared-menu .bhb-head-actions{gap:6px}
+ body.bh-shared-menu .bhb-head-actions a{padding:9px 8px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){.bh-site-menu-panel .bh-site-menu-links a{transition:none}}
+
+
+/* Instalação da Black Hands — chamada no menu e instruções nativas */
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install{
+ margin-top:9px;background:linear-gradient(110deg,#3d2b1d,#281d14);
+ color:#ffd3a0!important;border:1px solid #b47b43;font-weight:900;
+}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install .bh-site-menu-icon{
+ color:#ffc079;font-size:26px;font-weight:900
+}
+.main-nav a.bh-site-install-link{
+ color:#ffc48a;border:1px solid #935c31;background:linear-gradient(120deg,#402817,#1e160f);
+ border-radius:11px;font-weight:850
+}
+.main-nav a.bh-site-install-link:hover{background:#634026}
+.bh-install-dialog{
+ box-sizing:border-box;position:fixed;inset:0;margin:auto;
+ width:min(94vw,440px);max-width:440px;max-height:min(91dvh,780px);overflow:auto;
+ padding:0;border:1px solid #ae713d;border-radius:22px;
+ background:linear-gradient(150deg,#312013,#18120f 51%,#0f0e0d);
+ color:#fff5e9;box-shadow:0 26px 90px #000d;
+ font-family:system-ui,-apple-system,"Segoe UI",sans-serif
+}
+.bh-install-dialog::backdrop{background:rgba(0,0,0,.83);backdrop-filter:blur(7px)}
+.bh-install-dialog *{box-sizing:border-box}
+.bh-install-card{padding:31px 25px 23px;text-align:center;position:relative}
+.bh-install-close{
+ position:absolute;top:15px;right:16px;border:1px solid #79543a;border-radius:10px;
+ background:#291b13;color:#ffcb93;font-size:27px;width:38px;height:38px;
+ cursor:pointer;line-height:1
+}
+.bh-install-logo{width:78px;height:78px;display:block;object-fit:cover;margin:1px auto 17px;
+ background:black;border:1px solid #93603b;border-radius:18px;box-shadow:0 5px 28px #0009}
+.bh-install-kicker{display:block;color:#ffb76c;letter-spacing:2px;font-size:10px;font-weight:900}
+.bh-install-card h2{font:900 clamp(25px,5vw,31px)/1.17 system-ui,sans-serif;letter-spacing:-.7px;
+ margin:13px auto 12px;max-width:330px}
+.bh-install-card p{color:#cbb6a3;font-size:13px;line-height:1.65;margin:0 auto 20px;max-width:340px}
+.bh-install-steps{list-style:none;display:grid;gap:10px;margin:0 0 20px;padding:0;text-align:left}
+.bh-install-steps li{display:flex;gap:12px;align-items:flex-start;line-height:1.5;
+ background:#241c17;border:1px solid #593c28;border-radius:12px;padding:12px 13px;
+ color:#efe2d5;font-size:13px}
+.bh-install-steps li strong{
+ display:grid;place-items:center;flex:none;width:27px;height:27px;
+ border-radius:9px;background:#4b301e;color:#ffbf79;font-size:14px}
+.bh-install-steps li span{padding-top:3px}
+.bh-install-native,.bh-install-done{display:block;width:100%;min-height:49px;
+ padding:13px 16px;border-radius:11px;font-size:13px;font-weight:900;cursor:pointer}
+.bh-install-native{color:#1a1008;background:linear-gradient(110deg,#ffca82,#f29b43);border:0;margin-bottom:10px}
+.bh-install-native[hidden]{display:none!important}
+.bh-install-done{color:#ffcd98;background:#221912;border:1px solid #9d6338}
+.bh-install-card>small{display:block;color:#b09b8a;font-size:11px;line-height:1.5;margin-top:15px}
+.bh-install-dialog button:focus-visible{outline:2px solid #ffd39b;outline-offset:3px}
+@media(max-width:560px){
+ .bh-install-card{padding:28px 19px 20px}
+ .bh-install-card h2{font-size:25px}
+ .bh-install-steps li{font-size:12px}
+}
+
+
+
+/* Atalho de instalação destacado no menu Black Hands */
+.bh-install-menu-copy{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0;line-height:1.25;text-align:left}
+.bh-install-menu-copy strong{font-size:14px;font-weight:900;color:inherit;letter-spacing:.1px}
+.bh-install-menu-copy small{display:block;font-size:11px;font-weight:600;color:#d7b391;letter-spacing:0;white-space:normal}
+.main-nav a.bh-site-install-link{align-items:center;min-height:59px;padding:10px 14px;gap:13px}
+.main-nav a.bh-site-install-link svg{flex:none;width:23px;height:23px;stroke:#ffba6c}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install{min-height:66px;padding:12px 15px;gap:14px}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install .bh-install-menu-copy strong{font-size:15px;color:#fff1dc}
+.bh-site-menu-panel .bh-site-menu-links a.bh-site-menu-install .bh-install-menu-copy small{color:#e5b789}

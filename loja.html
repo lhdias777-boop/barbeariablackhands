@@ -1,7 +1,155 @@
 <!DOCTYPE html>
 
-<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><meta content="#090909" name="theme-color"/><title>Black Hands Store</title><link href="styles.css" rel="stylesheet"/><style>.store-page{padding:125px 6% 80px;max-width:1400px;margin:auto}.store-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:28px}.store-head h1{font:800 clamp(42px,7vw,76px)/.95 "Barlow Condensed",sans-serif;text-transform:uppercase;margin:10px 0}.store-head p{color:#aaa;max-width:560px;line-height:1.6}.cart-open{background:#f47b20;color:#111;border:0;padding:14px 18px;border-radius:4px;font-weight:800;cursor:pointer;white-space:nowrap}.store-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.store-card{background:#111;border:1px solid #2b2926;border-radius:8px;overflow:hidden;display:flex;flex-direction:column}.product-art{height:190px;background:radial-gradient(circle at 50% 40%,#34302b,#111 70%);display:grid;place-items:center;color:#f47b20;font:700 30px "Barlow Condensed",sans-serif;letter-spacing:2px;text-align:center;padding:15px}.store-card .details{padding:16px;display:flex;flex-direction:column;gap:9px;flex:1}.store-card h2{font:700 24px "Barlow Condensed",sans-serif;margin:0;text-transform:uppercase}.store-card p{font-size:12px;color:#999;margin:0;min-height:30px}.store-card strong{font-size:20px}.store-card button{border:0;background:#f47b20;color:#111;font-weight:800;padding:12px;border-radius:4px;cursor:pointer;margin-top:auto}.cart-panel{position:fixed;z-index:50;inset:0;background:#000b;display:none;justify-content:flex-end}.cart-panel.open{display:flex}.cart-content{width:min(460px,100%);height:100%;background:#101010;border-left:1px solid #333;padding:24px;overflow:auto}.cart-title{display:flex;align-items:center;justify-content:space-between}.cart-title h2{font:700 32px "Barlow Condensed";margin:0}.cart-close{background:none;color:white;border:0;font-size:28px;cursor:pointer}.cart-row{display:grid;grid-template-columns:1fr auto;gap:8px;border-bottom:1px solid #333;padding:16px 0}.qty{display:flex;align-items:center;gap:10px}.qty button{background:#222;border:1px solid #444;color:white;border-radius:4px;width:30px;height:30px}.cart-total{display:flex;justify-content:space-between;font-size:20px;font-weight:800;margin:24px 0}.checkout-fields{display:grid;gap:10px}.checkout-fields input,.checkout-fields select{background:#191919;color:white;border:1px solid #444;padding:13px;border-radius:4px;width:100%}.checkout-fields button{background:#f47b20;color:#111;font-weight:800;border:0;padding:14px;border-radius:4px}.checkout-note{font-size:12px;color:#999;line-height:1.6;margin-top:14px}.empty{color:#999;padding:25px 0}.cart-count{display:inline-grid;place-items:center;background:#111;color:#f47b20;border:1px solid #f47b20;width:22px;height:22px;border-radius:50%;margin-left:5px;font-size:11px}@media(max-width:950px){.store-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:650px){.store-page{padding:105px 5% 55px}.store-head{display:block}.cart-open{margin-top:12px}.store-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.product-art{height:145px;font-size:24px}.store-card .details{padding:12px}.store-card h2{font-size:21px}}@media(max-width:390px){.store-grid{grid-template-columns:1fr}}</style>
-<link href="assistant.css" rel="stylesheet"/></head><body><header class="topbar"><a class="brand" href="index.html"><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a><nav><a href="index.html">Início</a><a href="servicos.html">Serviços e preços</a><a href="loja.html">Black Hands Store</a><a href="agendar.html">Agendar</a></nav><button class="cart-open" id="openCart">Carrinho <span class="cart-count" id="cartCount">0</span></button></header><main class="store-page"><div class="store-head"><div><p class="eyebrow">CUIDADO • ESTILO • BLACK HANDS</p><h1>Black Hands <span style="color:#f47b20">Store</span></h1><p>Escolha seus produtos, adicione ao carrinho e confira o pedido antes de finalizar.</p></div></div><div class="store-grid" id="products"></div><p class="checkout-note">Os produtos e preços são editáveis no catálogo do código nesta versão inicial. O checkout Pix real só deve ser ativado após configurar o backend, credenciais do provedor e confirmação por webhook.</p></main><div aria-label="Carrinho de compras" aria-modal="true" class="cart-panel" id="cartPanel" role="dialog"><div class="cart-content"><div class="cart-title"><h2>Seu carrinho</h2><button aria-label="Fechar carrinho" class="cart-close" id="closeCart">×</button></div><div id="cartItems"></div><div class="cart-total"><span>Total</span><span id="cartTotal">R$ 0,00</span></div><form class="checkout-fields" id="checkoutForm"><label>CPF ou CNPJ para o Pix<input id="customerCpf" inputmode="numeric" required placeholder="Somente números" maxlength="18" /></label><input id="customerName" placeholder="Nome completo" required=""/><input id="customerPhone" placeholder="WhatsApp com DDD" required="" type="tel"/><input id="customerEmail" placeholder="E-mail (opcional)" type="email"/><select id="fulfillment"><option value="retirada">Retirada na barbearia</option><option value="entrega">Consultar entrega</option></select><button type="submit">CONTINUAR PARA PAGAMENTO</button></form><p class="checkout-note" id="checkoutMessage">A compra será preparada após configurar o serviço de pagamento. Não faça transferências para chaves não confirmadas.</p></div></div><footer><div><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/></div><div class="footer-links"><a href="index.html">Início</a><a href="servicos.html">Serviços e preços</a></div><p>© 2026 Black Hands Barber Shop.</p></footer><script src="store.js"></script>
+<html lang="pt-BR"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><meta content="#090909" name="theme-color"/><title>Black Hands Store</title><link href="styles.css" rel="stylesheet"/><style>.store-page{padding:125px 6% 80px;max-width:1400px;margin:auto}.store-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:28px}.store-head h1{font:800 clamp(42px,7vw,76px)/.95 "Barlow Condensed",sans-serif;text-transform:uppercase;margin:10px 0}.store-head p{color:#aaa;max-width:560px;line-height:1.6}.cart-open{background:#f47b20;color:#111;border:0;padding:14px 18px;border-radius:4px;font-weight:800;cursor:pointer;white-space:nowrap}.store-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.store-card{background:#111;border:1px solid #2b2926;border-radius:8px;overflow:hidden;display:flex;flex-direction:column}.product-art{height:190px;background:radial-gradient(circle at 50% 40%,#34302b,#111 70%);display:grid;place-items:center;color:#f47b20;font:700 30px "Barlow Condensed",sans-serif;letter-spacing:2px;text-align:center;padding:15px}.store-card .details{padding:16px;display:flex;flex-direction:column;gap:9px;flex:1}.store-card h2{font:700 24px "Barlow Condensed",sans-serif;margin:0;text-transform:uppercase}.store-card p{font-size:12px;color:#999;margin:0;min-height:30px}.store-card strong{font-size:20px}.store-card button{border:0;background:#f47b20;color:#111;font-weight:800;padding:12px;border-radius:4px;cursor:pointer;margin-top:auto}.cart-panel{position:fixed;z-index:50;inset:0;background:#000b;display:none;justify-content:flex-end}.cart-panel.open{display:flex}.cart-content{width:min(460px,100%);height:100%;background:#101010;border-left:1px solid #333;padding:24px;overflow:auto}.cart-title{display:flex;align-items:center;justify-content:space-between}.cart-title h2{font:700 32px "Barlow Condensed";margin:0}.cart-close{background:none;color:white;border:0;font-size:28px;cursor:pointer}.cart-row{display:grid;grid-template-columns:1fr auto;gap:8px;border-bottom:1px solid #333;padding:16px 0}.qty{display:flex;align-items:center;gap:10px}.qty button{background:#222;border:1px solid #444;color:white;border-radius:4px;width:30px;height:30px}.cart-total{display:flex;justify-content:space-between;font-size:20px;font-weight:800;margin:24px 0}.checkout-fields{display:grid;gap:10px}.checkout-fields input,.checkout-fields select{background:#191919;color:white;border:1px solid #444;padding:13px;border-radius:4px;width:100%}.checkout-fields button{background:#f47b20;color:#111;font-weight:800;border:0;padding:14px;border-radius:4px}.checkout-note{font-size:12px;color:#999;line-height:1.6;margin-top:14px}.empty{color:#999;padding:25px 0}.cart-count{display:inline-grid;place-items:center;background:#111;color:#f47b20;border:1px solid #f47b20;width:22px;height:22px;border-radius:50%;margin-left:5px;font-size:11px}@media(max-width:950px){.store-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:650px){.store-page{padding:105px 5% 55px}.store-head{display:block}.cart-open{margin-top:12px}.store-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.product-art{height:145px;font-size:24px}.store-card .details{padding:12px}.store-card h2{font-size:21px}}@media(max-width:390px){.store-grid{grid-template-columns:1fr}}
+/* Movimento suave da vitrine Black Hands: hover, teclado e revelacao ao rolar */
+.store-card{transition:transform .38s cubic-bezier(.2,.8,.2,1),border-color .32s ease,box-shadow .38s ease}
+.store-card:focus-within{border-color:#c77b38;box-shadow:0 12px 28px rgba(0,0,0,.3),0 0 0 1px rgba(244,123,32,.16)}
+.product-art{overflow:hidden;transition:background .38s ease}
+.product-art img{display:block;transition:transform .55s cubic-bezier(.2,.8,.2,1);transform-origin:center center}
+.store-card button{transition:background-color .25s ease,transform .25s ease}
+.store-card button:focus-visible{outline:2px solid #ffc078;outline-offset:3px}
+@media(hover:hover) and (pointer:fine){
+ .store-card:hover{transform:translateY(-5px);border-color:#ad6a35;box-shadow:0 14px 32px rgba(0,0,0,.32),0 0 0 1px rgba(244,123,32,.12)}
+ .store-card:hover .product-art img{transform:scale(1.045)}
+ .store-card:hover button{background:#ff933d}
+}
+@keyframes bhStoreCardIn{from{opacity:.55;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
+.store-card.bh-store-reveal{animation:bhStoreCardIn .58s cubic-bezier(.22,1,.36,1) both;animation-delay:var(--bh-store-delay,0ms)}
+@media(prefers-reduced-motion:reduce){
+ .store-card,.product-art,.product-art img,.store-card button{transition:none!important}
+ .store-card.bh-store-reveal{animation:none!important}
+ .store-card:hover{transform:none}
+ .store-card:hover .product-art img{transform:none}
+}
+
+/* Carrinho lateral Black Hands — visual premium e foco em usabilidade */
+body.bh-store-cart-open{overflow:hidden}
+.bh-floating-cart{position:fixed;z-index:130;right:clamp(15px,3vw,38px);bottom:calc(25px + env(safe-area-inset-bottom,0px));display:inline-flex;align-items:center;gap:12px;min-height:61px;padding:13px 16px 13px 19px;border-radius:100px;border:1px solid #ffc47e;background:linear-gradient(118deg,#ffbf71 0%,#f28b2f 100%);color:#211106;box-shadow:0 9px 30px #000a,0 0 0 5px #ed852a1c;font:900 14px/1.1 system-ui,sans-serif;cursor:pointer;transition:transform .22s,box-shadow .22s}
+.bh-floating-cart:hover{transform:translateY(-3px);box-shadow:0 14px 34px #000b,0 0 0 6px #ed852a2a}
+.bh-floating-cart:focus-visible,.cart-content button:focus-visible,.cart-content input:focus-visible,.cart-content select:focus-visible{outline:2px solid #ffcd92;outline-offset:3px}
+.bh-floating-cart .cart-count{margin:0;min-width:28px;width:auto;height:28px;padding:0 6px;border:none;background:#21150d;color:#ffc88a;font-size:12px;font-weight:900}
+@keyframes bh-cart-bump{0%,100%{transform:scale(1)}40%{transform:scale(1.075)}}
+.bh-floating-cart.bh-cart-added{animation:bh-cart-bump .4s ease}
+.cart-panel{z-index:1600;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:#000c;backdrop-filter:blur(5px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .24s ease,visibility .24s ease}
+.cart-panel.open{opacity:1;visibility:visible;pointer-events:auto}
+.cart-content{width:min(510px,100%);max-width:100%;height:100%;height:100dvh;display:flex;flex-direction:column;overflow:hidden;padding:0;background:linear-gradient(150deg,#21170f,#10100f 28%,#0c0b0a);border-left:1px solid #865634;box-shadow:-18px 0 66px #000b;transform:translateX(35px);transition:transform .28s cubic-bezier(.22,.8,.2,1)}
+.cart-panel.open .cart-content{transform:translateX(0)}
+.cart-title{padding:26px 26px 21px;border-bottom:1px solid #513721;background:linear-gradient(120deg,#38241a,#171411);align-items:flex-start;gap:18px}
+.bh-cart-heading{min-width:0}.bh-cart-small{font:850 10px/1 system-ui,sans-serif;letter-spacing:2.7px;color:#f6b36f}
+.cart-title h2{font:900 clamp(31px,5vw,39px)/1.05 "Barlow Condensed",Impact,sans-serif;text-transform:uppercase;margin:10px 0 8px}
+#cartHeaderCount{font:700 16px/1 system-ui,sans-serif;color:#f3af66}
+.cart-title p{color:#cbbdb0;font-size:12px;line-height:1.55;margin:0;max-width:330px}
+.cart-close{flex:none;display:grid;place-items:center;width:42px;height:42px;background:#261c17;color:#f6b572;border:1px solid #735038;border-radius:12px;font-size:30px;line-height:1}
+.cart-close:hover{background:#4d2b1c}
+.bh-cart-items{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:21px 24px}
+.bh-cart-item{display:grid;grid-template-columns:77px minmax(0,1fr);gap:14px;background:#1c1814;border:1px solid #4a3728;border-radius:16px;margin-bottom:12px;padding:12px}
+.bh-cart-item-art{display:grid;place-items:center;width:77px;height:82px;overflow:hidden;background:radial-gradient(circle,#392719,#131110);border-radius:11px;border:1px solid #533923;color:#ffaf61;text-align:center;font:800 11px/1.1 system-ui,sans-serif;letter-spacing:.4px;padding:6px;overflow-wrap:anywhere}
+.bh-cart-item-art img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.bh-cart-item-copy{min-width:0}.bh-cart-item-copy h3{font:850 16px/1.2 system-ui,sans-serif;margin:2px 0 6px;color:#fff8ef;overflow-wrap:anywhere}
+.bh-cart-item-copy p{color:#c0aa98;margin:0 0 8px;font-size:12px}
+.bh-cart-item-copy strong{color:#ffb56d;font-size:15px}
+.bh-cart-item-ctrl{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-top:12px;flex-wrap:wrap}
+.bh-cart-item .qty{gap:0;border:1px solid #72513b;border-radius:10px;background:#13110f;overflow:hidden}
+.bh-cart-item .qty button{width:35px;height:35px;border:none;border-radius:0;background:none;font-size:19px;cursor:pointer;color:#ffc88e}
+.bh-cart-item .qty button:hover{background:#3c271b}
+.bh-cart-item .qty span{min-width:30px;text-align:center;font-size:13px;font-weight:850}
+.bh-cart-remove{border:0!important;background:none!important;color:#c7aa92!important;text-decoration:underline;font-size:12px;cursor:pointer;padding:7px 0}
+.bh-cart-remove:hover{color:#ffc182!important}
+.bh-cart-empty{display:grid;place-items:center;gap:9px;min-height:230px;padding:25px;text-align:center;border:1px dashed #64462f;border-radius:17px;background:#1a1511}
+.bh-cart-empty-icon{font-size:36px;color:#ec9754}
+.bh-cart-empty strong{font-size:19px;color:#f7e8d7}
+.bh-cart-empty p{color:#b6a698;font-size:13px;line-height:1.5;margin:0}
+.bh-cart-footer{flex:0 0 auto;overflow-y:auto;max-height:61dvh;padding:18px 24px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid #64412b;background:#17130f;box-shadow:0 -10px 35px #0005}
+.cart-total{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px}
+.cart-total>span{color:#d5c3b0;font-size:14px;font-weight:700}
+.cart-total small{display:block;color:#9f8e81;font-size:11px;font-weight:500;margin-top:5px}
+.cart-total strong{font-size:clamp(23px,4vw,29px);font-weight:900;color:#ffb66d;font-variant-numeric:tabular-nums}
+.checkout-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checkout-fields label{font-size:11px;font-weight:730;color:#d5bb9f}
+.checkout-fields input,.checkout-fields select{display:block;width:100%;height:44px;margin-top:6px;background:#0d0d0c;border:1px solid #674935;border-radius:9px;color:#fff;outline:none;padding:11px;font-size:13px}
+.checkout-fields label:first-child,.checkout-fields label:nth-child(3),.checkout-fields>button{grid-column:1/-1}
+.checkout-fields>button{display:flex;justify-content:space-between;align-items:center;padding:15px 17px;border:0;border-radius:11px;min-height:52px;background:linear-gradient(110deg,#ffbe6f,#ef8e34);color:#211409;font:900 13px system-ui,sans-serif;cursor:pointer}
+.checkout-fields>button:disabled{cursor:not-allowed;background:#53402f;color:#aa9d8e}
+.bh-cart-continue{width:100%;border:0;background:transparent;color:#eac7a8;padding:13px 10px 4px;font-size:12px;font-weight:780;cursor:pointer}
+.bh-cart-continue:hover{color:#fff}
+.checkout-note{font-size:11px;color:#ab9b8d;line-height:1.6;margin:11px 0 0}
+@media(max-width:620px){
+ .bh-floating-cart{right:14px;bottom:calc(19px + env(safe-area-inset-bottom,0px));padding:12px 15px;min-height:54px;gap:9px;font-size:12px}
+ .bh-floating-cart svg{width:21px;height:21px}
+ .bh-floating-cart .cart-count{min-width:24px;height:24px;font-size:11px}
+ .cart-title{padding:20px 17px 17px}.bh-cart-items{padding:15px 14px}
+ .bh-cart-item{grid-template-columns:67px minmax(0,1fr);padding:10px;gap:11px}.bh-cart-item-art{width:67px;height:75px}
+ .bh-cart-footer{padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));max-height:58dvh}
+}
+@media(max-width:350px){.bh-floating-cart-label{display:none}.checkout-fields{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.bh-floating-cart,.cart-panel,.cart-content{transition:none!important}.bh-floating-cart.bh-cart-added{animation:none!important}}
+
+/* Vitrine: foto limpa, informações sempre abaixo; ferramentas de busca e ordenação */
+.bh-store-toolbar{display:flex;align-items:stretch;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:12px 0 10px}
+.bh-store-search{display:flex;align-items:center;gap:10px;min-width:240px;flex:1 1 310px;max-width:590px;min-height:51px;padding:0 16px;border:1px solid #715039;border-radius:13px;background:#191512;color:#f0a55d;transition:border-color .2s}
+.bh-store-search:focus-within{border-color:#ffb56b;box-shadow:0 0 0 3px #f6984a1c}
+.bh-store-search input{width:100%;border:0;background:transparent;color:#f7eee6;font:600 14px/1.3 system-ui,-apple-system,sans-serif;outline:none;padding:14px 0}
+.bh-store-search input::placeholder{color:#aa9b8a}
+.bh-store-sort{display:flex;align-items:center;gap:11px;font:650 12px system-ui,-apple-system,sans-serif;color:#d1bdab}
+.bh-store-sort select{max-width:255px;width:100%;min-height:51px;border:1px solid #715039;border-radius:13px;padding:11px 14px;background:#211911;color:#fff5e9;font:700 13px system-ui,-apple-system,sans-serif;cursor:pointer}
+.bh-store-sort select:focus-visible{outline:2px solid #ffbd7c;outline-offset:3px}
+.bh-store-results{color:#bea996;font:600 12px/1.5 system-ui,sans-serif;margin:11px 0 20px;min-height:18px}
+.store-grid{gap:18px;align-items:stretch}
+.store-card{border-color:#3b3028;border-radius:16px;background:linear-gradient(155deg,#1d1916,#101010);overflow:hidden}
+.store-card .product-art{padding:0;width:100%;height:auto;aspect-ratio:1/1;display:grid;place-items:center;background:#eee;overflow:hidden;border-bottom:1px solid #423022}
+.store-card .product-art img{width:100%;height:100%;display:block;object-fit:contain;border-radius:0!important}
+.store-card .details{padding:17px;gap:11px}
+.store-card h2{font:850 clamp(17px,2.3vw,22px)/1.25 system-ui,-apple-system,sans-serif;text-transform:none;min-height:45px;color:#fff6ec}
+.store-card .details p{font:500 13px/1.5 system-ui,-apple-system,sans-serif;min-height:40px;color:#b9aaa0}
+.store-card .details strong{font:900 21px/1 system-ui,-apple-system,sans-serif;color:#ffb16a}
+.store-card .details button{border-radius:10px;min-height:45px;letter-spacing:.2px}
+.bh-store-no-results{grid-column:1/-1;text-align:center;padding:35px 18px;border:1px dashed #74513a;border-radius:14px;color:#ddcbb8;background:#211812}
+@media(max-width:720px){.bh-store-toolbar{gap:11px}.bh-store-search{flex-basis:100%;max-width:none}.bh-store-sort{width:100%;justify-content:space-between}.bh-store-sort select{max-width:245px}.store-card h2{font-size:17px;min-height:42px}.store-grid{gap:11px}}
+@media(max-width:420px){.bh-store-sort{align-items:stretch;flex-direction:column;gap:7px}.bh-store-sort select{max-width:none}.store-card .details{padding:11px}.store-card .details button{font-size:10px;padding:9px 4px}}
+</style>
+<link href="assistant.css" rel="stylesheet"/><link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="logo-oficial-black-hands.jpg">
+<link rel="icon" type="image/jpeg" href="logo-oficial-black-hands.jpg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Black Hands">
+</head><body><header class="topbar"><a class="brand" href="index.html"><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a><nav><a href="index.html">Início</a><a href="servicos.html">Serviços e preços</a><a href="loja.html">Black Hands Store</a><a href="agendar.html">Agendar</a></nav></header><main class="store-page"><div class="store-head"><div><p class="eyebrow">CUIDADO • ESTILO • BLACK HANDS</p><h1>Black Hands <span style="color:#f47b20">Store</span></h1><p>Escolha seus produtos, adicione ao carrinho e confira o pedido antes de finalizar.</p></div></div><section class="bh-store-toolbar" aria-label="Pesquisar e ordenar produtos">
+  <label class="bh-store-search" for="storeSearch"><svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg><input type="search" id="storeSearch" placeholder="Pesquisar produtos..." autocomplete="off" aria-label="Pesquisar produtos"></label>
+  <label class="bh-store-sort" for="storeSort"><span>Ordenar por</span><select id="storeSort">
+    <option value="original">Ordem da vitrine</option>
+    <option value="name-asc">Nome: A a Z</option>
+    <option value="name-desc">Nome: Z a A</option>
+    <option value="price-asc">Preço: menor para maior</option>
+    <option value="price-desc">Preço: maior para menor</option>
+  </select></label>
+</section>
+<p class="bh-store-results" id="storeResults" role="status" aria-live="polite"></p>
+<div class="store-grid" id="products"></div>
+<p class="checkout-note">Valores sujeitos à disponibilidade. Confira os itens e o total antes de finalizar. A compra só é confirmada após o pagamento ser identificado.</p></main><button class="bh-floating-cart" id="openCart" type="button" aria-haspopup="dialog" aria-controls="cartPanel" aria-expanded="false" aria-label="Abrir carrinho de compras">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l2.25 11.4a2 2 0 0 0 2 1.6h8.5a2 2 0 0 0 2-1.6L21 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+<span class="bh-floating-cart-label">Meu carrinho</span>
+<span class="cart-count" id="cartCount" aria-live="polite" aria-atomic="true">0</span>
+</button>
+<div aria-label="Meu carrinho Black Hands Store" aria-modal="true" aria-hidden="true" class="cart-panel" id="cartPanel" role="dialog">
+<div class="cart-content" tabindex="-1">
+<div class="cart-title">
+ <div class="bh-cart-heading"><span class="bh-cart-small">BLACK HANDS STORE</span><h2>Meu carrinho <span id="cartHeaderCount">(0)</span></h2><p>Confira seus produtos e finalize quando estiver pronto.</p></div>
+ <button aria-label="Fechar carrinho" class="cart-close" id="closeCart" type="button">×</button>
+</div>
+<div id="cartItems" class="bh-cart-items" aria-live="polite"></div>
+<div class="bh-cart-footer">
+ <div class="cart-total"><span>Subtotal <small id="cartQtySummary">0 itens</small></span><strong id="cartTotal">R$ 0,00</strong></div>
+ <form class="checkout-fields" id="checkoutForm">
+  <label class="bh-cart-field">CPF ou CNPJ para o Pix<input id="customerCpf" inputmode="numeric" required placeholder="Somente números" maxlength="18" autocomplete="off"></label>
+  <label class="bh-cart-field">E-mail (opcional)<input id="customerEmail" placeholder="seuemail@exemplo.com" type="email" autocomplete="email"></label>
+  <label class="bh-cart-field">Forma de recebimento<select id="fulfillment"><option value="retirada">Retirada na barbearia</option><option value="entrega">Consultar entrega</option></select></label>
+  <button type="submit" id="cartCheckoutButton">FINALIZAR COMPRA <span aria-hidden="true">→</span></button>
+ </form>
+ <button type="button" class="bh-cart-continue" id="continueShopping">← Continuar comprando</button>
+ <p class="checkout-note" id="checkoutMessage" role="status">A geração do Pix depende da ativação dos pagamentos na Black Hands. Não faça transferências para chaves não confirmadas.</p>
+</div>
+</div>
+</div><footer><div><img alt="Black Hands Barber Shop" class="brand-official" src="logo-oficial-black-hands.jpg"/></div><div class="footer-links"><a href="index.html">Início</a><a href="servicos.html">Serviços e preços</a></div><p>© 2026 Black Hands Barber Shop.</p></footer><script src="bh-session.js"></script><script src="store.js"></script>
 <script defer="True" src="assistant.js"></script><a aria-label="Instagram da Black Hands Barber Shop" class="instagram-float" href="https://instagram.com/barbearia_blackhands?mdxt=djkyb3ptbDI2d3Yy" rel="noopener noreferrer" target="_blank" title="Instagram Black Hands">
 <svg aria-hidden="true" viewbox="0 0 24 24"><rect fill="none" height="18" rx="5" stroke="currentColor" stroke-width="2" width="18" x="3" y="3"></rect><circle cx="12" cy="12" fill="none" r="4" stroke="currentColor" stroke-width="2"></circle><circle cx="17.5" cy="6.5" fill="currentColor" r="1.2"></circle></svg>
-</a></body></html>
+</a><script src="site-menu.js" defer></script></body></html>

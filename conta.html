@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0b0c">
+<meta name="description" content="Minha conta Black Hands: seus agendamentos, perfil e acesso seguro.">
+<title>Minha Conta | Black Hands Barber Shop</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+:root{--account-orange:#ef903a;--account-orange2:#ffc16f;--account-paper:#f6f3ed;--account-muted:#aba6a0;--account-line:#39312c;--account-dark:#111113}
+.account-page,.account-page *{box-sizing:border-box}
+body.account-body{margin:0;background:#090909;color:var(--account-paper)}
+.account-page{max-width:1170px;margin:0 auto;padding:44px 24px 94px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.account-header{height:76px;background:#0b0b0b;border-bottom:1px solid #30241d;display:flex;align-items:center;justify-content:space-between;padding:0 max(20px,calc((100vw - 1170px)/2))}
+.account-brand{display:flex;gap:14px;align-items:center;text-decoration:none;color:#f8f8f8}.account-brand img{width:62px;height:62px;object-fit:contain;border-radius:8px}.account-brand strong{font-family:inherit;font-size:19px;letter-spacing:1.7px;display:block}.account-brand small{letter-spacing:3.8px;font-size:10px;color:#aaa;display:block}
+.account-nav{display:flex;gap:22px;align-items:center}.account-nav a{color:#dbd7d2;text-decoration:none;font-size:13px;font-weight:650}.account-nav a:hover{color:var(--account-orange)}.account-nav a.account-nav-cta{background:#ef903a;color:#180f07;padding:12px 18px;border-radius:9px}
+.account-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,475px);align-items:stretch;gap:40px}
+.account-intro{position:relative;min-height:580px;display:flex;flex-direction:column;justify-content:center;padding:40px 5px 32px 0}
+.account-eyebrow{color:var(--account-orange);font-size:11px;font-weight:850;letter-spacing:3px;text-transform:uppercase;margin:0 0 20px}
+.account-intro h1{font-size:clamp(42px,5.3vw,72px);letter-spacing:-2.3px;line-height:1.05;font-weight:900;margin:0 0 24px;max-width:610px;color:#fff}
+.account-intro h1 em{color:var(--account-orange);font-style:normal}
+.account-intro>p{font-size:16px;line-height:1.8;color:#aca7a0;max-width:480px;margin:0}
+.account-perks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:43px;max-width:540px}
+.account-perk{border:1px solid #352a23;border-radius:14px;background:#151311;padding:17px 15px;min-height:128px;display:flex;flex-direction:column;gap:12px}
+.account-perk svg{width:24px;height:24px;stroke:var(--account-orange);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.account-perk b{font-size:12px;line-height:1.5}
+.account-panel{background:linear-gradient(155deg,#1a1918 0%,#141313 60%,#111 100%);border:1px solid #51402f;border-radius:22px;padding:32px;box-shadow:0 26px 80px #0006;align-self:center;width:100%}
+.account-panel h2{font-size:26px;line-height:1.2;margin:6px 0 8px;color:#fff;font-weight:850;letter-spacing:-.7px}
+.account-panel p{color:#aba6a0;line-height:1.65;font-size:13px;margin:6px 0 20px}
+.account-panel .account-tabs{display:grid;grid-template-columns:1fr 1fr;padding:5px;gap:5px;background:#0f0f0f;border:1px solid #342a24;border-radius:12px;margin:22px 0 25px}
+.account-tabs button{border:0;border-radius:8px;background:transparent;color:#aaa;font-size:14px;font-weight:750;padding:13px;cursor:pointer;min-height:44px}
+.account-tabs button[aria-selected="true"]{background:#e9913f;color:#17100a;box-shadow:0 6px 15px #0005}
+.account-form{display:grid;gap:17px}
+.account-field{display:block;font-size:12px;color:#e3ded6;font-weight:750;letter-spacing:.1px}
+.account-field input{display:block;width:100%;height:51px;margin-top:8px;background:#0e0e0f;color:#fff;border:1px solid #55463a;border-radius:10px;padding:0 15px;font-size:15px;transition:border-color .18s,box-shadow .18s}
+.account-field input::placeholder{color:#78716d}.account-field input:focus{border-color:#ef903a;outline:0;box-shadow:0 0 0 3px #ef903a22}
+.account-form input:autofill{box-shadow:0 0 0 1000px #141313 inset;-webkit-text-fill-color:#fff}
+.account-help{font-size:11px!important;line-height:1.55!important;color:#a7a09b!important;margin:0!important}
+.account-password-line{display:flex;justify-content:space-between;align-items:center;gap:12px}.account-password-line button{border:0;background:transparent;color:#efad6a;cursor:pointer;font-size:12px;font-weight:800;padding:5px}
+.account-primary{border:0;border-radius:11px;background:linear-gradient(110deg,#ffc06a,#ef913b 65%,#df7624);color:#1a110b;font-weight:900;font-size:14px;letter-spacing:.3px;padding:16px 19px;cursor:pointer;min-height:51px;box-shadow:0 12px 28px #ef893327;transition:transform .14s}
+.account-primary:hover{transform:translateY(-1px)}.account-primary:disabled{opacity:.55;cursor:wait}
+.account-alert{font-size:13px!important;padding:12px 13px;border-radius:10px;background:#22190f;border:1px solid #734620;color:#ffcf9c!important;line-height:1.5!important;margin:10px 0!important}
+.account-alert[data-type="success"]{background:#122118;border-color:#325841;color:#b9ead0!important}
+.account-alert[data-type="error"]{background:#2b1717;border-color:#7a3c3c;color:#ffb9b4!important}
+.account-disclosure{border-top:1px solid #392e27;margin-top:23px;padding-top:18px;font-size:12px;color:#aea6a0;line-height:1.65}
+.account-disclosure a,.account-link{color:#f3a65f;text-decoration:none}
+.account-disclosure a:hover,.account-link:hover{text-decoration:underline}
+.account-dashboard{max-width:1080px;margin:0 auto}
+.dashboard-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:25px;flex-wrap:wrap}
+.dashboard-heading h1{margin:4px 0 8px;font-size:clamp(30px,5vw,46px);line-height:1.1;letter-spacing:-1px}
+.dashboard-heading p{color:#b0aaa4;margin:0;font-size:14px}
+.account-outline{border:1px solid #6d4c32;border-radius:10px;background:#20160f;color:#ffb878;padding:13px 16px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
+.dashboard-top-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.account-home-button{display:inline-flex;align-items:center;justify-content:center;padding:13px 16px;min-height:44px;background:#ef903a;color:#1a1009;text-decoration:none;border-radius:10px;font-size:13px;font-weight:850;white-space:nowrap}
+.account-home-button:hover,.account-home-button:focus-visible{background:#ffc16f;color:#1a1009}
+.dashboard-banner{background:linear-gradient(120deg,#21170f,#151312 70%);border:1px solid #6b482d;border-radius:18px;padding:24px;display:grid;grid-template-columns:1fr auto;gap:24px;margin-bottom:20px}
+.dashboard-banner h2{font-size:23px;margin:0 0 8px}.dashboard-banner p{font-size:13px;color:#b9b1a9;margin:0;line-height:1.6}
+.dashboard-avatar{display:grid;place-items:center;width:68px;height:68px;border-radius:18px;background:#e9913b;color:#201208;font-weight:900;font-size:27px}
+.dashboard-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px}
+.dashboard-stat{border:1px solid #40352c;background:#181716;padding:17px;border-radius:13px}.dashboard-stat b{display:block;font-size:22px;color:#f3a656}.dashboard-stat span{font-size:12px;color:#b3a9a1}
+.dashboard-layout{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+.dashboard-card{border:1px solid #40342b;border-radius:17px;background:#171616;padding:24px;margin-bottom:18px;min-width:0}
+.dashboard-card h2{font-size:19px;margin:0 0 7px}.dashboard-card p{font-size:13px;color:#ada69d;line-height:1.65;margin:5px 0 16px}
+.dashboard-card .account-form{gap:13px}.dashboard-card .account-field input{height:47px}
+.booking-mini{padding:16px 0;border-top:1px solid #382e27}
+.booking-mini:first-child{border-top:0}.booking-mini-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.booking-mini strong{font-size:14px}.booking-mini span{font-size:11px;color:#ffbb77;font-weight:750}
+.booking-mini p{margin:7px 0!important;color:#c1bab1!important}
+.dashboard-placeholder{border:1px dashed #514031;border-radius:12px;padding:20px;line-height:1.7;color:#a8a09a;font-size:13px}
+.account-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}
+.account-actions a{background:#2a2019;border:1px solid #674327;border-radius:9px;padding:10px 13px;color:#ffc284;font-size:12px;font-weight:750;text-decoration:none}
+.account-actions a:hover{background:#3c2a1f}
+.account-footer{border-top:1px solid #2a211c;padding:29px 20px;text-align:center;color:#857d75;font-size:12px}
+[hidden]{display:none!important}
+@media(max-width:860px){.account-grid{grid-template-columns:1fr;gap:18px}.account-intro{min-height:auto;padding:25px 0 5px}.account-intro h1{font-size:43px;max-width:620px}.account-intro>p{font-size:14px}.account-perks{margin-top:24px}.account-panel{max-width:650px;justify-self:center}.dashboard-layout{grid-template-columns:1fr}}
+@media(max-width:600px){.account-header .account-nav a.account-nav-home{display:inline-flex;padding:10px 5px;color:#ffc16f;font-weight:850}.dashboard-top-actions{width:100%}.account-home-button{min-width:130px}.account-header{height:70px;padding:0 16px}.account-brand{gap:8px}.account-brand img{width:51px;height:51px}.account-brand strong{font-size:13px;letter-spacing:1px}.account-brand small{font-size:8px;letter-spacing:2px}.account-nav{gap:10px}.account-nav a{font-size:11px}.account-nav a:not(.account-nav-cta){display:none}.account-nav a.account-nav-cta{padding:10px 12px}.account-page{padding:25px 16px 50px}.account-intro{padding:7px 2px 5px}.account-intro h1{font-size:37px;line-height:1.08;letter-spacing:-1.4px;margin-bottom:13px}.account-eyebrow{font-size:10px;margin-bottom:12px}.account-intro>p{font-size:13px;line-height:1.65}.account-perks{grid-template-columns:repeat(3,1fr);gap:7px;margin-top:19px}.account-perk{min-height:94px;padding:12px 10px;gap:7px}.account-perk b{font-size:10px}.account-perk svg{width:20px;height:20px}.account-panel{padding:23px 18px;border-radius:17px}.account-panel h2{font-size:23px}.account-panel .account-tabs{margin:18px 0 20px}.dashboard-banner{padding:18px;grid-template-columns:1fr auto}.dashboard-avatar{width:52px;height:52px;font-size:21px}.dashboard-banner h2{font-size:21px}.dashboard-stats{gap:7px}.dashboard-stat{padding:12px}.dashboard-stat b{font-size:18px}.dashboard-stat span{font-size:10px}.dashboard-card{padding:18px}.dashboard-heading h1{font-size:30px}}
+@media(max-width:380px){.account-brand strong{font-size:11px}.account-brand small{display:none}.account-brand img{width:44px;height:44px}.account-header{padding:0 10px}.account-nav{gap:6px}}
+
+/* Black Hands My Account — painel estilo aplicativo */
+.account-dashboard.is-app-ready{max-width:1140px}
+.account-dashboard.is-app-ready .dashboard-heading{margin:4px 0 17px}
+.account-dashboard.is-app-ready .dashboard-heading h1{font-size:clamp(29px,4.5vw,42px);letter-spacing:-1.3px}
+.account-dashboard.is-app-ready .dashboard-heading p:not(.account-eyebrow){font-size:13px}
+.account-dashboard.is-app-ready .dashboard-banner{position:relative;margin-bottom:15px;padding:20px 24px;align-items:center;background:linear-gradient(115deg,#352315 0%,#1b1611 65%,#11100f 100%);border-color:#9b6133;box-shadow:0 15px 34px #0004}
+.account-dashboard .dashboard-banner p{margin:3px 0;font-size:12px}
+.account-dashboard .dashboard-avatar{border-radius:50%;width:56px;height:56px;background:linear-gradient(140deg,#f6b969,#d67d31);color:#1b1008;border:2px solid #ffbf72;font-size:19px;letter-spacing:1px;box-shadow:0 5px 17px #0007}
+.bh-account-avatar-actions{display:flex;align-items:center;gap:12px}
+.bh-account-bell{position:relative;display:grid;place-items:center;width:43px;height:43px;border-radius:13px;border:1px solid #79553b;background:#2b2018;color:#ffb978;cursor:pointer}
+.bh-account-bell:hover{background:#48301f}
+.bh-account-bell:focus-visible,.bh-account-quick-card:focus-visible,.bh-account-tab:focus-visible{outline:2px solid #ffd19a;outline-offset:3px}
+.bh-account-bell-count{position:absolute;top:-6px;right:-6px;background:#f29e50;color:#1a110a;border-radius:12px;min-width:19px;height:19px;font:900 11px/19px system-ui;text-align:center}
+.bh-account-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;font:850 10px/1.3 system-ui,sans-serif;letter-spacing:1px;color:#d5a77b;border:1px solid #6d4b31;border-radius:99px;padding:6px 10px;margin-top:10px}
+.bh-account-badge.is-vip{background:#3c2817;color:#ffcb86;border-color:#db9d56}
+.bh-account-tablist{display:flex;align-items:center;gap:6px;margin:10px 0 17px;padding:6px;border-radius:15px;border:1px solid #503727;background:#151211;position:sticky;top:0;z-index:18;backdrop-filter:blur(15px)}
+.bh-account-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:50px;padding:9px 8px;border-radius:11px;border:1px solid transparent;background:transparent;color:#b9a79a;font:800 12px/1.2 system-ui,sans-serif;cursor:pointer;transition:background .18s,color .18s}
+.bh-account-tab svg{width:20px;height:20px;flex:none}
+.bh-account-tab:hover{color:#ffbd81;background:#34231a}
+.bh-account-tab[aria-selected=true],.bh-account-tab[aria-current=page]{background:linear-gradient(115deg,#f5ab56,#e68937);color:#22140b;box-shadow:0 5px 13px #0006}
+.bh-account-panel{min-width:0;animation:bh-account-in .2s ease}
+.bh-account-panel .dashboard-card{margin-bottom:14px;background:linear-gradient(150deg,#201a16,#131211);border-color:#503b2c;padding:24px}
+.bh-account-panel .dashboard-card>h2{font-size:21px}
+.bh-account-panel .dashboard-card>p{max-width:680px;font-size:12px}
+.bh-account-next{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px;margin:0 0 22px;border:1px solid #a06638;border-radius:19px;background:radial-gradient(ellipse at 100% 0%,#4d2b16 0%,transparent 56%),linear-gradient(115deg,#2c1b12,#181311 80%);box-shadow:0 14px 28px #0005}
+.bh-account-next-info{min-width:0}
+.bh-account-kicker{display:block;color:#f9b874;font:850 10px/1.4 system-ui,sans-serif;letter-spacing:2px;margin-bottom:9px}
+.bh-account-next h2{color:#fff9f1;font-size:clamp(22px,3.5vw,29px);line-height:1.15;margin:0 0 8px}
+.bh-account-next p{color:#c9b7a7;font-size:13px;line-height:1.65;margin:0;max-width:620px}
+.bh-account-next-cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:13px 17px;border-radius:11px;background:#f0a451;color:#1c1209;text-decoration:none;font:900 12px/1.3 system-ui,sans-serif;white-space:nowrap;min-height:49px}
+.bh-account-next-cta:hover{background:#ffd191;color:#1c1209}
+.bh-account-next-cta svg{width:18px;height:18px}
+.bh-account-block-title{font-size:22px;line-height:1.2;margin:0 0 14px;letter-spacing:-.5px}
+.bh-account-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 21px}
+.bh-account-quick-card{appearance:none;display:flex;align-items:center;gap:13px;min-height:91px;text-align:left;padding:16px 17px;border-radius:15px;border:1px solid #51402f;background:#1b1714;color:#e8d8cb;cursor:pointer;text-decoration:none;transition:transform .17s,border-color .17s,background .17s}
+.bh-account-quick-card:hover{transform:translateY(-2px);border-color:#ce8e54;background:#2b2018}
+.bh-account-quick-card svg{width:27px;height:27px;flex:none;color:#f6ad63}
+.bh-account-quick-card span{min-width:0}
+.bh-account-quick-card strong{display:block;font-size:14px;line-height:1.35;color:#fef5ec}
+.bh-account-quick-card small{display:block;margin-top:5px;color:#b7a398;font-size:11px;line-height:1.45}
+.bh-account-mini-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 24px}
+.bh-account-mini-stats .dashboard-stat{background:#171411;border-color:#403022}
+.bh-account-section-header{display:flex;justify-content:space-between;align-items:baseline;gap:15px;margin:17px 0}
+.bh-account-section-header h2{margin:0}
+.bh-account-section-header p{font-size:12px;color:#aa9585;line-height:1.5;margin:0}
+.bh-account-updates{display:grid;gap:10px;margin-bottom:20px}
+.bh-account-update{display:flex;align-items:flex-start;gap:12px;background:#1a1714;border:1px solid #403123;border-radius:13px;padding:14px}
+.bh-account-update-dot{flex:none;width:10px;height:10px;margin-top:5px;background:#8f8d87;border-radius:99px}
+.bh-account-update[data-tone=warning] .bh-account-update-dot{background:#ffa14f}
+.bh-account-update[data-tone=success] .bh-account-update-dot{background:#83b99a}
+.bh-account-update strong{display:block;font-size:13px;color:#f4e9dd}
+.bh-account-update p{font-size:12px;color:#bdab9b;line-height:1.55;margin:6px 0 0}
+.bh-account-payments-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.bh-account-payments-metric{padding:18px;background:#1d1814;border:1px solid #513926;border-radius:14px}
+.bh-account-payments-metric strong{display:block;font-size:30px;line-height:1;color:#ffb976}
+.bh-account-payments-metric span{display:block;font-size:11px;color:#c0ab97;margin-top:10px}
+.bh-account-payments-list{display:grid;gap:10px}
+.bh-account-payment-note{font-size:12px;line-height:1.6;color:#baa99c;margin:12px 0 5px}
+.bh-account-bottom{display:none}
+.bh-account-panel .booking-mini{border-color:#4b3a2d}
+.bh-account-panel .account-actions a{display:inline-flex;min-height:43px;align-items:center;border-radius:9px}
+.bh-account-panel .dashboard-card .account-field input{max-width:650px}
+@keyframes bh-account-in{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:790px){
+ .account-dashboard.is-app-ready .dashboard-heading{gap:11px}
+ .bh-account-next{padding:19px;gap:14px}
+ .bh-account-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bh-account-tab{font-size:11px}
+ .bh-account-tab svg{width:18px;height:18px}
+}
+@media(max-width:600px){
+ body.account-body:has(#accountDashboard:not([hidden])){padding-bottom:calc(75px + env(safe-area-inset-bottom,0px))}
+ .account-page{padding-top:19px}
+ .account-dashboard.is-app-ready .dashboard-heading h1{font-size:26px;margin:0 0 5px}
+ .account-dashboard.is-app-ready .dashboard-heading p:not(.account-eyebrow){font-size:11px}
+ .account-dashboard.is-app-ready .dashboard-heading .account-eyebrow{font-size:9px;margin-bottom:5px!important}
+ .account-dashboard.is-app-ready .dashboard-top-actions{width:auto}
+ .account-dashboard.is-app-ready .account-home-button{padding:10px 11px;min-width:0;font-size:11px;min-height:40px}
+ .account-dashboard.is-app-ready .account-outline{padding:10px 11px;font-size:11px}
+ .account-dashboard.is-app-ready .dashboard-banner{padding:15px;gap:12px;margin-bottom:12px;border-radius:14px}
+ .account-dashboard.is-app-ready .dashboard-banner h2{font-size:19px}
+ .account-dashboard.is-app-ready .dashboard-banner p{font-size:11px}
+ .account-dashboard.is-app-ready .dashboard-avatar{width:45px;height:45px;font-size:15px}
+ .bh-account-avatar-actions{gap:7px}
+ .bh-account-bell{width:39px;height:39px}
+ .bh-account-bell svg{width:19px;height:19px}
+ .bh-account-tablist{display:none}
+ .bh-account-next{align-items:stretch;flex-direction:column;padding:18px;border-radius:15px;margin-bottom:21px}
+ .bh-account-next h2{font-size:23px}
+ .bh-account-next p{font-size:12px}
+ .bh-account-next-cta{width:100%;justify-content:space-between;min-height:46px}
+ .bh-account-quick{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .bh-account-quick-card{min-height:105px;flex-direction:column;align-items:flex-start;justify-content:center;padding:13px 14px;gap:9px;border-radius:13px}
+ .bh-account-quick-card svg{width:24px;height:24px}
+ .bh-account-quick-card strong{font-size:12px}
+ .bh-account-quick-card small{font-size:10px;margin-top:3px}
+ .bh-account-block-title{font-size:19px}
+ .bh-account-mini-stats .dashboard-stat{padding:11px}
+ .bh-account-mini-stats .dashboard-stat b{font-size:19px}
+ .bh-account-section-header{display:block}
+ .bh-account-section-header p{margin-top:5px}
+ .bh-account-panel .dashboard-card{padding:17px;border-radius:14px}
+ .bh-account-panel .dashboard-card>h2{font-size:18px}
+ .bh-account-payments-summary{gap:8px}
+ .bh-account-payments-metric{padding:12px}
+ .bh-account-payments-metric strong{font-size:21px}
+ .bh-account-payments-metric span{font-size:10px}
+ .bh-account-bottom{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;bottom:0;left:0;right:0;z-index:90;max-height:calc(77px + env(safe-area-inset-bottom,0px));padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px));gap:3px;background:#13100ef5;border-top:1px solid #69442b;backdrop-filter:blur(18px);box-shadow:0 -8px 28px #0009}
+ .bh-account-bottom .bh-account-tab{display:flex;flex-direction:column;gap:4px;min-width:0;min-height:49px;border-radius:10px;padding:7px 3px 5px;font-size:10px}
+ .bh-account-bottom .bh-account-tab svg{width:21px;height:21px}
+ .bh-account-bottom .bh-account-tab[aria-current=page]{background:#3a2414;color:#ffbf76;border-color:#86552e;box-shadow:none}
+ .bh-account-bottom .bh-account-tab span{white-space:nowrap}
+}
+@media(max-width:380px){
+ .bh-account-quick-card{padding:11px}
+ .bh-account-bell{width:34px;height:34px}
+ .bh-account-mini-stats{gap:6px}
+ .bh-account-mini-stats .dashboard-stat{padding:8px}
+ .bh-account-mini-stats .dashboard-stat span{font-size:9px}
+ .bh-account-bottom .bh-account-tab{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.bh-account-panel{animation:none}.bh-account-quick-card{transition:none}}
+
+/* Reabrir Pix diretamente em Minha Conta, sem criar outra cobrança */
+.bh-account-pay-again{display:flex;align-items:flex-start;flex-direction:column;gap:9px;margin-top:12px;padding-top:12px;border-top:1px solid #473425}
+.bh-account-pay-again small{display:block;color:#bc9d80;font-size:11px;line-height:1.5}
+.bh-account-pay-again a{font-size:12px;font-weight:800;color:#f9b370;text-decoration:none}
+.bh-account-pay-button{min-height:44px;padding:11px 14px;border:1px solid #ffc17d;border-radius:10px;background:linear-gradient(110deg,#ffbb6d,#ee933e);color:#211207;font:900 12px/1.3 system-ui,sans-serif;cursor:pointer}
+.bh-account-pay-button:hover{background:#ffd39c}
+body.bh-account-pix-open{overflow:hidden}
+.bh-account-pix-overlay{position:fixed;z-index:2400;inset:0;display:grid;place-items:center;background:#000c;backdrop-filter:blur(8px);padding:12px}
+.bh-account-pix-overlay[hidden]{display:none!important}
+.bh-account-pix-modal{width:min(480px,100%);max-height:min(92dvh,760px);overflow-y:auto;color:#f6e9dc;background:linear-gradient(145deg,#281b13,#13110f 60%);border:1px solid #a16e43;border-radius:19px;box-shadow:0 22px 75px #000b;outline:none}
+.bh-account-pix-head{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:19px 22px;border-bottom:1px solid #67442c}
+.bh-account-pix-head small{color:#f3ae68;font:850 10px/1.4 system-ui,sans-serif;letter-spacing:1.7px}
+.bh-account-pix-head h2{font:850 23px/1.1 system-ui,sans-serif;margin:6px 0 0;color:#fff5ed}
+.bh-account-pix-close{flex:none;display:grid;place-items:center;width:40px;height:40px;background:#392719;color:#ffe0bf;border:1px solid #7d5434;border-radius:11px;font-size:28px;cursor:pointer}
+.bh-account-pix-content{padding:21px 23px}
+.bh-account-pix-content>p{font-size:13px;line-height:1.6;color:#d3bb9f}
+.bh-account-pix-image{width:min(220px,100%);height:auto;margin:15px auto;border:10px solid #fff;border-radius:11px;display:block}
+.bh-account-pix-image[hidden]{display:none}
+.bh-account-pix-code{display:block;color:#f6ceaa;font-size:12px;font-weight:800;margin:14px 0}
+.bh-account-pix-code textarea{margin-top:8px;width:100%;min-height:85px;resize:vertical;padding:12px;border-radius:10px;background:#0d0c0b;color:#fff5ea;border:1px solid #765237;font:12px/1.5 monospace;overflow-wrap:anywhere}
+.bh-account-pix-actions{display:flex;flex-wrap:wrap;gap:10px}
+.bh-account-pix-actions button{flex:1 1 160px;min-height:45px}
+.bh-account-pix-return{display:inline-flex;align-items:center;min-height:44px;color:#ffbe80;text-decoration:none;font-size:13px;font-weight:750}
+.bh-account-pix-warning{padding:12px;border-radius:10px;border:1px solid #725131;background:#251b14;color:#c8b5a1!important;font-size:11px!important}
+@media(max-width:600px){.bh-account-pix-head{padding:17px}.bh-account-pix-content{padding:17px}.bh-account-pix-head h2{font-size:20px}}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="logo-oficial-black-hands.jpg">
+<link rel="icon" type="image/jpeg" href="logo-oficial-black-hands.jpg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Black Hands">
+</head>
+<body class="account-body">
+<header class="account-header">
+ <a class="account-brand" href="index.html"><img src="logo-oficial-black-hands.jpg" alt="Black Hands Barber Shop"><span><strong>BLACK HANDS</strong><small>BARBER SHOP</small></span></a>
+ <nav class="account-nav" aria-label="Menu"><a href="index.html" class="account-nav-home">Início</a><a href="#accountBookings">Meus agendamentos</a><a href="agendar.html" class="account-nav-cta">AGENDAR</a></nav>
+</header>
+<main class="account-page">
+ <section class="account-grid" id="accountGuest">
+  <div class="account-intro">
+   <p class="account-eyebrow">BLACK HANDS • ÁREA DO CLIENTE</p>
+   <h1>Seu estilo.<br><em>Sua conta.</em></h1>
+   <p>Entre para ter seus agendamentos em um só lugar, consultar seus pedidos e voltar a agendar com mais facilidade.</p>
+   <div class="account-perks">
+    <div class="account-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18m5 5 2 2 5-5"/></svg><b>Agendamentos no seu perfil</b></div>
+    <div class="account-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3 8 8 10 5-2 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg><b>Acesso com senha protegida</b></div>
+    <div class="account-perk"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2c0-3 3.6-5 8-5s8 2 8 5v2"/></svg><b>Perfil e dados atualizados</b></div>
+   </div>
+  </div>
+  <section class="account-panel" aria-labelledby="authHeading">
+   <p class="account-eyebrow" style="margin:0 0 5px">BEM-VINDO À BLACK HANDS</p>
+   <h2 id="authHeading">Crie sua conta</h2>
+   <p id="authSubtitle">Seu espaço exclusivo na barbearia. Simples e rápido.</p>
+   <div class="account-tabs" role="tablist" aria-label="Acesso à conta">
+    <button id="registerTab" type="button" role="tab" aria-selected="true">Criar conta</button>
+    <button id="loginTab" type="button" role="tab" aria-selected="false">Já tenho conta</button>
+   </div>
+   <form class="account-form" id="authForm" autocomplete="on">
+    <label class="account-field" id="nameRow">Nome completo
+     <input name="fullName" type="text" autocomplete="name" minlength="3" maxlength="120" placeholder="Como devemos chamar você?" required>
+    </label>
+    <label class="account-field">WhatsApp com DDD
+     <input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="(31) 99999-9999" required>
+    </label>
+    <label class="account-field">Senha
+     <input id="authPassword" name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="Pelo menos 10 caracteres" required>
+    </label>
+
+<div class="account-password-line">
+     <span class="account-help" id="passwordHint">Use uma senha exclusiva de pelo menos 10 caracteres.</span>
+     <button type="button" id="togglePassword">Mostrar senha</button>
+    </div>
+    <label id="whatsappConsentRow" class="account-help" style="display:flex;gap:11px;align-items:flex-start;line-height:1.55;cursor:pointer">
+      <input id="whatsappConsent" type="checkbox" style="width:21px;height:21px;flex:none;margin-top:2px;accent-color:#f4a250">
+      <span><strong>Quero receber mensagens da Black Hands no WhatsApp</strong> com boas-vindas, confirmações de pedidos e agendamentos, VIP e lembretes 1 dia e 1 hora antes. Opcional: posso cancelar quando quiser no perfil. Não inclui publicidade.</span>
+    </label>
+    <button class="account-primary" id="submitAuth" type="submit">CRIAR MINHA CONTA</button>
+    <p id="authMsg" role="status" aria-live="polite" class="account-alert" hidden></p>
+   </form>
+   <div class="account-disclosure">
+    <strong>Sobre seu acesso</strong><br>
+    Cadastro com WhatsApp e senha, sem SMS. O número não será verificado automaticamente. Para recuperar o acesso caso esqueça a senha, procure a equipe da barbearia; não existe recuperação automática sem confirmação de identidade.
+    <div style="margin-top:8px"><a href="https://wa.me/5531971245200" rel="noopener noreferrer">Falar com a Black Hands</a></div>
+   </div>
+  </section>
+ </section>
+ <section class="account-dashboard" id="accountDashboard" hidden aria-labelledby="dashboardHeading">
+  <div class="dashboard-heading">
+   <div><p class="account-eyebrow" style="margin:0 0 8px">ÁREA DO CLIENTE</p><h1 id="dashboardHeading">Minha Black Hands</h1><p>Agenda, compras e VIP: tudo a poucos toques.</p></div>
+   <div class="dashboard-top-actions"><a href="index.html" class="account-home-button" aria-label="Voltar ao início do site Black Hands">← Início do site</a><button id="logout" type="button" class="account-outline">Sair da conta</button></div>
+  </div>
+  <div class="dashboard-banner">
+   <div><p class="account-eyebrow" style="margin:0 0 8px">CONTA CONECTADA</p><h2 id="welcome">Bem-vindo!</h2><p id="accountPhoneLabel"></p><p id="accountMemberSince"></p></div>
+   <div class="dashboard-avatar" id="accountAvatar" aria-hidden="true"><img src="logo-oficial-black-hands.jpg" alt="" style="width:100%;height:100%;object-fit:contain"></div>
+  </div>
+  <div class="dashboard-stats">
+   <div class="dashboard-stat"><b id="accountBookingCount">—</b><span>Meus agendamentos</span></div>
+   <div class="dashboard-stat"><b id="accountPendingCount">—</b><span>Em análise</span></div>
+   <div class="dashboard-stat"><b id="accountConfirmedCount">—</b><span>Confirmados</span></div>
+  </div>
+  <div class="dashboard-layout">
+   <div>
+    <section class="dashboard-card">
+     <h2>Meus agendamentos</h2>
+     <p>Pedidos feitos enquanto você estava conectado ou vinculados por código. O status vem diretamente do servidor.</p>
+     <div id="accountBookings" aria-live="polite"><div class="dashboard-placeholder">Carregando seus agendamentos...</div></div>
+     <div class="account-actions"><a href="agendar.html">+ Novo agendamento</a><a href="acompanhar.html">Consultar por código</a></div>
+    </section>
+    <section class="dashboard-card">
+     <h2>Vincular um agendamento</h2>
+     <p>Fez um agendamento antes de entrar na conta? Use o código privado recebido no site para adicioná-lo ao seu perfil.</p>
+     <form id="claimForm" class="account-form">
+      <label class="account-field">Código privado
+       <input id="claimToken" type="text" autocomplete="off" placeholder="Cole o código de acompanhamento" required>
+      </label>
+      <button class="account-primary" type="submit">VINCULAR AGENDAMENTO</button>
+      <p id="claimMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+   </div>
+   <div>
+    <section class="dashboard-card">
+     <h2>Minhas compras</h2>
+     <p>Acompanhe pedidos feitos na Black Hands Store usando esta conta.</p>
+     <div id="accountOrders" aria-live="polite"><div class="dashboard-placeholder">Carregando suas compras...</div></div>
+     <div class="account-actions"><a href="loja.html">Ir para a Black Hands Store →</a></div>
+    </section>
+    <section class="dashboard-card">
+     <h2>Meu plano VIP</h2>
+     <p>Confira sua assinatura e a validade após a confirmação do pagamento.</p>
+     <div id="accountVip" aria-live="polite"><div class="dashboard-placeholder">Carregando seu plano VIP...</div></div>
+     <div class="account-actions"><a href="planos-vip.html#vipCalendar">Meu calendário VIP →</a></div>
+    </section>
+    <section class="dashboard-card">
+     <h2>Meu perfil</h2>
+     <p>Personalize como seu nome aparece no seu perfil.</p>
+     <form id="profileForm" class="account-form">
+      <label class="account-field">Nome completo
+       <input id="profileName" type="text" autocomplete="name" minlength="3" maxlength="120" required>
+      </label>
+      <label class="account-field">WhatsApp cadastrado
+       <input id="profilePhone" type="tel" readonly aria-describedby="phoneNote">
+      </label>
+      <p class="account-help" id="phoneNote">O WhatsApp não foi verificado. Por segurança, a troca do número exige atendimento da equipe.</p>
+      <button class="account-primary" type="submit">SALVAR ALTERAÇÕES</button>
+      <p id="profileMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+    <section class="dashboard-card" id="whatsappPreferences">
+     <h2>Notificações pelo WhatsApp</h2>
+     <p>Você decide se deseja receber confirmações de agendamentos, compras, VIP e lembretes de cortes pelo número oficial da Black Hands. Os envios dependem da ativação da integração oficial.</p>
+     <form id="whatsappPreferenceForm" class="account-form">
+      <label style="display:flex;align-items:flex-start;gap:12px;font-size:14px;line-height:1.55;cursor:pointer">
+       <input id="whatsappOptIn" type="checkbox" style="accent-color:#f4a250;width:23px;height:23px;flex:none">
+       <span>Autorizo mensagens de atendimento pelo WhatsApp cadastrado. Posso desativar a qualquer momento.</span>
+      </label>
+      <button class="account-primary" type="submit">SALVAR PREFERÊNCIA</button>
+      <p class="account-alert" id="whatsappPreferenceMessage" role="status" hidden></p>
+     </form>
+    </section>
+    <section class="dashboard-card">
+     <h2>Segurança da conta</h2>
+     <p>Troque sua senha quando quiser. Os outros aparelhos serão desconectados.</p>
+     <form id="passwordForm" class="account-form">
+      <label class="account-field">Senha atual<input name="currentPassword" type="password" autocomplete="current-password" required></label>
+      <label class="account-field">Nova senha<input name="newPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+      <label class="account-field">Confirmar nova senha<input name="newConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label>
+      <button class="account-primary" type="submit">ALTERAR MINHA SENHA</button>
+      <p id="passwordMsg" class="account-alert" role="status" hidden></p>
+     </form>
+    </section>
+    <section class="dashboard-card"><h2>Precisa de ajuda?</h2><p>Em caso de dificuldade com seu acesso ou agendamento, fale com a equipe.</p><div class="account-actions"><a href="https://wa.me/5531971245200" rel="noopener noreferrer">Atendimento Black Hands</a></div></section>
+   </div>
+  </div>
+ </section>
+</main>
+<footer class="account-footer">© 2026 BLACK HANDS BARBER SHOP · SUA EXPERIÊNCIA, SEU ESTILO.</footer>
+<script src="account-pix.js" defer></script>
+<script src="conta.js" defer></script>
+<script src="account-dashboard-app.js" defer></script>
+<script src="site-menu.js" defer></script></body>
+</html>
