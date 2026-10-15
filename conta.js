@@ -107,6 +107,33 @@ async function refreshBookings(){
    const detail=document.createElement('p');detail.textContent=(Array.isArray(booking.services)?booking.services.join(' + '):'Serviço')+' · '+brl(booking.amount);card.append(detail);
    const payment=document.createElement('p');payment.textContent=booking.paymentMethod==='PAY_ON_DAY'?'Pagamento: dinheiro no dia':'Pix: '+(booking.paymentStatus==='PAID'?'confirmado':'pendente');card.append(payment);
    const reference=document.createElement('p');reference.textContent='Pedido '+booking.reference;card.append(reference);
+   const active=['HOLD','AWAITING_STAFF','CONFIRMED'].includes(booking.status);
+   const expired=booking.status==='HOLD'&&(!booking.holdUntil||Date.parse(booking.holdUntil)<=Date.now());
+   const unpaid=['PENDING','CREATING'].includes(booking.paymentStatus);
+   if(booking.paymentMethod==='PIX'&&unpaid&&active){
+    const area=document.createElement('div');area.className='bh-account-pay-again';
+    if(expired){
+     const note=document.createElement('small');note.textContent='O prazo para pagar esta pré-reserva terminou. Selecione outro horário.';
+     const link=document.createElement('a');link.href='agendar.html';link.textContent='Agendar novamente →';
+     area.append(note,link);
+    }else if(booking.pixOrderId&&booking.hasPixCharge){
+     const pay=document.createElement('button');pay.type='button';pay.textContent='▣ Ver PIX / Pagar agora';
+     pay.className='bh-account-pay-button';
+     pay.addEventListener('click',()=>window.BHAccountPix?.open('booking',booking.pixOrderId));
+     area.append(pay);
+     if(booking.paymentEnvironment==='sandbox'){
+      const test=document.createElement('small');test.textContent='Cobrança de teste — não pague pelo banco.';
+      area.append(test);
+     }
+    }else{
+     const note=document.createElement('small');note.textContent='O código Pix ainda está sendo preparado. Atualize esta página em instantes.';
+     area.append(note);
+    }
+    card.append(area);
+   }else if(booking.status==='EXPIRED'){
+    const area=document.createElement('div');area.className='bh-account-pay-again';
+    const link=document.createElement('a');link.href='agendar.html';link.textContent='Esta reserva expirou · Agendar novamente →';area.append(link);card.append(area);
+   }
    node.append(card);
   }
  }catch(e){
@@ -125,8 +152,27 @@ async function refreshOrdersVip(){
   }else for(const order of orders){
    const item=document.createElement('div');item.className='booking-mini';
    const title=document.createElement('strong');title.textContent='Pedido '+order.reference+' · '+brl(order.amount);
-   const detail=document.createElement('p');detail.textContent=(order.itemCount||0)+' produto(s) · '+(order.status==='PAID'?'Pagamento confirmado':order.status==='PENDING'?'Aguardando pagamento':'Em processamento');
-   item.append(title,detail);ordersNode.append(item);
+   const label={PAID:'Pagamento confirmado',PENDING:'Aguardando pagamento',
+     CREATING:'Preparando cobrança',CANCELLED:'Pedido cancelado',
+     ERROR:'Erro no pagamento',REFUNDED:'Reembolsado'}[order.status]||'Em processamento';
+   const detail=document.createElement('p');detail.textContent=(order.itemCount||0)+' produto(s) · '+label;
+   item.append(title,detail);
+   if(['PENDING','CREATING'].includes(order.status)&&order.id){
+    const area=document.createElement('div');area.className='bh-account-pay-again';
+    if(order.hasPixCharge){
+     const pay=document.createElement('button');pay.type='button';pay.className='bh-account-pay-button';
+     pay.textContent='▣ Ver PIX / Pagar agora';
+     pay.addEventListener('click',()=>window.BHAccountPix?.open('store',order.id));
+     area.append(pay);
+     if(order.paymentEnvironment==='sandbox'){
+      const note=document.createElement('small');note.textContent='Cobrança de teste — não pague pelo banco.';area.append(note);
+     }
+    }else{
+     const note=document.createElement('small');note.textContent='A cobrança ainda está sendo preparada. Atualize a página mais tarde.';area.append(note);
+    }
+    item.append(area);
+   }
+   ordersNode.append(item);
   }
  }catch(e){ordersNode.textContent=e.message;}
  try{
