@@ -110,7 +110,9 @@ body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system
  <div id="pixSetupWarnings" class="adm-muted" style="margin:15px 0"></div>
  <button type="button" class="adm-button alt" id="pixSetupRefresh">↻ Verificar configurações</button>
  <button type="button" class="adm-button" id="pixTestConnection">Testar conexão sem cobrança</button>
+ <button type="button" class="adm-button alt" id="pixCheckWebhook">Verificar webhook no Asaas</button>
  <p id="pixTestResult" class="adm-msg" role="status"></p>
+ <p id="pixWebhookCheckResult" class="adm-tip" role="status" aria-live="polite">O webhook de produção precisa estar ativo no Asaas e usar o mesmo token salvo na Cloudflare. Essa verificação não gera cobrança.</p>
 </article>
 <article class="adm-card">
  <h2>Passos para ativar cobranças reais</h2>
