@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c0b0a"><meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Financeiro restrito Black Hands Barber Shop.">
+<title>Financeiro | Black Hands Barber Shop</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+:root{--adm-bg:#090909;--adm-panel:#151310;--adm-card:#1b1713;--adm-line:#423024;--adm-orange:#f39b42;--adm-light:#faf5ee;--adm-muted:#b8ada2}
+*{box-sizing:border-box}
+body.adm-body{background:var(--adm-bg);color:var(--adm-light);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;margin:0}
+.adm-header{background:#0c0b0b;border-bottom:1px solid #33251c;display:flex;align-items:center;justify-content:space-between;padding:16px max(22px,calc((100vw - 1320px)/2));gap:18px}
+.adm-brand{display:flex;align-items:center;gap:14px;color:white;text-decoration:none}.adm-brand img{width:51px;height:51px;object-fit:contain;border-radius:10px}.adm-brand strong{display:block;font-size:16px;letter-spacing:2px}.adm-brand small{display:block;letter-spacing:2px;color:#b6aca3;font-size:10px}
+.adm-link{color:#f5b371;text-decoration:none;border:1px solid #775131;padding:10px 13px;border-radius:10px;font-weight:700}
+.adm-login{width:min(460px,calc(100% - 30px));margin:8vh auto 80px;padding:33px 28px;background:linear-gradient(145deg,#292017,#121110 75%);border:1px solid #88572e;border-radius:23px;box-shadow:0 25px 95px #0008}
+.adm-badge{display:inline-block;border-radius:100px;padding:6px 12px;border:1px solid #b47540;color:#ffc07e;font-size:10px;font-weight:800;letter-spacing:2px;margin-bottom:18px}
+.adm-login h1{font-size:35px;line-height:1.07;margin:0 0 12px}.adm-login p{color:var(--adm-muted);line-height:1.6}
+.adm-input,.adm-select,.adm-textarea{width:100%;background:#0e0d0c;color:white;border:1px solid #574638;border-radius:10px;padding:12px 13px;font:inherit;min-height:47px}
+.adm-textarea{min-height:95px;resize:vertical}.adm-input:focus,.adm-textarea:focus,.adm-select:focus{outline:2px solid #ed9b49}
+.adm-label{display:grid;gap:7px;color:#ddd0c3;font-size:12px;font-weight:750}
+.adm-button{cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(110deg,#ffbf69,#ed8732);color:#26160b;border:0;border-radius:10px;padding:13px 17px;font-weight:900;min-height:44px;font:inherit;text-decoration:none}
+.adm-button:disabled{opacity:.5;cursor:wait}.adm-button.alt{background:#292019;color:#ffc08a;border:1px solid #78502d}
+.adm-error{padding:13px;border:1px solid #984645;background:#3d1d1b;color:#ffceca;border-radius:10px;line-height:1.45}.adm-error:empty{display:none}
+.adm-app{max-width:1370px;margin:auto;padding:32px 24px 90px}
+.adm-title{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.adm-title h1{font-size:clamp(30px,4vw,49px);margin:0;line-height:1}.adm-title p{color:var(--adm-muted)}
+.adm-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.adm-nav{display:flex;overflow:auto;gap:8px;padding:10px 0 20px;position:sticky;top:0;z-index:15;background:#090909f5}
+.adm-nav button{cursor:pointer;white-space:nowrap;border:1px solid #4b3324;background:#191511;color:#d6c3b1;padding:12px 14px;border-radius:11px;font-weight:700}
+.adm-nav button[aria-selected=true]{background:#efa04a;color:#241308;border-color:#efa04a}
+.adm-panel[hidden],[hidden]{display:none!important}
+.adm-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;margin:7px 0 22px}
+.adm-metric,.adm-card{background:linear-gradient(145deg,#1b1713,#121111);border:1px solid #3c2e24;border-radius:15px;padding:18px;min-width:0}
+.adm-metric small{font-size:12px;color:#bdaea0}.adm-metric strong{display:block;color:#ffb361;font-size:clamp(22px,3vw,30px);margin:11px 0 4px;overflow-wrap:anywhere}
+.adm-row{display:grid;grid-template-columns:1.2fr 1fr;gap:15px}.adm-card{margin:0 0 15px}
+.adm-card h2{font-size:20px;margin:0 0 14px}.adm-muted{color:var(--adm-muted);line-height:1.6}
+.adm-table-wrap{overflow-x:auto;border-radius:11px;border:1px solid #403329}
+.adm-table{border-collapse:collapse;width:100%;font-size:12px}
+.adm-table th{background:#251d16;color:#ffbd79;font-size:11px;text-align:left;white-space:nowrap}
+.adm-table td,.adm-table th{padding:12px 11px;border-bottom:1px solid #32271f;vertical-align:top}.adm-table td{color:#e4d9cf}
+.adm-table tr:last-child td{border-bottom:0}.adm-table td:first-child{font-weight:700}
+.adm-pill{display:inline-block;padding:5px 9px;border-radius:20px;background:#46311e;color:#ffca8c;font-size:11px;font-weight:800}
+.adm-pill.good{background:#193d25;color:#a6e9ae}.adm-pill.bad{background:#3d1e1b;color:#f6b1ab}
+.adm-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}.adm-toolbar .adm-input{max-width:310px}
+.adm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.adm-form{display:grid;gap:13px}.adm-form button{justify-self:start}
+.adm-msg{color:#ffc27f;min-height:20px;font-size:12px;margin:10px 0}
+.adm-tip{border:1px solid #654328;border-radius:12px;padding:12px 15px;color:#d9b893;background:#231a12;line-height:1.55;margin-bottom:15px}
+.adm-compact{max-width:740px}.adm-smallbtn{border:1px solid #72472a;border-radius:8px;color:#ffb970;background:#291a11;font-weight:750;padding:8px 10px;cursor:pointer}
+.adm-title .adm-muted{margin:8px 0 0}
+@media(max-width:970px){.adm-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.adm-row{grid-template-columns:1fr}}
+@media(max-width:600px){.adm-app{padding:22px 14px 65px}.adm-header{padding:13px 14px}.adm-brand img{width:45px;height:45px}.adm-brand strong{font-size:12px}.adm-brand small{font-size:9px}.adm-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.adm-metric{padding:13px}.adm-grid{grid-template-columns:1fr}.adm-login{padding:26px 19px}.adm-nav button{padding:10px 12px}.adm-card{padding:15px}}
+.adm-toolbar label{display:grid;gap:5px;font-weight:750;color:#cfc2b5;font-size:12px}.adm-toolbar input{min-width:150px}
+.adm-note{padding:10px 13px;border:1px solid #54351f;border-radius:11px;color:#ffb767;margin-bottom:12px}
+
+:root{--f-gold:#f5a752}
+body.adm-body{background:radial-gradient(ellipse at 70% 0%,#332116 0,#090909 430px);min-height:100dvh}
+.finance-app{max-width:1440px;margin:auto;padding:26px 22px 95px}
+.finance-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin:4px 0 22px}
+.finance-top h1{font:900 clamp(32px,5vw,50px)/1.05 system-ui,sans-serif;letter-spacing:-1.7px;margin:0 0 9px}
+.finance-top p{color:#b9aaa0;margin:0;line-height:1.5}
+.finance-pill{display:inline-flex;align-items:center;gap:9px;color:#eac49d;border:1px solid #785034;border-radius:50px;padding:8px 13px;font-size:12px;font-weight:800;margin-bottom:13px}
+.finance-pill::before{content:"";width:8px;height:8px;background:#90c49d;border-radius:100%}
+.finance-filters{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:18px;border:1px solid #463326;border-radius:15px;background:#1c1612;padding:17px}
+.finance-filters label{display:grid;gap:6px;color:#ceb8a5;font-size:12px;font-weight:750}
+.finance-filters input,.finance-filters select{min-width:130px}
+.finance-filters .adm-button{min-height:46px}
+.finance-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.finance-metric{background:linear-gradient(155deg,#291b13,#141211);padding:21px 18px;border:1px solid #63462d;border-radius:15px;min-width:0}
+.finance-metric small{color:#cbb6a5;font-weight:700;font-size:11px;line-height:1.3}
+.finance-metric strong{display:block;margin:13px 0 6px;color:#ffba6d;font-size:clamp(20px,2.6vw,32px);letter-spacing:-1px;overflow-wrap:anywhere}
+.finance-metric span{font-size:11px;color:#a9a199}
+.finance-metric[data-kind=income] strong{color:#b6e0b4}
+.finance-metric[data-kind=expenses] strong{color:#f6bcb3}
+.finance-layout{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+.finance-layout>.adm-card{margin:0}
+.finance-card-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.finance-card-title h2{margin:0 0 15px}
+.finance-bars{display:grid;gap:15px}
+.finance-bar-row{display:grid;grid-template-columns:minmax(100px,150px) minmax(0,1fr) auto;gap:11px;align-items:center;font-size:12px;font-weight:750;color:#d9c9bb}
+.finance-track{height:11px;border-radius:20px;background:#35291f;overflow:hidden}
+.finance-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#8f4d23,#ffb26a);min-width:0}
+.finance-fill.cost{background:linear-gradient(90deg,#a54d3c,#ef9c83)}
+.finance-bar-total{color:#f2d2ab;white-space:nowrap}
+.finance-section{margin-top:17px}
+.finance-table-tools{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-bottom:12px}
+.finance-table-tools input{min-width:220px;flex:2}
+.finance-table-tools select{min-width:170px;flex:1}
+.finance-table{min-width:690px}
+.finance-table small{display:block;margin-top:5px;color:#a49483}
+.finance-table .f-money{font-weight:850;white-space:nowrap}
+.finance-table .f-plus{color:#b2e0b0}.finance-table .f-minus{color:#e7a59b}
+.finance-status{display:inline-block;padding:5px 9px;border-radius:99px;border:1px solid #6d4e30;color:#e9ba81;font-size:11px;font-weight:800;white-space:nowrap}
+.finance-status.confirmed{color:#ace2b3;border-color:#3d704b;background:#1a2e1e}
+.finance-status.test{color:#b2a6a0;border-color:#56463d}
+.finance-banner{padding:14px 18px;border-radius:12px;border:1px solid #65472f;background:#251b14;color:#dcc3a9;font-size:12px;line-height:1.7;margin:0 0 18px}
+.finance-message{padding:12px 16px;min-height:41px;border-radius:10px;color:#f3be83}
+.finance-expense-form{display:grid;grid-template-columns:130px 180px minmax(150px,1fr) 140px auto;gap:10px;align-items:end}
+.finance-expense-form .adm-label{min-width:0}
+.finance-expense-form .adm-input,.finance-expense-form .adm-select{min-width:0}
+.finance-expense-form .adm-button{white-space:nowrap}
+.finance-bottom-note{margin-top:20px;color:#a99a8a;line-height:1.6;font-size:12px}
+.finance-empty{border:1px dashed #63452d;border-radius:13px;padding:25px;text-align:center;color:#bda797;line-height:1.5}
+@media(max-width:1120px){.finance-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.finance-expense-form{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-expense-form .adm-button{grid-column:1/-1}}
+@media(max-width:760px){.finance-app{padding:20px 13px 85px}.finance-layout{grid-template-columns:1fr}.finance-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.finance-metric{padding:16px 13px}.finance-bars{gap:13px}.finance-bar-row{grid-template-columns:minmax(75px,93px) 1fr auto;gap:8px;font-size:11px}.finance-expense-form{grid-template-columns:1fr}.finance-expense-form .adm-button{grid-column:auto;width:100%}.finance-filters{gap:9px;padding:12px}.finance-filters label{flex:1 1 135px}.finance-filters .adm-button{flex:1 1 100%}.finance-table-tools input,.finance-table-tools select{width:100%;min-width:0;flex:1 1 100%}}
+@media print{body.adm-body{color:black;background:white!important}.adm-header,.finance-filters,.finance-actions,.finance-expense-form,.finance-table-tools,.finance-login,#financeRefresh{display:none!important}.finance-app{padding:0}.finance-metric,.adm-card{color:black;background:white;border-color:#ccc}.finance-metric strong,.finance-card-title h2{color:black}.finance-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}}
+</style>
+</head>
+<body class="adm-body">
+<header class="adm-header">
+<a class="adm-brand" href="index.html"><img src="logo-oficial-black-hands.jpg" alt="Black Hands Barber Shop"><span><strong>BLACK HANDS</strong><small>FINANCEIRO · ÁREA RESTRITA</small></span></a>
+<div class="adm-actions"><a class="adm-link" href="admin.html">← Painel ADM</a><a class="adm-link" href="index.html">Ver site ↗</a></div>
+</header>
+<section id="financeLogin" class="adm-login" hidden>
+<span class="adm-badge">ÁREA ADMINISTRATIVA</span>
+<h1>Financeiro Black Hands</h1>
+<p>Entre com sua conta Black Hands e a senha administrativa para consultar os valores registrados pela barbearia.</p>
+<form class="adm-form" id="financeLoginForm">
+<label class="adm-label">Senha administrativa<input id="financePassword" class="adm-input" type="password" autocomplete="current-password" required minlength="8" maxlength="128"></label>
+<button class="adm-button" type="submit">Entrar no financeiro →</button>
+</form>
+<p class="adm-msg" id="financeLoginStatus" role="alert"></p>
+<a class="adm-link" href="conta.html?mode=login&amp;next=financeiro.html">Entrar na Minha Conta primeiro</a>
+</section>
+<main id="financeApp" class="finance-app" hidden>
+<div class="finance-top">
+<div><span class="finance-pill">Sistema financeiro conectado</span><h1>Financeiro <span style="color:#ef9e50">Black Hands.</span></h1><p>Recebimentos, pendências e despesas da barbearia em um só lugar.</p></div>
+<div class="adm-actions finance-actions"><button type="button" class="adm-button alt" id="financeRefresh">↻ Atualizar</button><button type="button" class="adm-button alt" id="financePrint">Imprimir</button><button type="button" class="adm-button" id="financeCSV">Exportar CSV</button></div>
+</div>
+<div class="finance-banner" id="financeNotice">Carregando informações seguras do Supabase... As receitas consideram apenas pagamentos reais confirmados pelo servidor e dinheiro registrado pela equipe. Testes Sandbox ficam fora dos totais.</div>
+<div class="finance-filters" aria-label="Período do relatório">
+<label>Período rápido<select class="adm-select" id="financePreset"><option value="month">Este mês</option><option value="today">Hoje</option><option value="week">Últimos 7 dias</option><option value="lastMonth">Mês anterior</option><option value="custom">Personalizado</option></select></label>
+<label>De<input type="date" class="adm-input" id="financeFrom" required></label>
+<label>Até<input type="date" class="adm-input" id="financeTo" required></label>
+<button type="button" class="adm-button" id="financeApply">Consultar período →</button>
+</div>
+<p id="financeMessage" class="finance-message" role="status" aria-live="polite"></p>
+<section id="financeMetrics" class="finance-metrics" aria-label="Indicadores financeiros"></section>
+<div class="finance-layout">
+<section class="adm-card"><div class="finance-card-title"><h2>Recebimentos por origem</h2></div><div class="finance-bars" id="financeRevenues"></div></section>
+<section class="adm-card"><div class="finance-card-title"><h2>Despesas por categoria</h2></div><div class="finance-bars" id="financeCostCategories"></div></section>
+</div>
+<section class="adm-card finance-section">
+<div class="finance-card-title"><h2>Movimentações do período</h2><span id="financeResults" class="adm-muted"></span></div>
+<div class="finance-table-tools">
+<input id="financeSearch" class="adm-input" type="search" placeholder="Pesquisar produto, cliente, agendamento, VIP..." aria-label="Pesquisar movimentos">
+<select id="financeKind" class="adm-select" aria-label="Filtrar tipo"><option value="all">Todas as origens</option><option value="Agendamento">Agendamentos PIX</option><option value="Store">Black Hands Store</option><option value="VIP">Planos VIP</option><option value="Dinheiro">Dinheiro na barbearia</option><option value="Despesa">Despesas</option></select>
+<select id="financeStatus" class="adm-select" aria-label="Filtrar situação"><option value="all">Todos os status</option><option value="paid">Recebidos</option><option value="pending">Pendentes</option><option value="sandbox">Somente testes</option><option value="cancelled">Cancelados</option></select>
+</div>
+<div id="financeTransactions" class="adm-table-wrap finance-table"></div>
+</section>
+<section class="adm-card finance-section">
+<div class="finance-card-title"><h2>Registrar despesa</h2><span class="adm-muted">Aluguel, salários, produtos, contas e outros gastos</span></div>
+<p class="adm-muted">Entradas do site são automáticas. Despesas feitas fora do site podem ser registradas aqui.</p>
+<form id="financeExpenseForm" class="finance-expense-form">
+<label class="adm-label">Data<input type="date" class="adm-input" id="financeExpenseDate" required></label>
+<label class="adm-label">Categoria<select class="adm-select" id="financeExpenseCategory" required><option>Produtos</option><option>Funcionários</option><option>Aluguel</option><option>Contas</option><option>Marketing</option><option>Manutenção</option><option>Outros</option></select></label>
+<label class="adm-label">Descrição<input class="adm-input" id="financeExpenseDescription" minlength="3" maxlength="220" required placeholder="Ex.: compra de produtos"></label>
+<label class="adm-label">Valor em R$<input type="number" class="adm-input" id="financeExpenseAmount" min="0.01" max="1000000" step="0.01" required></label>
+<button type="submit" class="adm-button">+ Registrar despesa</button>
+</form>
+</section>
+<section class="adm-card finance-section"><h2>Histórico de despesas</h2><div id="financeExpenses" class="adm-table-wrap finance-table"></div></section>
+<p class="finance-bottom-note">Dados da Black Hands atualizados pelo servidor. PIX Sandbox não movimenta dinheiro. Pagamentos aguardando aprovação, pedidos expirados e cancelamentos não contam como receita. Saldo estimado = recebimentos confirmados − despesas registradas; não equivale ao extrato bancário.</p>
+</main>
+<script src="financeiro.js" defer></script>
+</body>
+</html>
