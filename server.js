@@ -957,6 +957,57 @@ app.patch('/api/admin/live/bookings/:id',accountSameOrigin,requireAdmin,async(re
   return res.json({ok:true,note:target==='CANCELLED'?'Agendamento cancelado. Reembolso, se necessário, é uma operação separada.':'Agendamento confirmado pela equipe.'});
  }catch(e){console.error('Admin booking change:',String(e.message).slice(0,120));return res.status(503).json({error:'Não foi possível atualizar o agendamento.'});}
 });
+// Administração: cancela somente pagamentos NÃO pagos. Para produção, exige
+// cancelamento no próprio Asaas antes de atualizar o banco. Nunca apaga histórico.
+app.post('/api/admin/live/cancel-pending/:kind/:id',accountSameOrigin,requireAdmin,async(req,res)=>{
+ accountNoCache(res);
+ const kind=String(req.params.kind||''),id=String(req.params.id||'');
+ if(!['booking','store','vip'].includes(kind)||!/^[0-9a-f-]{36}$/i.test(id))
+  return res.status(400).json({error:'Selecione uma pendência válida.'});
+ try{
+  const isVip=kind==='vip',table=isVip?'bh_customer_vip_payments':'bh_pix_orders';
+  const rows=await sbReq(table,'?id=eq.'+id+'&select=id,status,asaas_payment_id,payment_environment,created_at'+
+   (isVip?'':',kind')+'&limit=1');
+  const item=rows[0];
+  if(!item||(!isVip&&item.kind!==kind))
+   return res.status(404).json({error:'Pendência não encontrada.'});
+  if(item.status==='CANCELLED')return res.json({ok:true,message:'Essa pendência já foi cancelada.'});
+  if(!['CREATING','PENDING','ERROR'].includes(item.status))
+   return res.status(409).json({error:'Esse pagamento já foi confirmado ou não pode ser cancelado por aqui. Consulte o financeiro.'});
+  if(item.status==='CREATING'&&!item.asaas_payment_id&&
+     Date.parse(item.created_at)>Date.now()-10*60*1000)
+   return res.status(409).json({error:'O Asaas ainda está criando a cobrança. Aguarde 10 minutos antes de limpar esta pendência.'});
+  if(item.payment_environment==='production'){
+   if(paymentEnvironment()!=='production')
+    return res.status(409).json({error:'Reative a conexão de produção antes de cancelar uma cobrança real no Asaas.'});
+   if(!item.asaas_payment_id)
+    return res.status(409).json({error:'Sem identificação da cobrança no Asaas. Verifique com a equipe antes de cancelar.'});
+   // Não permitir reembolso sem revisão humana. Pagamentos já liquidados são bloqueados.
+   const remote=await asaas('/payments/'+encodeURIComponent(item.asaas_payment_id));
+   if(['CONFIRMED','RECEIVED','RECEIVED_IN_CASH','REFUNDED','REFUND_REQUESTED'].includes(remote.status))
+    return res.status(409).json({error:'Pagamento já recebido ou em reembolso. Não foi cancelado. Consulte o Asaas.'});
+   if(!['PENDING','OVERDUE','DELETED'].includes(remote.status))
+    return res.status(409).json({error:'Status Asaas '+String(remote.status).slice(0,35)+' exige conferência manual.'});
+   if(remote.status!=='DELETED')
+    await asaas('/payments/'+encodeURIComponent(item.asaas_payment_id),{method:'DELETE'});
+  }
+  const rpc=isVip?'bh_admin_cancel_unpaid_vip':'bh_admin_cancel_unpaid_pix';
+  await sbReq('rpc/'+rpc,'',{method:'POST',body:JSON.stringify(
+   isVip?{p_payment_id:id}:{p_order_id:id}
+  )});
+  res.json({ok:true,message:kind==='booking'
+   ?'Cobrança pendente cancelada e horário liberado. A reserva não poderá mais ser paga.'
+   :'Cobrança pendente cancelada. O histórico foi preservado.'});
+ }catch(e){
+  console.error('Cancel pending:',String(e.message).slice(0,150));
+  const msg=String(e.message||'');
+  if(msg.includes('pending_order_not_cancellable'))
+   return res.status(409).json({error:'O pagamento mudou de status e não pode mais ser cancelado.'});
+  if(msg.includes('pending_order_still_creating'))
+   return res.status(409).json({error:'A cobrança ainda está sendo criada. Aguarde antes de cancelar.'});
+  return res.status(503).json({error:'Não foi possível cancelar com segurança. Confira o Asaas e tente novamente.'});
+ }
+});
 app.get('/api/site/catalog',async(req,res)=>{
  res.setHeader('Cache-Control','public,max-age=30');
  try{
