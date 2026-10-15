@@ -45,7 +45,8 @@ const files = [
   'black-hands-precos.jpg',
   'logo-oficial-black-hands.jpg',
   'promo-corte-sobrancelha.jpg',
-  'promo-pacote-completo.jpg'
+  'promo-pacote-completo.jpg',
+  'store-products.svg'
 ];
 
 fs.mkdirSync(out, { recursive: true });
