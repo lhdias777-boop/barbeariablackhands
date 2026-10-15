@@ -135,6 +135,26 @@ $('pixTestConnection').addEventListener('click',async()=>{
  finally{button.disabled=false;}
 });
 
+$('pixCheckWebhook').addEventListener('click',async()=>{
+ const button=$('pixCheckWebhook'),output=$('pixWebhookCheckResult');
+ button.disabled=true;
+ output.textContent='Consultando os Webhooks cadastrados no Asaas, sem gerar cobrança...';
+ try{
+  const data=await request('/api/admin/live/pix-webhook-check',{method:'POST',body:'{}'});
+  const locale=data.environment==='production'?'produção':data.environment==='sandbox'?'Sandbox':'não configurado';
+  output.textContent='Ambiente '+locale+'. '+(data.registered?
+   'Webhook encontrado. '+(data.enabled?'Ativo. ':'Inativo. ')+
+   (data.uninterrupted?'Envio habilitado. ':'Fila interrompida. ')+
+   (data.eventsReady?'Eventos de pagamento corretos. ':'Verifique PAYMENT_CONFIRMED e PAYMENT_RECEIVED. ')+
+   (data.workerTokenConfigured?'Token guardado no Worker. ':'Token ausente no Worker. '):
+   'Nenhum webhook encontrado apontando para a URL atual da Black Hands. ')+data.note;
+  if(data.webhookSetupReady)output.style.borderColor='#658e66';
+  else output.style.borderColor='#c07d48';
+ }catch(e){
+  output.textContent='Não foi possível verificar: '+e.message;
+  output.style.borderColor='#a35b53';
+ }finally{button.disabled=false}
+});
 $('adminWhatsappRefresh').addEventListener('click',notificationStatus);
 $('staffGrantForm').addEventListener('submit',async e=>{
  e.preventDefault();const btn=e.target.querySelector('button');btn.disabled=true;
