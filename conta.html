@@ -76,6 +76,129 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
 @media(max-width:860px){.account-grid{grid-template-columns:1fr;gap:18px}.account-intro{min-height:auto;padding:25px 0 5px}.account-intro h1{font-size:43px;max-width:620px}.account-intro>p{font-size:14px}.account-perks{margin-top:24px}.account-panel{max-width:650px;justify-self:center}.dashboard-layout{grid-template-columns:1fr}}
 @media(max-width:600px){.account-header .account-nav a.account-nav-home{display:inline-flex;padding:10px 5px;color:#ffc16f;font-weight:850}.dashboard-top-actions{width:100%}.account-home-button{min-width:130px}.account-header{height:70px;padding:0 16px}.account-brand{gap:8px}.account-brand img{width:51px;height:51px}.account-brand strong{font-size:13px;letter-spacing:1px}.account-brand small{font-size:8px;letter-spacing:2px}.account-nav{gap:10px}.account-nav a{font-size:11px}.account-nav a:not(.account-nav-cta){display:none}.account-nav a.account-nav-cta{padding:10px 12px}.account-page{padding:25px 16px 50px}.account-intro{padding:7px 2px 5px}.account-intro h1{font-size:37px;line-height:1.08;letter-spacing:-1.4px;margin-bottom:13px}.account-eyebrow{font-size:10px;margin-bottom:12px}.account-intro>p{font-size:13px;line-height:1.65}.account-perks{grid-template-columns:repeat(3,1fr);gap:7px;margin-top:19px}.account-perk{min-height:94px;padding:12px 10px;gap:7px}.account-perk b{font-size:10px}.account-perk svg{width:20px;height:20px}.account-panel{padding:23px 18px;border-radius:17px}.account-panel h2{font-size:23px}.account-panel .account-tabs{margin:18px 0 20px}.dashboard-banner{padding:18px;grid-template-columns:1fr auto}.dashboard-avatar{width:52px;height:52px;font-size:21px}.dashboard-banner h2{font-size:21px}.dashboard-stats{gap:7px}.dashboard-stat{padding:12px}.dashboard-stat b{font-size:18px}.dashboard-stat span{font-size:10px}.dashboard-card{padding:18px}.dashboard-heading h1{font-size:30px}}
 @media(max-width:380px){.account-brand strong{font-size:11px}.account-brand small{display:none}.account-brand img{width:44px;height:44px}.account-header{padding:0 10px}.account-nav{gap:6px}}
+
+/* Black Hands My Account — painel estilo aplicativo */
+.account-dashboard.is-app-ready{max-width:1140px}
+.account-dashboard.is-app-ready .dashboard-heading{margin:4px 0 17px}
+.account-dashboard.is-app-ready .dashboard-heading h1{font-size:clamp(29px,4.5vw,42px);letter-spacing:-1.3px}
+.account-dashboard.is-app-ready .dashboard-heading p:not(.account-eyebrow){font-size:13px}
+.account-dashboard.is-app-ready .dashboard-banner{position:relative;margin-bottom:15px;padding:20px 24px;align-items:center;background:linear-gradient(115deg,#352315 0%,#1b1611 65%,#11100f 100%);border-color:#9b6133;box-shadow:0 15px 34px #0004}
+.account-dashboard .dashboard-banner p{margin:3px 0;font-size:12px}
+.account-dashboard .dashboard-avatar{border-radius:50%;width:56px;height:56px;background:linear-gradient(140deg,#f6b969,#d67d31);color:#1b1008;border:2px solid #ffbf72;font-size:19px;letter-spacing:1px;box-shadow:0 5px 17px #0007}
+.bh-account-avatar-actions{display:flex;align-items:center;gap:12px}
+.bh-account-bell{position:relative;display:grid;place-items:center;width:43px;height:43px;border-radius:13px;border:1px solid #79553b;background:#2b2018;color:#ffb978;cursor:pointer}
+.bh-account-bell:hover{background:#48301f}
+.bh-account-bell:focus-visible,.bh-account-quick-card:focus-visible,.bh-account-tab:focus-visible{outline:2px solid #ffd19a;outline-offset:3px}
+.bh-account-bell-count{position:absolute;top:-6px;right:-6px;background:#f29e50;color:#1a110a;border-radius:12px;min-width:19px;height:19px;font:900 11px/19px system-ui;text-align:center}
+.bh-account-badge{display:inline-flex;align-items:center;width:max-content;max-width:100%;font:850 10px/1.3 system-ui,sans-serif;letter-spacing:1px;color:#d5a77b;border:1px solid #6d4b31;border-radius:99px;padding:6px 10px;margin-top:10px}
+.bh-account-badge.is-vip{background:#3c2817;color:#ffcb86;border-color:#db9d56}
+.bh-account-tablist{display:flex;align-items:center;gap:6px;margin:10px 0 17px;padding:6px;border-radius:15px;border:1px solid #503727;background:#151211;position:sticky;top:0;z-index:18;backdrop-filter:blur(15px)}
+.bh-account-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;min-height:50px;padding:9px 8px;border-radius:11px;border:1px solid transparent;background:transparent;color:#b9a79a;font:800 12px/1.2 system-ui,sans-serif;cursor:pointer;transition:background .18s,color .18s}
+.bh-account-tab svg{width:20px;height:20px;flex:none}
+.bh-account-tab:hover{color:#ffbd81;background:#34231a}
+.bh-account-tab[aria-selected=true],.bh-account-tab[aria-current=page]{background:linear-gradient(115deg,#f5ab56,#e68937);color:#22140b;box-shadow:0 5px 13px #0006}
+.bh-account-panel{min-width:0;animation:bh-account-in .2s ease}
+.bh-account-panel .dashboard-card{margin-bottom:14px;background:linear-gradient(150deg,#201a16,#131211);border-color:#503b2c;padding:24px}
+.bh-account-panel .dashboard-card>h2{font-size:21px}
+.bh-account-panel .dashboard-card>p{max-width:680px;font-size:12px}
+.bh-account-next{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px;margin:0 0 22px;border:1px solid #a06638;border-radius:19px;background:radial-gradient(ellipse at 100% 0%,#4d2b16 0%,transparent 56%),linear-gradient(115deg,#2c1b12,#181311 80%);box-shadow:0 14px 28px #0005}
+.bh-account-next-info{min-width:0}
+.bh-account-kicker{display:block;color:#f9b874;font:850 10px/1.4 system-ui,sans-serif;letter-spacing:2px;margin-bottom:9px}
+.bh-account-next h2{color:#fff9f1;font-size:clamp(22px,3.5vw,29px);line-height:1.15;margin:0 0 8px}
+.bh-account-next p{color:#c9b7a7;font-size:13px;line-height:1.65;margin:0;max-width:620px}
+.bh-account-next-cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:13px 17px;border-radius:11px;background:#f0a451;color:#1c1209;text-decoration:none;font:900 12px/1.3 system-ui,sans-serif;white-space:nowrap;min-height:49px}
+.bh-account-next-cta:hover{background:#ffd191;color:#1c1209}
+.bh-account-next-cta svg{width:18px;height:18px}
+.bh-account-block-title{font-size:22px;line-height:1.2;margin:0 0 14px;letter-spacing:-.5px}
+.bh-account-quick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 21px}
+.bh-account-quick-card{appearance:none;display:flex;align-items:center;gap:13px;min-height:91px;text-align:left;padding:16px 17px;border-radius:15px;border:1px solid #51402f;background:#1b1714;color:#e8d8cb;cursor:pointer;text-decoration:none;transition:transform .17s,border-color .17s,background .17s}
+.bh-account-quick-card:hover{transform:translateY(-2px);border-color:#ce8e54;background:#2b2018}
+.bh-account-quick-card svg{width:27px;height:27px;flex:none;color:#f6ad63}
+.bh-account-quick-card span{min-width:0}
+.bh-account-quick-card strong{display:block;font-size:14px;line-height:1.35;color:#fef5ec}
+.bh-account-quick-card small{display:block;margin-top:5px;color:#b7a398;font-size:11px;line-height:1.45}
+.bh-account-mini-stats{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 24px}
+.bh-account-mini-stats .dashboard-stat{background:#171411;border-color:#403022}
+.bh-account-section-header{display:flex;justify-content:space-between;align-items:baseline;gap:15px;margin:17px 0}
+.bh-account-section-header h2{margin:0}
+.bh-account-section-header p{font-size:12px;color:#aa9585;line-height:1.5;margin:0}
+.bh-account-updates{display:grid;gap:10px;margin-bottom:20px}
+.bh-account-update{display:flex;align-items:flex-start;gap:12px;background:#1a1714;border:1px solid #403123;border-radius:13px;padding:14px}
+.bh-account-update-dot{flex:none;width:10px;height:10px;margin-top:5px;background:#8f8d87;border-radius:99px}
+.bh-account-update[data-tone=warning] .bh-account-update-dot{background:#ffa14f}
+.bh-account-update[data-tone=success] .bh-account-update-dot{background:#83b99a}
+.bh-account-update strong{display:block;font-size:13px;color:#f4e9dd}
+.bh-account-update p{font-size:12px;color:#bdab9b;line-height:1.55;margin:6px 0 0}
+.bh-account-payments-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 20px}
+.bh-account-payments-metric{padding:18px;background:#1d1814;border:1px solid #513926;border-radius:14px}
+.bh-account-payments-metric strong{display:block;font-size:30px;line-height:1;color:#ffb976}
+.bh-account-payments-metric span{display:block;font-size:11px;color:#c0ab97;margin-top:10px}
+.bh-account-payments-list{display:grid;gap:10px}
+.bh-account-payment-note{font-size:12px;line-height:1.6;color:#baa99c;margin:12px 0 5px}
+.bh-account-bottom{display:none}
+.bh-account-panel .booking-mini{border-color:#4b3a2d}
+.bh-account-panel .account-actions a{display:inline-flex;min-height:43px;align-items:center;border-radius:9px}
+.bh-account-panel .dashboard-card .account-field input{max-width:650px}
+@keyframes bh-account-in{from{opacity:.5;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:790px){
+ .account-dashboard.is-app-ready .dashboard-heading{gap:11px}
+ .bh-account-next{padding:19px;gap:14px}
+ .bh-account-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .bh-account-tab{font-size:11px}
+ .bh-account-tab svg{width:18px;height:18px}
+}
+@media(max-width:600px){
+ body.account-body:has(#accountDashboard:not([hidden])){padding-bottom:calc(75px + env(safe-area-inset-bottom,0px))}
+ .account-page{padding-top:19px}
+ .account-dashboard.is-app-ready .dashboard-heading h1{font-size:26px;margin:0 0 5px}
+ .account-dashboard.is-app-ready .dashboard-heading p:not(.account-eyebrow){font-size:11px}
+ .account-dashboard.is-app-ready .dashboard-heading .account-eyebrow{font-size:9px;margin-bottom:5px!important}
+ .account-dashboard.is-app-ready .dashboard-top-actions{width:auto}
+ .account-dashboard.is-app-ready .account-home-button{padding:10px 11px;min-width:0;font-size:11px;min-height:40px}
+ .account-dashboard.is-app-ready .account-outline{padding:10px 11px;font-size:11px}
+ .account-dashboard.is-app-ready .dashboard-banner{padding:15px;gap:12px;margin-bottom:12px;border-radius:14px}
+ .account-dashboard.is-app-ready .dashboard-banner h2{font-size:19px}
+ .account-dashboard.is-app-ready .dashboard-banner p{font-size:11px}
+ .account-dashboard.is-app-ready .dashboard-avatar{width:45px;height:45px;font-size:15px}
+ .bh-account-avatar-actions{gap:7px}
+ .bh-account-bell{width:39px;height:39px}
+ .bh-account-bell svg{width:19px;height:19px}
+ .bh-account-tablist{display:none}
+ .bh-account-next{align-items:stretch;flex-direction:column;padding:18px;border-radius:15px;margin-bottom:21px}
+ .bh-account-next h2{font-size:23px}
+ .bh-account-next p{font-size:12px}
+ .bh-account-next-cta{width:100%;justify-content:space-between;min-height:46px}
+ .bh-account-quick{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .bh-account-quick-card{min-height:105px;flex-direction:column;align-items:flex-start;justify-content:center;padding:13px 14px;gap:9px;border-radius:13px}
+ .bh-account-quick-card svg{width:24px;height:24px}
+ .bh-account-quick-card strong{font-size:12px}
+ .bh-account-quick-card small{font-size:10px;margin-top:3px}
+ .bh-account-block-title{font-size:19px}
+ .bh-account-mini-stats .dashboard-stat{padding:11px}
+ .bh-account-mini-stats .dashboard-stat b{font-size:19px}
+ .bh-account-section-header{display:block}
+ .bh-account-section-header p{margin-top:5px}
+ .bh-account-panel .dashboard-card{padding:17px;border-radius:14px}
+ .bh-account-panel .dashboard-card>h2{font-size:18px}
+ .bh-account-payments-summary{gap:8px}
+ .bh-account-payments-metric{padding:12px}
+ .bh-account-payments-metric strong{font-size:21px}
+ .bh-account-payments-metric span{font-size:10px}
+ .bh-account-bottom{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;bottom:0;left:0;right:0;z-index:90;max-height:calc(77px + env(safe-area-inset-bottom,0px));padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px));gap:3px;background:#13100ef5;border-top:1px solid #69442b;backdrop-filter:blur(18px);box-shadow:0 -8px 28px #0009}
+ .bh-account-bottom .bh-account-tab{display:flex;flex-direction:column;gap:4px;min-width:0;min-height:49px;border-radius:10px;padding:7px 3px 5px;font-size:10px}
+ .bh-account-bottom .bh-account-tab svg{width:21px;height:21px}
+ .bh-account-bottom .bh-account-tab[aria-current=page]{background:#3a2414;color:#ffbf76;border-color:#86552e;box-shadow:none}
+ .bh-account-bottom .bh-account-tab span{white-space:nowrap}
+}
+@media(max-width:380px){
+ .bh-account-quick-card{padding:11px}
+ .bh-account-bell{width:34px;height:34px}
+ .bh-account-mini-stats{gap:6px}
+ .bh-account-mini-stats .dashboard-stat{padding:8px}
+ .bh-account-mini-stats .dashboard-stat span{font-size:9px}
+ .bh-account-bottom .bh-account-tab{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.bh-account-panel{animation:none}.bh-account-quick-card{transition:none}}
 </style>
 </head>
 <body class="account-body">
@@ -134,7 +257,7 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
  </section>
  <section class="account-dashboard" id="accountDashboard" hidden aria-labelledby="dashboardHeading">
   <div class="dashboard-heading">
-   <div><p class="account-eyebrow" style="margin:0 0 8px">ÁREA DO CLIENTE</p><h1 id="dashboardHeading">Minha Black Hands</h1><p>Seus agendamentos e dados, organizados em um só lugar.</p></div>
+   <div><p class="account-eyebrow" style="margin:0 0 8px">ÁREA DO CLIENTE</p><h1 id="dashboardHeading">Minha Black Hands</h1><p>Agenda, compras e VIP: tudo a poucos toques.</p></div>
    <div class="dashboard-top-actions"><a href="index.html" class="account-home-button" aria-label="Voltar ao início do site Black Hands">← Início do site</a><button id="logout" type="button" class="account-outline">Sair da conta</button></div>
   </div>
   <div class="dashboard-banner">
@@ -224,5 +347,6 @@ body.account-body{margin:0;background:#090909;color:var(--account-paper)}
 </main>
 <footer class="account-footer">© 2026 BLACK HANDS BARBER SHOP · SUA EXPERIÊNCIA, SEU ESTILO.</footer>
 <script src="conta.js" defer></script>
+<script src="account-dashboard-app.js" defer></script>
 <script src="site-menu.js" defer></script></body>
 </html>
