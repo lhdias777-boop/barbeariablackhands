@@ -31,17 +31,17 @@
    directions.append(installLine('✓','Você pode abrir pelo ícone da Black Hands na tela inicial.'));
    return;
   }
-  summary.textContent='Tenha agendamentos, compras e VIP a um toque, com a logo oficial da Black Hands na sua tela inicial.';
+  summary.textContent='Abra seus agendamentos, compras e VIP tocando no ícone oficial da Black Hands, como um aplicativo.';
   if(isApple()){
    directions.append(
-    installLine('1','Abra este site pelo Safari do iPhone.'),
-    installLine('2','Toque em Compartilhar (ícone de quadrado com seta para cima).'),
-    installLine('3','Escolha Adicionar à Tela de Início e depois toque em Adicionar.')
+    installLine('1','Abra o site da Black Hands no Safari do iPhone.'),
+    installLine('2','Toque no botão Compartilhar (quadrado com seta para cima).'),
+    installLine('3','Escolha Adicionar à Tela de Início, ative Abrir como App se aparecer, e toque em Adicionar.')
    );
   }else if(isAndroid()){
    if(installPrompt){
     native.hidden=false;
-    directions.append(installLine('✓','Toque em Instalar agora para abrir a confirmação do Android.'));
+    directions.append(installLine('✓','Toque no botão abaixo para abrir a confirmação de instalação no Android.'));
    }else{
     directions.append(
      installLine('1','Abra a Black Hands no Google Chrome.'),
@@ -76,12 +76,12 @@
    '<button class="bh-install-close" type="button" aria-label="Fechar instruções">×</button>'+
    '<img class="bh-install-logo" src="logo-oficial-black-hands.jpg" alt="Logo Black Hands Barber Shop" width="78" height="78">'+
    '<span class="bh-install-kicker">BLACK HANDS • ACESSO RÁPIDO</span>'+
-   '<h2 id="bhInstallTitle">Black Hands na sua tela inicial.</h2>'+
+   '<h2 id="bhInstallTitle">Leve a Black Hands com você.</h2>'+
    '<p data-install-summary></p>'+
    '<ol class="bh-install-steps" data-install-directions></ol>'+
-   '<button class="bh-install-native" data-install-native type="button" hidden>↓ Instalar agora</button>'+
+   '<button class="bh-install-native" data-install-native type="button" hidden>↓ Adicionar à tela inicial</button>'+
    '<button class="bh-install-done" type="button">Entendi</button>'+
-   '<small>É gratuito. Seu login, agendamentos e pedidos continuam no mesmo site.</small>'+
+   '<small>É gratuito, não precisa da App Store nem da Play Store. Seu login, agendamentos e pedidos continuam no mesmo site.</small>'+
    '</div>';
   document.body.append(dialog);
   dialog.querySelector('.bh-install-close').addEventListener('click',()=>dialog.close());
@@ -109,7 +109,7 @@
  if(homeNav&&homeToggle){
   const link=document.createElement('a');
   link.href='#instalar-app';link.className='bh-site-install-link';
-  link.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v13m0 0 5-5m-5 5-5-5M4 17v4h16v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Instalar aplicativo</span>';
+  link.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v13m0 0 5-5m-5 5-5-5M4 17v4h16v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="bh-install-menu-copy"><strong>Baixar app</strong><small>Adicionar à tela inicial</small></span>';
   link.addEventListener('click',e=>{
    e.preventDefault();
    if(homeNav.classList.contains('is-open'))homeToggle.click();
@@ -150,7 +150,7 @@
   ['Black Hands Store','loja.html','shopping-bag'],
   ['Avaliações','index.html#avaliacoes','star'],
   ['Localização e contato','index.html#contato','map-pin'],
-  ['Instalar aplicativo','#instalar-app','download']
+  ['Baixar app','#instalar-app','download']
  ];
  const symbols={
   'house':'⌂','scissors':'✂','calendar-days':'▦','crown':'♛',
@@ -159,11 +159,21 @@
  for(const [label,href,key] of items){
   const link=document.createElement('a');link.href=href;
   const mark=document.createElement('span');mark.className='bh-site-menu-icon';mark.setAttribute('aria-hidden','true');mark.textContent=symbols[key];
-  const name=document.createElement('span');name.textContent=label;link.append(mark,name);
+  const name=document.createElement('span');name.textContent=label;
+  if(key==='download'){
+   name.className='bh-install-menu-copy';
+   const title=document.createElement('strong');title.textContent='Baixar app';
+   const detail=document.createElement('small');detail.textContent='Adicionar à tela inicial';
+   name.replaceChildren(title,detail);
+  }
+  link.append(mark,name);
   const current=location.pathname.split('/').pop()||'index.html';
   if(href===current)link.setAttribute('aria-current','page');
   if(key==='calendar-days')link.classList.add('bh-site-menu-book');
-  if(key==='download'){link.classList.add('bh-site-menu-install');link.addEventListener('click',e=>{e.preventDefault();closeMenu();openInstall();});}
+  if(key==='download'){
+   link.classList.add('bh-site-menu-install');link.setAttribute('aria-label','Baixar app Black Hands: instalar ou adicionar à tela inicial');
+   link.addEventListener('click',e=>{e.preventDefault();closeMenu();openInstall();});
+  }
   nav.append(link);
  }
  const footer=document.createElement('div');footer.className='bh-site-menu-foot';
